@@ -1,0 +1,27 @@
+common udct,udctim,udctx,udcty,udctsymbol,udctsymbol_size,udctring_symbol,$
+       udctring_symbol_size,udctstars,udctxp,udctyp,udctplanet,udctring,$
+       udctxr,udctyr,udcts_names,udctplanet_symbol,udctplanet_symbol_size,$
+       udctnl,udctplan_names
+udctim=im
+udctx=coords[*,1]
+udcty=coords[*,0]
+udctxp=planet_coords[*,1]
+udctyp=planet_coords[*,0]
+udctxr=ring_coords[*,1]
+udctyr=ring_coords[*,0]
+udctsymbol=symbol
+udctsymbol_size=symbol_size
+udctring_symbol=ring_symbol
+udctring_symbol_size=ring_symbol_size
+udctstars=stars
+udctplanet=planet
+udctring=ring
+udcts_names=s_names
+udctplanet_symbol=planet_symbol
+udctplanet_symbol_size=planet_symbol_size
+udctnl=nl
+udctplan_names=plan_names
+
+tvlct,indgen(256),indgen(256),indgen(256)
+
+xloadct,updatecallback='update_colour_table'

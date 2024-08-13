@@ -1,0 +1,31 @@
+if not keyword_set(rpj_sz) then stop, 'No reprojected image is open.'
+if not keyword_set(reproj_mnrad) then reproj_mnrad=mnrad
+if not keyword_set(reproj_mxrad) then reproj_mxrad=mxrad
+if not keyword_set(reproj_mnlon) then reproj_mnlon=mnlon
+if not keyword_set(reproj_mxlon) then reproj_mxlon=mxlon
+radi = make_radi( reproj_mnrad, reproj_mxrad, reproj_mnlon, reproj_mxlon, $
+             rpj_sz, loni=loni )
+if !d.window lt 32 and not keyword_set(forcewin) then stop, 'Current window ('+strtrim(!d.window,2)+') is less than 32.  Are you sure this is a reprojected image?  If so, set forcewin=1'
+
+ring_symbol=-4
+if keyword_set(nops) then ring_symbol=0
+ring_symbol_size=0.5
+ring_line=2
+;if !version.arch eq 'ppc' then ring_color=red() else ring_color=getcolor('red')
+if !d.n_colors eq 16777216 then ring_color=red() else ring_color=getcolor('red')
+
+if not keyword_set(noplot) then for j=0l,n_elements(ring_rads)-1 do plots,[-1,rpj_sz[1]],interpol(lindgen(rpj_sz[2]),radi,ring_rads[j])*[1,1],psym=ring_symbol,symsize=ring_symbol_size,line=ring_line,color=make_array(n_elements(ring[*,0]),value=ring_color),/device
+
+;showing = xr gt 0 and xr lt nl and yr gt 0 and yr lt nl
+;dist = (xr-(nl/2-1))^2 + (yr-(nl/2-1))^2
+;wherename = lonarr(ring_num)
+;for j=0l,ring_num-1 do if (where(showing[jj[j]:jj[j+1]-1]))[0] ne -1 then $
+;	wherename[j] = jj[j] + (where( dist[jj[j]:jj[j+1]-1] eq $
+;		min(dist[ where(showing[jj[j]:jj[j+1]-1]) + jj[j] ]) ))[0]
+;;change = [9,11]
+;;wherename[change]=wherename[change]+1
+if (keyword_set(ring_rads_legend) and not keyword_set(nolegend) and not keyword_set(noplot)) then $
+	for j=0l,n_elements(ring_rads)-1 do $
+	xyouts, 5, 2+interpol(lindgen(rpj_sz[2]),radi,ring_rads[j]), ring_rads_legend[j], $
+		/dev, co=ring_color
+

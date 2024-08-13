@@ -1,0 +1,54 @@
+function caviar_kappa2, r, dkappa_dr, dkappa2_dr=dkappa2_dr, lc82=lc82, gm=_gm, prad=_prad, j2=_j2, j4=_j4, j6=_j6, j8=_j8, noj8=noj8
+
+if n_params() eq 0 then begin
+  print, 'Syntax:  Result = CAVIAR_kappa2( r, dkappa_dr )'
+  print, 'Returns the square of the radial frequency (radians/sec) for radius r in Saturn''s ring plane,'
+  print, 'accounting for Saturn''s j2, j4, and j6.  '
+  print, 'Optionally returns the derivative (radians/sec/km) as well.'
+  retall
+endif
+
+;; Saturn mass, radius, and harmonics from JPL kernel cpck05May2004.tpc
+;gm = 37931289.4836 ;km^3/s^2
+;prad = 60330.0d0 ;km
+;j2 = 0.016292243237d
+;j4 = -0.000928716077d
+;j6 = 0.000088845313
+saturn_constants, gm=gm, prad=prad, j2=j2, j4=j4, j6=j6, j8=j8
+if not keyword_set(j8) then j8=0
+if keyword_set(noj8) then j8=0
+if keyword_set(lc82) then begin
+  ; Use values from Lissauer and Cuzzi (1982)
+  gm = 37929141.6d ;km^3/s^2
+  j2 = 16299.1d-6
+  j4 = -916.7d-6
+  j6 = 81.3d-6
+  j8 = 0
+endif
+; Overwrite with input values, if they exist
+if keyword_exists(_gm) then gm = _gm
+if keyword_exists(_prad) then prad = _prad
+if keyword_exists(_j2) then j2 = _j2
+if keyword_exists(_j4) then j4 = _j4
+if keyword_exists(_j6) then j6 = _j6
+if keyword_exists(_j8) then j8 = _j8
+
+; From MD99 Eq 6.242, kappa^2 = (3/a) ( partial V / partial r )_0 
+;                               + ( partial^2 V / partial r^2 )_0
+; where MD99 Eq 6.218 gives V = -gm/r * ( 1 - Sum_i P_i(0)*J_i*(prad/r)^i ) 
+; ==> dV/dr = gm/r^2 * ( 1 - Sum_i (i+1)*P_i(0)*J_i*(prad/r)^i )
+; ==> d2V/dr2 = -gm/r^3 * ( 2 - Sum_i (i+1)*(i+2)*P_i(0)*J_i*(prad/r)^i )
+; kappa^2 = gm/r^3 * ( 1 + Sum_i (i+1)*(i-1)*P_i(0)*J_i*(prad/r)^i )
+; Note that P_2(0) = -1/2; P_4(0) = 3/8; P_6(0) = -5/16; P_8(0) = 35/128
+kappa2 = gm / r^3 * ( 1 - j2*3/2*(prad/r)^2 + j4*45/8*(prad/r)^4 $
+                        - j6*175/16*(prad/r)^6 + j8*2205/128*(prad/r)^8 )
+; d(kappa^2)/dr = gm/r^4 * ( - 3 
+;                            - Sum_i (i+1)*(i-1)*(i+3)*P_i(0)*J_i*(prad/r)^i )
+dkappa2_dr = gm / r^4 * ( -3 + j2*15/2*(prad/r)^2 - j4*315/8*(prad/r)^4 $
+                             + j6*1575/16*(prad/r)^6 - j8*6615/32*(prad/r)^8 )
+; d(kappa^2)/dr = 2*kappa*d(kappa)/dr
+dkappa_dr = dkappa2_dr / 2 / sqrt(kappa2)
+
+return, kappa2
+
+end

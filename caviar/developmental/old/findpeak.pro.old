@@ -1,0 +1,107 @@
+function findpeak, rrpi, mnrad, mxrad, mnlon, mxlon, nterms=_nterms, yy=yy
+
+        drawnyet = 0
+	if keyword_set(_nterms) then nterms = _nterms else nterms = 4
+	sr=size(rrpi)
+	ls=sr(1)
+	rs=sr(2)
+	radi=findgen(rs)/(rs-1.)*(mxrad-mnrad)+mnrad
+	loni=findgen(ls)/(ls-1.)*(mxlon-mnlon)+mnlon
+	out=fltarr(1+nterms,ls)
+	out[0,*]=loni
+
+        if !d.window eq -1 then begin
+          print, 'No window currently open.  Cannot proceed.'
+          return, -1
+        endif else begin
+          win = !d.window
+          print, 'Current window:  '+string(!d.window)
+          print, 'Roll the scroll-bar to change the current window.'
+        endelse
+        if 4 eq 5 then begin
+          changewindow:
+          print, 'Enter currently-open window to use:'
+          win = ''
+          while win eq '' do begin
+            read, win
+            win = long(win)
+            winset, win, nowin
+            if keyword_set(nowin) then win=''    ; change was unsuccessful
+          endwhile
+        endif
+        if keyword_set(yy) then begin
+          yi1 = yy[0]
+          yi2 = yy[1]
+          yo1 = yy[2]
+          yo2 = yy[3]
+        endif else begin
+          print, 'Click on right-hand minimum radius value for feature'
+          cursor, x, yi1, 3, /device
+          if !mouse.button eq 16 then goto, changewindow
+          plots, [0], [yi1], ps=-4, color=green(), /device
+          print, 'Click on left-hand minimum radius value for feature'
+          cursor, x, yi2, 3, /device
+          if !mouse.button eq 16 then goto, changewindow
+          plots, [0,ls-1], [yi1,yi2], ps=-4, color=green(), /device
+          print, 'Click on right-hand maximum radius value for feature'
+          cursor, x, yo1, 3, /device
+          if !mouse.button eq 16 then goto, changewindow
+          plots, [0,0,ls-1], [yo1,yi1,yi2], ps=-4, color=green(), /device
+          print, 'Click on left-hand maximum radius value for feature'
+          cursor, x, yo2, 3, /device
+          if !mouse.button eq 16 then goto, changewindow
+          yy = [ yi1, yi2, yo1, yo2 ]
+        endelse
+        plots, [0,0,ls-1,ls-1,0], [yo1,yi1,yi2,yo2,yo1], ps=-4, color=green(), /device
+
+        print, 'Select type of feature to fit:'
+        print, '1) Brightness maximum'
+        print, '2) Brightness minimum'
+        print, '3) Inner edge (bright-to-dark)'
+        print, '4) Outer edge (dark-to-bright)'
+        fittype = ''
+        while fittype eq '' do begin
+          read, fittype
+          fittype = fix(fittype)
+          if fittype lt 1 or fittype gt 4 then fittype=''
+        endwhile
+
+        nexamp = 6
+        pmold = !p.multi
+        !p.multi = [0,2,3]
+        examp = long( findgen(nexamp) / (nexamp-1) * (ls-1) )
+
+	for i=0l,ls-1 do begin
+;          if i ne 0 and i mod 1920 eq 0 then begin
+;            win = win + 1
+;            wset, win
+;          endif
+          data = rrpi[i,*]
+          if fittype ge 3 then data = deriv(data)
+          if fittype ge 2 and fittype le 3 then data = -data
+          yi = round( yi1 + float(i)/(ls-1)*(yi2-yi1) )
+          yo = round( yo1 + float(i)/(ls-1)*(yo2-yo1) )
+	  ;ai = [-.01,mean([yi,yo]),10,0,0,0]
+	  ai = [ (max(data[yi:yo])-min(data[yi:yo]))/3., mean([yi,yo]), (yo-yi)/3., replicate(0,nterms-3)]
+          ;gi = gaussfit( (findgen(rs))[yi:yo], data[yi:yo], ai, nterms=nterms )
+          gi = (gaussfit( findgen((yo-yi)*3+1)+yi*2-yo, [replicate(data[yi],yo-yi),data[yi:yo],replicate(data[yo],yo-yi)], ai, nterms=nterms ))[yo-yi:2*(yo-yi)]
+          out[1:nterms,i] = ai
+          ;plots, i mod 1920, ai[1], ps=3, color=blue(), /device
+          plots, i, ai[1], ps=3, color=blue(), /device
+          if (where(i eq examp))[0] ne -1 then begin
+            if i eq examp[0] then window, 8 else wset, 8
+            plot, radi[yi:yo], data[yi:yo], title='lon = '+string(loni[i]), /ys
+            oplot, radi[yi:yo], gi, l=1
+            wset, win
+            ;plots, i mod 1920, ai[1], ps=4, color=red(), /device
+            plots, i, ai[1], ps=4, color=red(), /device
+          endif
+        end
+        out[2,*] = interpol( radi, findgen(rs), out[2,*] )
+
+        !p.multi = pmold
+
+	return, out
+
+	end
+

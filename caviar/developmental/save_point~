@@ -1,0 +1,16 @@
+period = rstrpos( image_name, '.' )
+suffix = strmid( image_name, period, strlen(image_name) )
+if suffix ne '.IMG' then print, 'Image_name suffix is '+suffix+' not .IMG'
+savefile = strmid( image_name, 0, period )+'.offset'
+if keyword_set(findfile(savefile)) and not keyword_set(overwrite) then stop, $
+	savefile+' already exists.  To overwrite, set overwrite=1 .'
+overwrite = 0
+
+print, 'Saving pointing information in '+savefile
+save, cmat, point_descrip, filename=savefile
+point_descrip = ''
+
+; Old version of restore_point converted from cmat to object_offset (the format
+; used by Casvu).  This, however, is not robust when kernels are updated.
+;.run cmat_to_object_offset
+;save, object_offset, object_rot, object_rot_angle, object_rot_axis, filename=savefile

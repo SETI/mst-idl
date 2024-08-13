@@ -1,0 +1,24 @@
+if not keyword_exists(mooncolor) then mooncolor = 1
+equal = 0
+specify_levels = 0
+if not keyword_set(half) and not keyword_set(qland) and $
+   not keyword_set(qport) and not keyword_set(hland) and $
+   not keyword_set(hport) and not keyword_set(aspect) then aspect = 0.4
+if keyword_set(dolzr) then begin
+  lzr, psname, half=half, aspect=aspect, qland=qland, $
+       qport=qport, hland=hland, hport=hport, specifyxy=specifyxy
+  psname = ''  ;Safety feature, prevent inadvertently using same filename twice
+  plot_color
+  if not keyword_exists(cmyk) then cmyk=0;1
+  device, cmyk=cmyk
+  @plot_prepare
+  if keyword_set(qland) or keyword_set(qport) then begin
+    wavelet_charsz=1
+  endif else wavelet_charsz=0
+  specify_levels = 1
+  print, 'Started plot '+psname+$
+    '.  Go ahead and @run_wavelet1 now, and be sure to clzr when you''re done!'
+endif
+
+end
+

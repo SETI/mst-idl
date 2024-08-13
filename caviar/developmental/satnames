@@ -1,0 +1,8 @@
+image_coords,planet,cmat,vobs_planet,cam_params,nl,planet_coords
+
+tv,im,/order
+
+plots,round(planet_coords[*,1]),round((nl-1)-planet_coords[*,0]),psym=planet_symbol,symsize=planet_symbol_size,color=make_array(n_elements(planet[*,0]),value=green()),/device
+get_planet_name,planet[*,0],plan_names
+xyouts,planet_coords[*,1]+6,(nl-4)-planet_coords[*,0],plan_names[*],color=make_array(n_elements(planet[*,0]),value=green()),/device
+

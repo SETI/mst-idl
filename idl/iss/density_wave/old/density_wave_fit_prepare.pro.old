@@ -1,0 +1,28 @@
+;restore, 'stretch.sav'
+;image_name = filenames[28]
+;noplot = 1
+;@caviar
+
+;moon = 10
+;m = 20
+;x1 = 1096 & x2 = 1298
+;sat = 618l
+moon = 1
+m = 9
+x1 = 491 & x2 = 894
+sat = 616l
+rres = resloc( m, m, moon, res_descrip=res_descrip )
+.run get_sat_coords
+lambda = lcen[28] * !dpi/180
+lambdasat = sat_polar[1] * !dpi/180
+rsat = sat_polar[2]
+
+radi = radi[x1:x2]
+val = val[x1:x2]
+thoukm = min(radi) - (min(radi) mod 1000)
+radscan_descrip = strmid(image_name,0,11)+' scan cropped '+$
+	strtrim(x1,2)+':'+strtrim(x2,2)+', centered on '+res_descrip
+
+save, m, lambda, lambdasat, rsat, thoukm, rres, radi, val, radscan_descrip, $
+	filename='~/idl/iss/density_wave/test_wave.sav'
+

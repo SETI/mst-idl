@@ -1,0 +1,34 @@
+object_offset = 0
+period = rstrpos( image_name, '.' )
+suffix = strmid( image_name, period, strlen(image_name) )
+if suffix ne '.IMG' then print, 'Image_name suffix is '+suffix+' not .IMG'
+filestart = rstrpos(image_name,'N',period) > rstrpos(image_name,'W',period)
+if filestart eq -1 then stop, 'Image_Name does not contain N or W.'
+;filestem = strmid( image_name, 0, period )
+filelen = 13
+while (where(strmid(image_name,filestart+filelen,1) eq ['.','_']))[0] eq -1 do filelen=filelen+1
+filestem = strmid( image_name, 0, filestart+filelen )
+if keyword_set(findfile(filestem+'.IMG.bc')) then begin &$
+  print, 'Restoring Autonav kernel '+filestem+'.IMG.bc' &$
+  cspice_furnsh,filestem+'.IMG.bc' &$
+  image_data,label,et,epoch,exposure,cam_name,pmat,nl,found &$
+  cmat=nacmat##pmat &$
+endif
+savefile = findfile( filestem+'*.offset' )
+;savefile = strmid( image_name, 0, period )+'.offset'
+if n_elements(savefile) gt 1 then stop, 'Multiple files '+filestem+'*.offset'
+if not keyword_set(savefile) then begin &$
+  print, 'Saved pointing information '+filestem+'.offset* not found.' &$
+  restore, '/home/borogove/iss/caviar/developmental/nochange.offset' &$
+endif else if keyword_set(nopoint) then begin &$
+  print, savefile+' not restored because nopoint=1.' &$
+  restore, '/home/borogove/iss/caviar/developmental/nochange.offset' &$
+endif else begin &$
+  print, 'Restoring saved pointing information from '+savefile &$
+  print, '     (To restore from a different file, change the variable savefile.)' &$
+  restore, savefile &$
+endelse
+
+; Old version of save_point converted from cmat to object_offset (the format
+; used by Casvu).  This, however, is not robust when kernels are updated.
+;@object_offset_to_cmat

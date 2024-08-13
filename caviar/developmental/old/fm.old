@@ -1,0 +1,10 @@
+find_stars,rawim,xt,yt,flux,sharp,round,1.0,1.3,[-1.0,1.0],[0.2,1.0]
+nx=n_elements(xt)
+found_star_coords=dblarr(nx,2)
+found_star_coords(*,0)=1023.0d0-yt
+found_star_coords(*,1)=xt
+
+tv,im,/order
+
+;plots,found_star_coords[*,1],1023-found_star_coords[*,0],psym=symbol,symsize=symbol_size,/device
+plots,found_star_coords[*,1],(nl-1)-found_star_coords[*,0],psym=symbol,symsize=symbol_size,color=make_array(nx,value=cyan()),/device

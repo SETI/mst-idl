@@ -1,0 +1,8 @@
+function sign, x
+
+out = x*0
+int = where( x ne 0, count )
+if count gt 0 then out[int] = x[int] / abs(x[int])
+return, out
+
+end

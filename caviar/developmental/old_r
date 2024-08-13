@@ -1,0 +1,17 @@
+reproj_parameters=[130000.0d0,150000d0,341.0d0,20.0d0]
+
+
+wset=1
+get_ring,et,reproj_parameters[0:1],reproj_parameters[2],reproj_parameters[3],polera,poledec,3600,reproj_region,699L
+image_coords,reproj_region,cmat,vobs_planet,cam_params,nl,reproj_region_coords
+reproj_region_symbol=3
+reproj_region_symbol_size=0.5
+plots,round(reproj_region_coords[*,1]),(nl-1)-round(reproj_region_coords[*,0]),psym=reproj_region_symbol,$
+symsize=reproj_region_symbol_size,color=make_array(n_elements(reproj_region[*,0]),value=green()),/device
+plots,round([reproj_region_coords[0,1],reproj_region_coords[3600,1]]),(nl-1)-round([reproj_region_coords[0,0],$
+reproj_region_coords[3600,0]]),linestyle=0,color=green(),/device
+plots,round([reproj_region_coords[3599,1],reproj_region_coords[7199,1]]),(nl-1)-round([reproj_region_coords[3599,0],$
+reproj_region_coords[7199,0]]),linestyle=0,color=green(),/device
+
+reproj,polera,poledec,699L,im,rawim,et,cmat,reproj_parameters[0],reproj_parameters[1],$
+reproj_parameters[2],reproj_parameters[3],cam_params,nl

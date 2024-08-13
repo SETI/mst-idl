@@ -1,0 +1,26 @@
+_fac = [ 1, 1.5, 2, 3, 5, 10 ]
+nfac = n_elements(_fac)
+if not keyword_exists(kkk) then kkk = -1
+kkk = kkk + 1
+restore, 'stretch.sav'
+restore, '../rhea_reproject_grp.sav'
+jjj = 6
+image_name = filenames[jjj]
+@caviar
+
+ring_rads = 764.0d0 * 2.5
+startlon = 0
+stoplon = 360
+ring_npoints = 1440.0
+get_ring,et,ring_rads,startlon,stoplon,polera,poledec,ring_npoints,ring,605L,light_time=light_time
+image_coords,ring,cmat,vobs_planet,cam_params,nl,rcrds
+rawim[rcrds[*,1],rcrds[*,0]] = rawim[rcrds[*,1],rcrds[*,0]] + rms[jjj]*_fac[kkk]
+
+.run rhea_reproject
+tvscl, imrz>(-rms[jjj])<rms[jjj]
+sz = size(imrz)
+if not keyword_set(__imrz_fake) then __imrz_fake = fltarr( sz[1], sz[2], nfac )
+__imrz_fake[*,*,kkk] = imrz
+print, strtrim(kkk,2)+' / '+strtrim(nfac,2)+' :  fac='+strtrim(_fac[kkk],2)
+
+save, _fac, nfac, __imrz_fake, jjj, filename='rhearpx_fakedata.sav'

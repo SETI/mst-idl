@@ -1,0 +1,2 @@
+set logscale
+plot 'fort.10.fin' u ($1*1.e4):(abs($2)) t "|{/Symbol D}J|_{num}" w l lw 2, 'fort.10.fin' u ($1*1.e4):($2/abs($2)*64./243.*(3e-12)**2/($1)**5*(2*0.696769989+1.125972531)**2) t"({/Symbol D}J)_{Eq. (32)}" w l, 'fort.10.fin' every::::30 u ($1*1.e4):1 t"b" w l, 'fort.10.fin' u ($1*1.e4):4 t"({/Symbol d}J)_{num}" w l lw 2, 'fort.10.fin' u ($1*1.e4):(4.92*$1*$2) t"4.92(b/r_m)({/Symbol D}J)_{num}" w l

@@ -1,0 +1,405 @@
+pro run_wavelet, _rr, _vv, _wave, wavenum, runits=runits, minlam=minlam, $
+        maxlam=maxlam, nosqrt=nosqrt, xtn=_xtn, $
+        param=param, noplot=noplot, noscan=noscan, $
+        xtit=_xtit, ytit=_ytit, tit=_tit, xr=_xr, yr=yr, phi=phi, $
+        rrads=ring_rads, rrlegend=ring_rads_legend, $
+        specify_levels=specify_levels, errbar=errbar, printmax=printmax, $
+        minkk=minkk, maxkk=maxkk, equalpanels=equalpanels, top=top, hang=hang, $
+        mooncolor=mooncolor, charsz=charsz, nocrop=nocrop, $
+        levels=levels, c_colors=c_colors, dj=dj, dt=dt, period=period, $
+        scale=scale, ytv=ytv, yticki=_yticki, phasepanel=phasepanel, pkt=pkt, $
+        totphase=totphase, linear=linear, zeroes=zeroes, plotyr=plotyr, $
+        twolineswn=twolineswn, wavelength=wavelength, $
+        get_yma1=_yma1, get_yma2=_yma2, get_yma5=_yma5, $
+        put_yma1=put_yma1, put_yma2=put_yma2, put_yma5=put_yma5, debug=debug, $
+        vims=vims, niceplot=niceplot, ring_rads_keep=ring_rads_keep, $
+        ring_rads_index=ring_rads_index, ring_rads_maxlam=ring_rads_maxlam, $
+        ring_rads_sigma_manual=ring_rads_sigma_manual
+
+if n_params() eq 0 then begin
+  print, 'Syntax:  RUN_WAVELET, rr, vv, wave, runits=, minlam=, maxlam=, param='
+  retall
+endif
+
+;common wavelet10, rr, vv, dj, dt, param, period, scale, thoukm, wave, xtit, ytit
+if max(_rr)-min(_rr) gt 1e4 then tkmbase = 100000 else if max(_rr)-min(_rr) gt 1.3e3 then tkmbase=10000 else tkmbase = 1000
+rr = reform(_rr) ;tkm( reform(_rr), thoukm=thoukm )
+vv = reform(_vv)
+if (where(rr ne rr[sort(rr)]))[0] ne -1 then begin
+  vv = vv[sort(rr)]
+  rr = rr[sort(rr)]
+endif
+if not keyword_exists(nosqrt) then nosqrt = 1
+
+if keyword_set(_xr) then xr = _xr
+
+if not keyword_set(phi) then phi=0
+if !d.name eq 'X' and not keyword_set(noplot) then device, decomposed=0
+;if !d.name eq 'PS' then !p.font = 1 else !p.font = -1
+;if !d.name eq 'PS' then !p.thick = 2 else !p.thick = 1
+if keyword_set(charsz) then !p.charsize=charsz else !p.charsize=1.5
+
+yr = 0
+if keyword_set(_tit) then tit = _tit else tit = ''
+j = 100
+if not keyword_set(param) then param = 6
+
+nt = n_elements(rr)
+dt = mean( rr[1:nt-1] - rr[0:nt-2] )
+fourier_factor = 4 * !pi / (param+sqrt(2+param^2))
+if not keyword_set(minlam) then minlam = dt*fourier_factor  ; 2.39865
+if not keyword_set(maxlam) then maxlam = minlam*float(nt)/2 ; 49.4469
+; Fake parameters for setting the y-cropping 
+; These used to be actual wavelet parameters, but...
+s0 = minlam / fourier_factor
+dj = alog2(maxlam/minlam) / j
+if keyword_set(phi) then begin
+  if not keyword_set(runits) then runits='deg'
+  xtit='Longitude ('+runits+')'
+endif else begin
+  if not keyword_set(runits) then runits='km'
+  xtit='Radius'+tkmtit( rr, thoukm=thoukm )
+endelse
+if keyword_set(_xtit) then xtit=_xtit
+if not keyword_set(wavelength) then wavelength = [ '.001', '.003', '.01', '.03', '.1', '.3', '1', '2', '5', '10', '30' ]
+if keyword_set(_ytit) then ytit=_ytit else ytit='I/F';'Optical Depth'
+yr = 2 * !pi / fourier_factor / s0 / [ 2.^(j*dj), 1 ]
+; It's better to use the canonical parameters for doing the transform.
+s0 = dt
+dj = 0.125
+j = alog2(float(nt)/2)/dj
+; If j is not an integer, adjust dj so that it is.
+if j ne fix(j) then dj = alog2(float(nt)*dt/s0)/float(fix(j)+1)
+j = fix(j) + 1
+
+vv_recon = vv
+recon = 1;0
+wave = wavelet( vv_recon, dt, /pad, s0=s0, j=j, dj=dj, param=param, period=period, scale=scale, coi=coi, signif=signif, recon=recon, dof=dof )
+
+; FFT_THEOR, as calculated by wavelet.pro (before being normalized by stddev).
+fft_theor = signif / (chisqr_cvf(.05,dof)/dof) / stddev(vv)^2
+if not keyword_set(nocrop) then begin
+  ; fft_theor should be equal to 1 at all frequencies (white noise)
+  ; High wavenumbers are corrupted because the wavelet ranges over too many
+  ; frequencies, going off the edge.  Low wavenumbers are corrupted because 
+  ; the wavelet ranges over too few frequencies and is under-sampled.
+  good = where( abs(fft_theor-1) lt .01, count )  ;.001
+  if count eq 0 then stop, 'fft_theor is entirely corrupted.'
+  fft_theor = fft_theor[good]
+  period = period[good]
+  scale = scale[good]
+  signif = signif[good]
+  wave = wave[*,good]
+  j = count-1
+endif
+
+_wave = wave   ; Extra copy for sake of common block
+wavenum = 2*!pi / period
+coi = 2*!pi / coi
+vvv = max(wavenum) - (vv-min(vv))/(max(vv)-min(vv))*(max(wavenum)-min(wavenum))/4
+
+; Calculate totphase and zeroes
+totphase = get_phase( total(_wave,2), wrap=twr )
+zeroes = 0.
+for j=1,n_elements(twr)-2 do begin
+  if sign(totphase[twr[j-1]]) ne sign(totphase[twr[j]-1]) then begin
+    zeroes = [ zeroes, $
+               interpol( indgen(twr[j]-twr[j-1])+twr[j-1], $
+                         totphase[twr[j-1]:twr[j]-1], 0 ), $
+               interpol( [-1,0]+twr[j], $
+               fix_angles( totphase[twr[j]-1:twr[j]], /to360 ), 180 ) ]
+  endif
+endfor
+zeroes = clip(zeroes)
+
+; Calculate wavelet_levels
+power = abs(wave^2)
+if keyword_set(nosqrt) then begin
+  lv = 3.
+  mnmnp = -10
+  errbarexp = 2
+endif else begin
+  lv = 6.  ; Number of contours per order of magnitude
+  mnmnp = -5
+  errbarexp = 1
+  power = sqrt(power)
+endelse
+mxp = max(alog10(power))
+if keyword_set(errbar) then begin
+  if n_elements(errbar) eq 1 then errbar = errbar[[0,0]]
+  mnp = min(alog10(power))>alog10(median(errbar)^errbarexp)
+endif else begin
+  mnp = min(alog10(power))>mnmnp
+endelse
+if mnp gt mxp then mnp = min(alog10(power))
+if keyword_set(vims) then mnp = mnp > 2
+mnp = round(mnp*lv)/lv & mxp = round(mxp*lv)/lv
+levels = findgen( (mxp-mnp)*lv+1 )/lv + mnp
+if keyword_set(linear) then begin
+  ; Linearly from mnp to mxp
+  levels = findgen(15)/14 * 10^mxp
+  levels[0] = 10^mnp
+  levels = alog10(levels)
+endif
+
+if not keyword_set(noplot) then begin
+
+  oldpm = !p.multi
+  !p.multi=0;[0,1,2]
+  ys=9
+  xma=[10,6]
+  _yr = [ min(wavenum), max(wavenum) ]
+  if not keyword_set(yr) then yr = _yr else begin
+    yr[0] = yr[0] > _yr[0]
+    yr[1] = yr[1] < _yr[1]
+  endelse
+  loadct, 0
+  ; Height of the plotting window, in characters
+  yma = ( float(!d.y_size)/!d.y_ch_size )/!p.charsize
+  yma1=[(yma-6)*5/6+4,2]  ; Upper 1/6 of the usable plotting area
+  yma2=[4,(yma-6)/6+2]    ; Lower 5/6 of the usable plotting area
+  yma5=[(yma-6)*5/6+4-yma-6,yma-4]  ; Could be used for a plot below
+  xtle=!p.ticklen*2
+  if keyword_set(phasepanel) then begin
+    ; Note that equalpanels will not run if phasepanel is set.
+    ; Also, should not use hang and phasepanel together.
+    ; yma is 1/3 of the usable y-dimension, so without phasepanel it's 
+    ; 5/6 and 1/6.  We want 4/6 and two with 1/6.
+    yma2=[4,(yma-6)/3+2]    ; Lower 2/3 of the usable plotting area
+    yma3=[(yma-6)*2/3+4,(yma-6)/6+2]
+  endif else if keyword_set(equalpanels) then begin
+    yma1=[(yma-6)/2+4,2]
+    yma2=[4,(yma-6)/2+2]
+    xtle=!p.ticklen
+  endif
+  if keyword_set(put_yma1) then yma1 = put_yma1
+  if keyword_set(put_yma2) then yma2 = put_yma2
+  if keyword_set(put_yma5) then yma5 = put_yma5
+  _yma1 = yma1
+  _yma2 = yma2
+  _yma5 = yma5
+
+  if not keyword_set(noscan) then begin
+    if not keyword_set(ytv) then ytv = 0
+    if keyword_set(_yticki) then yticki=_yticki else begin
+      if keyword_set(xr) then begin
+        foo = where( rr gt xr[0] and rr lt xr[1], count )
+        if count eq 0 then begin
+          yticki=0
+          goto, noyti
+        endif 
+        miny = min(vv[foo])
+        maxy = max(vv[foo])
+      endif else begin 
+        miny = min(vv)
+        maxy = max(vv)
+      endelse
+      exp = alog10( maxy-miny )
+      if exp lt 0 then exp=floor(exp) else exp=ceil(exp)
+      yticki = floor(( maxy - miny )/10.^exp) * 10.^exp
+      if ceil(miny/yticki) eq floor(maxy/yticki) then yticki=yticki/2
+    endelse
+    noyti:
+    if yticki gt 0 then begin
+      yticks = 0
+      ytv = 0
+    endif else begin
+      yticki = 0
+      yticks = 2
+    endelse 
+    plot_nosci, tkm( rr, thoukm=thoukm, phi=phi ), vv, yma=yma1, /xs, /ys, $
+                yticks=yticks, ytickv=ytv, yticki=yticki, $
+                xma=xma, xtickn=replicate(' ',20), ytit=ytit, tit=tit, $
+                xr=xr, yr=plotyr, /nodata, xtickle=xtle
+    if keyword_set(errbar) then begin
+      polyfill, tkm( [rr,reverse(rr)], thoukm=thoukm, phi=phi ), $
+                [ vv-errbar, reverse(vv+errbar) ], noclip=0, color=gray()
+    endif
+    oplot, tkm( rr, thoukm=thoukm, phi=phi ), vv
+  endif
+
+  if keyword_set(ring_rads) and keyword_set(ring_rads_legend) then begin
+    if keyword_set(niceplot) then begin
+      if keyword_set(xr) then begin
+        foo = where( tkm(ring_rads) lt xr[0] or tkm(ring_rads) gt xr[1], count )
+      endif else begin
+        foo = where( ring_rads lt min(_rr) or ring_rads gt max(_rr), count )
+      endelse 
+      if count gt 0 then begin
+        if keyword_set(ring_rads_keep) then begin
+          foo2 = where( ring_rads_keep[foo] eq 1, count2 )
+          if count2 eq count then goto, noneleft
+          if count2 gt 0 then begin
+            foo = vec_remove( foo, foo2 )
+            count = count - count2
+          endif 
+        endif
+        if count eq n_elements(ring_rads) then begin
+          ring_rads = 0
+          ring_rads_legend = ''
+          ring_rads_index = ''
+          ring_rads_maxlam = 0
+          ring_rads_keep = 0
+          ring_rads_sigma_manual = 0
+        endif else begin
+          ring_rads = vec_remove( ring_rads, foo )
+          ring_rads_legend = vec_remove( ring_rads_legend, foo )
+          if keyword_set(ring_rads_index) then begin
+            ring_rads_index = vec_remove( ring_rads_index, foo )
+          endif
+          if keyword_set(ring_rads_maxlam) then begin
+            ring_rads_maxlam = vec_remove( ring_rads_maxlam, foo )
+          endif
+          if keyword_set(ring_rads_keep) then begin
+            ring_rads_keep = vec_remove( ring_rads_keep, foo )
+          endif
+          if keyword_set(ring_rads_sigma_manual) then begin
+            ring_rads_sigma_manual = vec_remove( ring_rads_sigma_manual, foo )
+          endif
+        endelse
+      endif 
+      noneleft:
+    endif 
+    if not keyword_set(top) then top = 0 else top = 1
+    if not keyword_set(hang) then hang = 0 else hang = 1
+    if keyword_set(top) then hang = 0
+    solid_diamonds
+    nrr = n_elements(ring_rads)
+    dyr = !y.crange[1]-!y.crange[0]
+    if keyword_set(equalpanels) then dyr = dyr/30 else dyr = dyr/75
+    if not keyword_set(noscan) then begin
+      for j=0,nrr-1 do begin
+        if keyword_set(mooncolor) then begin
+          clr=get_mooncolor(ring_rads_legend[j])
+          if ring_rads_legend[j] eq '' then clr=get_mooncolor('Pan')
+        endif else begin
+          if !d.name eq 'X' then clr=white() else clr=0
+        endelse
+        rrl = ring_rads_legend[j]
+        if rrl eq 'Pan' then rrl = ''
+        if rrl eq 'At' then rrl = ''
+        if strmid( rrl, strlen(rrl)-18, 18 ) eq '(2002-05, 2010-13)' then $
+                  rrl = strmid( rrl, 0, strlen(rrl)-18 )+'(a)'
+        if strmid( rrl, strlen(rrl)-18, 18 ) eq '(2006-09, 2014-17)' then $
+                  rrl = strmid( rrl, 0, strlen(rrl)-18 )+'(b)'
+        if strmid( rrl, strlen(rrl)-6, 6 ) eq ' (ecc)' then $
+                  rrl = strmid( rrl, 0, strlen(rrl)-6 )
+        if strmid( rrl, strlen(rrl)-4, 4 ) eq ' km)' then begin
+          openparen = strpos( rrl, '(' )
+          rrl = strmid( rrl, 0, openparen-1 )
+        endif 
+        oplot, [tkm(ring_rads[j])], [!y.crange[top]], ps=8, noclip=1, color=clr
+        if not keyword_set(hang) then begin
+          xyouts, tkm(ring_rads[j]), !y.crange[top]+dyr*(1-2*top), chars=1, $
+            rrl, orient=90, noclip=1, align=top, color=clr
+        endif
+      endfor
+    endif
+  endif
+
+  if keyword_set(phasepanel) then begin
+    if keyword_set(pkt) then begin
+      oplot, tkm( rr[round(zeroes)], thoukm=thoukm, phi=phi ), $
+             vv[round(zeroes)], ps=pkt
+    endif
+    plot, tkm( rr, thoukm=thoukm, phi=phi ), totphase, /nodata, yma=yma3, $
+         yticki=100, yr=[-180,180], ytit='Phase (!Uo!N)', xma=xma, /xs, /ys, $
+	 xtickn=replicate(' ',20), xr=xr, xtickle=xtle, /noerase
+    for j=0,n_elements(twr)-2 do begin
+      oplot, tkm( rr[twr[j]:twr[j+1]-1], thoukm=thoukm, phi=phi ), $
+             totphase[twr[j]:twr[j+1]-1]
+    endfor
+  endif
+
+  tit=''
+  if keyword_set(specify_levels) then begin
+    if not keyword_set(cc1) then cc1 = 35;100
+    if not keyword_set(cc2) then cc2 = 247
+  endif else begin
+    if not keyword_set(cc1) then cc1 = 220
+    if not keyword_set(cc2) then cc2 = 0
+  endelse
+  c_colors = cc2-findgen((mxp-mnp)*lv+1)/((mxp-mnp)*lv)*(cc2-cc1)
+  if keyword_set(twolineswn) then begin
+    ytit2 = 'Wavenumber!C(radians/'+runits+')'
+  endif else begin
+    ytit2 = 'Wavenumber (radians/'+runits+')'
+  endelse
+  if keyword_set(_xtn) then xtn=_xtn else xtn=''
+  contour, alog10(power), tkm( rr, thoukm=thoukm, phi=phi ), wavenum, $
+           /xs, ys=ys, xr=xr, yr=yr, xma=xma, yma=yma2, /fill, nlevels=15, $
+           ylog=0, xtit=xtit, ytit=ytit2, tit=tit, xtickn=xtn, $
+           levels=levels, c_colors=c_colors, /noerase
+
+  plots, tkm( rr, thoukm=thoukm, phi=phi ), coi, noclip=0
+  chym = [0,1]*(yr[1]-yr[0])*.003 + yr[0]
+  for jj=-1,1,2 do polyfill, tkm( [rr[0],rr[where(finite(coi))],rr[nt-1],rr[[nt-1,0,0]]], thoukm=thoukm, phi=phi ), [yr[1],coi[where(finite(coi))],yr[1],yr[[0,0,1]]]>chym[(jj+1)/2], /line_fill, noclip=0, orient=jj*45, /data, spacing=.25
+
+  if keyword_set(printmax) then begin
+    if printmax gt max(wavenum) then printmax=min(wavenum)
+    minkk = min(where( tkm(rr,thoukm=thoukm,phi=phi) ge xr[0] ))
+    maxkk = max(where( tkm(rr,thoukm=thoukm,phi=phi) le xr[1] ))
+    _printmax = fltarr(maxkk-minkk+1)
+    for kk=minkk,maxkk do begin
+      mx = where( power[kk,where(wavenum gt printmax)] eq max(power[kk,where(wavenum gt printmax)]) )
+      foo = gaussfit( wavenum[mx-3:mx+3], power[kk,mx-3:mx+3], a )
+;      if a[1] gt 50 and a[1] lt 100 then plots, tkm( rr[kk], thoukm=thoukm, phi=phi ), a[1], ps=3, noclip=0
+      _printmax[kk-minkk] = a[1]
+    endfor
+    printmax = _printmax
+  endif
+
+  if keyword_set(ring_rads) and keyword_set(ring_rads_legend) then begin
+    if not keyword_set(top) then for j=0,nrr-1 do begin
+      if keyword_set(mooncolor) then begin
+        clr=get_mooncolor(ring_rads_legend[j])
+        if ring_rads_legend[j] eq '' then clr=get_mooncolor('Pan')
+      endif else begin
+        if !d.name eq 'X' then clr=white() else clr=0
+      endelse
+      rrl = ring_rads_legend[j]
+      if rrl eq 'Pan' then rrl = ''
+      if rrl eq 'At' then rrl = ''
+      if strmid( rrl, strlen(rrl)-18, 18 ) eq '(2002-05, 2010-13)' then $
+                rrl = strmid( rrl, 0, strlen(rrl)-18 )+'(a)'
+      if strmid( rrl, strlen(rrl)-18, 18 ) eq '(2006-09, 2014-17)' then $
+                rrl = strmid( rrl, 0, strlen(rrl)-18 )+'(b)'
+      if strmid( rrl, strlen(rrl)-6, 6 ) eq ' (ecc)' then $
+                rrl = strmid( rrl, 0, strlen(rrl)-6 )
+      if strmid( rrl, strlen(rrl)-4, 4 ) eq ' km)' then begin
+        openparen = strpos( rrl, '(' )
+        rrl = strmid( rrl, 0, openparen-1 )
+      endif 
+      oplot, [tkm(ring_rads[j])], [!y.crange[1-top]], ps=8, noclip=1, color=clr
+      if keyword_set(hang) then begin
+        dyr = !y.crange[1]-!y.crange[0]
+        if keyword_set(equalpanels) then dyr = dyr/30 else dyr = dyr/30
+        xyouts, tkm(ring_rads[j]), !y.crange[1-top]-dyr*(1-2*top), chars=1, $
+          rrl, orient=90, noclip=1, align=1-top, color=clr
+      endif
+    endfor
+;    solid_diamonds
+;    nrr = n_elements(ring_rads)
+;    dyr = yr[1]-yr[0]
+;    if keyword_set(equalpanels) then dyr = dyr/30 else dyr = dyr/75
+;    rrl = ring_rads_legend[j]
+;    if rrl eq 'Pan' then rrl = ''
+;    if rrl eq 'At' then rrl = ''
+;    oplot, tkm(ring_rads), replicate( yr[1], nrr ), ps=8, noclip=1
+;    for j=0,nrr-1 do xyouts, tkm(ring_rads[j]), yr[1]+dyr, $
+;          rrl, orient=90, noclip=1
+  endif
+
+  axis, yaxis=1, yticks=n_elements(wavelength)-1, $
+         ytickv = 2*!pi/float(wavelength), ytickn = wavelength, /ys, $
+         ytit='Wavelength ('+runits+')'
+
+;  if keyword_set(errbar) then contour, alog10(abs(wave)^2), $
+;         tkm(rr,thoukm=thoukm,phi=phi), wavenum, /overplot, level=levels[0]
+
+  if keyword_set(debug) then stop
+  !p.multi = oldpm
+
+endif
+
+end

@@ -1,0 +1,55 @@
+;NOTE: this will call radial_filter.pro 
+
+type = 'Radial Filter'
+if keyword_set(phi) then type = 'Longitudinal scan'
+area = ''
+if keyword_set(mnrad) then area = area + ', mnrad = '+strtrim(mnrad,2)
+if keyword_set(mxrad) then area = area + ', mxrad = '+strtrim(mxrad,2)
+if keyword_set(mnlon) then area = area + ', mnlon = '+strtrim(mnlon,2)
+if keyword_set(mxlon) then area = area + ', mxlon = '+strtrim(mxlon,2)
+if area eq '' then area = ' of entire image'
+
+descrip = type + area
+print, descrip
+
+;set necessary keywords. radscan_quick will not be enabled
+
+if not keyword_set(radscan_quick) then radscan_quick = 0
+noradarray = (not keyword_set(radscan_quick)) and keyword_set(mnrad) and keyword_set(mxrad) and keyword_set(mnlon) and keyword_set(mxlon)
+if not keyword_set(noradarray) then get_radarray, cam_params, cmat, nl, et, polera, poledec, sc, radarray, lonarray, outofplane=outofplane, minmaxonly=1-radscan_quick, planet_coords=planet_coords
+
+;if keyword_set(radscan_quick) then if keyword_set(outofplane) then stop
+; This is the old radial scan method.  It runs in only 40% of the time of the
+; new method.  However, it is less accurate, and has a systematic error in the
+; radial variable (traceable to get_radarray, I think).
+;if keyword_set(radscan_quick) then radial_scan_quick, rawim, radarray, lonarray, val, radi, mnrad=mnrad, mxrad=mxrad, mnlon=mnlon, mxlon=mxlon, phi=phi, resfac=resfac, noscan=noscan, radbins=radbins
+
+;print,"zoomfactor=",zoomfactor
+
+;VALUES BEFORE RUNNING
+;rawim: the raw image, 2d float array
+;radi: int, 0
+;val: int, 0
+;et: double, 2.2e8 - I think its a distance?
+;polera: double, ~40
+;poledec: double, ~83
+;cam_params: double array containing camera parameters
+;nl: length of an image side
+;cmat: 3x3 double array containing....stuff
+;vobs_planet: length 3 double array (0'd)
+;others are just keywords set
+
+;VALUES AFTER RUNNING
+;radi: 1D double array containing the distances from the center of the planet used in the calculations
+;val: 1D double array containing the average radial value at distances listed in radi
+;rest unchanged
+
+;This calls the radial filter algorithm, which scans and outputs the radially subtracted image in bksub_img. bksub_img will have the same dimentions as rawim
+
+if not keyword_set(radscan_quick) then radial_filter, bksub_img, rawim, radi, val, et, polera, poledec, cam_params, nl, cmat, vobs_planet, mnrad=mnrad, mxrad=mxrad, mnlon=mnlon, mxlon=mxlon, resfac=resfac, zoomfactor=zoomfactor, noscan=noscan, phi=phi, nocrop=nocrop, radarray=radarray, lonarray=lonarray, outofplane=outofplane, errbar=errbar, radscan_np=radscan_np, crays=cray, cray_space=cray_space
+if keyword_set(phi) then phiout = phi else phiout = 0
+@reset_radscan
+ 
+;.run plot_radscan
+;.run save_radscan
+print, 'RADSCAN no longer automatically saves its results.  Type ".run save_radscan" to save.'

@@ -1,0 +1,21 @@
+if keyword_set(dolzr) then begin
+  lzr, 'ringsres_radial_scales'
+  @plot_prepare
+endif
+plot, [0], [0], /nodata, xtit='Radius'+tkmtit(), ytit='Radial Scale (km/px)', $
+      xr=[70,142], /xs, yr=[0.5,1.5], /ys
+dir = [ '046/RDHRESSCN', '063/RDHRSSCHP', '071/RDHRSSCHP' ]
+xypos = [ [130,0.72], [100,1.4], [80,0.9] ]
+solid_circles
+for j=0l,n_elements(dir)-1 do begin
+  restore, '$DATA/images/' + dir[j] + '/stretch.sav'
+  foo = where( strmid(filenames,0,1) eq 'N' and $
+               _keywords.ringplane_aimpoint_radius gt 74000 and $
+               _keywords.ringplane_aimpoint_radius lt 139000 )
+  oplot, tkm(_keywords[foo].ringplane_aimpoint_radius), $
+        _keywords[foo].ringplane_aimpoint_radial_scale, ps=-8
+  xyouts, xypos[0,j], xypos[1,j], dir[j]
+endfor
+if keyword_set(dolzr) then clzr
+
+end

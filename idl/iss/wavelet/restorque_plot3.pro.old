@@ -1,0 +1,284 @@
+savefile1 = 'ring_rads_index_outcome.sav'
+if keyword_set(findfile(savefile1)) then restore, savefile1 else begin
+
+  dirs = [ '046/RDHRESSCN', '071/RDHRSSCHP', '077/RDHRCOMP', '132/PROPELLR' ]
+  ndirs = n_elements(dirs)
+  restore, '~/Data/caviar/developmental/ring_rads.sav'
+  nrr = n_elements(_ring_rads)
+  ; 0 = Wave does not fall within an image
+  ; 1 = Wave observed
+  ; 2 = Wave not observed, possibly due to other structure
+  ; 3 = Wave should be observed and is not
+  ; 4 = Resonance associated with a gap and/or ringlet
+  ; 5 = Resonance does not fall within a wave-propagating region
+  nnum = 6
+  for k=0,ndirs-1 do begin
+    restore, '~/Data/images/'+dirs[k]+'/ring_rads_index.sav'
+    if k eq 0 then ring_rads_index = _ring_rads_index else begin
+      ring_rads_index = [ [ring_rads_index], [_ring_rads_index] ]
+    endelse 
+  endfor
+  count = lonarr(nrr,nnum)
+  _ring_rads_index_outcome = bytarr(nrr) - 1
+  for j=0,nrr-1 do begin
+    for k=0,nnum-1 do begin
+      foo = where( ring_rads_index[j,*] eq k, _count )
+      count[j,k] = _count
+      if _count eq ndirs-count[j,0] then _ring_rads_index_outcome[j] = k
+    endfor
+    foo = where( ring_rads_index[j,*] eq 1, c )
+    if c gt 0 then _ring_rads_index_outcome[j] = 1
+    foo = where( ring_rads_index[j,*] ne [2,3,2,0], c )
+    if c eq 0 then _ring_rads_index_outcome[j] = 3
+  endfor
+  foo = where( _ring_rads_legend eq 'Mi 2:1 CER' )
+  _ring_rads_index_outcome[foo] = 2
+  foo = where( _ring_rads_legend eq 'Pr 33:31' )
+  _ring_rads_index_outcome[foo] = 5
+  foo = where( strmid(_ring_rads_legend,3,8) eq '18:15 BW' )
+  _ring_rads_index_outcome[foo] = 2
+  foo = where( _ring_rads_legend eq 'Pan 45:46' )
+  _ring_rads_index_outcome[foo] = 2
+  foo = where( _ring_rads_legend eq 'Pan 39:40' )
+  _ring_rads_index_outcome[foo] = 2
+  foo = where( _ring_rads_legend eq 'Pan 35:36' )
+  _ring_rads_index_outcome[foo] = 2
+  foo = where( _ring_rads_legend eq 'Pan 32:33' )
+  _ring_rads_index_outcome[foo] = 2
+  foo = where( _ring_rads_legend eq 'Pan 31:32' )
+  _ring_rads_index_outcome[foo] = 2
+  foo = where( _ring_rads_legend eq 'At 77:76' )
+  _ring_rads_index_outcome[foo] = 5
+  foo = where( _ring_rads_legend eq 'At 79:78' )
+  _ring_rads_index_outcome[foo] = 5
+  foo = where( _ring_rads_legend eq 'Pan 29:30' )
+  _ring_rads_index_outcome[foo] = 2
+  foo = where( _ring_rads_legend eq 'Pan 28:29' )
+  _ring_rads_index_outcome[foo] = 2
+  foo = where( _ring_rads_legend eq 'Pd 19:18' )
+  _ring_rads_index_outcome[foo] = 5
+
+  save, _ring_rads, _ring_rads_legend, _ring_rads_index_outcome, dirs, ndirs, $
+        nrr, filename=savefile1
+
+endelse
+
+savefile2 = 'restorque_plot3.sav'
+if keyword_set(findfile(savefile2)) then restore, savefile2 else begin
+
+  keep = bytarr(nrr)
+  moon = lonarr(nrr)
+  m1 = lonarr(nrr)
+  m2 = lonarr(nrr)
+  order = lonarr(nrr)
+  bw = bytarr(nrr)
+  cer = bytarr(nrr)
+  for j=0,nrr-1 do begin
+    _moon = strmid(_ring_rads_legend[j],0,2)
+    if _moon eq 'Pa' then begin
+      if strmid(_ring_rads_legend[j],4,1) eq ' ' then begin
+        _moon='Pan'
+      endif else _moon='Pd'
+    endif
+    moonlen = strlen(_moon)
+    if naifsat(_moon) gt 600 then begin
+      moon[j] = naifsat(_moon)
+      colon = strpos( _ring_rads_legend[j], ':' )
+      m1[j] = strmid( _ring_rads_legend[j], moonlen, colon-moonlen )
+      m2[j] = strmid( _ring_rads_legend[j], colon+1, 2 )
+      order[j] = m1[j] - m2[j]
+      foo = strpos( _ring_rads_legend[j], 'BW' )
+      if foo ne -1 then bw[j] = 1
+      foo = strpos( _ring_rads_legend[j], 'CER' )
+      if foo ne -1 then cer[j] = 1
+      if cer[j] ne 1 and m1[j] lt 100 then keep[j] = 1
+    endif
+  endfor
+
+  save, keep, moon, m1, m2, order, bw, cer, filename=savefile2
+
+endelse
+
+for k=610,611 do begin
+  for b=0,1 do begin
+    foo = where( moon eq k and bw eq b )
+    orderlist = order[foo]
+    orderlist = orderlist[sort(orderlist)]
+    orderlist = orderlist[uniq(orderlist)]
+    norder = n_elements(orderlist)
+    for o=0,norder-1 do begin
+      foo1 = where( order[foo] eq orderlist[o] )
+      m1list = m1[foo[foo1]]
+      m1list = m1list[sort(m1list)]
+      m1list = m1list[uniq(m1list)]
+      nm = n_elements(m1list)
+      for m=0,nm-1 do begin
+        foo2 = where( m1[foo[foo1]] eq m1list[m], count )
+        if count ne 2 then stop
+        keep[foo[foo1[foo2]]] = [1,0]
+        _ring_rads_legend[foo[foo1[foo2]]] = strmid(naifsat(k),0,2)+' '+$
+                                     strtrim(m1[foo[foo1[foo2[0]]]],2)+':'+$
+                                     strtrim(m2[foo[foo1[foo2[0]]]],2)+$
+                                     (['',' BW'])[b]
+        rri = _ring_rads_index_outcome[foo[foo1[foo2]]]
+        if rri[0] eq rri[1] then begin
+          _ring_rads_index_outcome[foo[foo1[foo2]]] = rri[0]
+        endif else begin
+          foo3 = where( rri eq 1, count )
+          if count gt 0 then begin
+            _ring_rads_index_outcome[foo[foo1[foo2]]] = 1
+          endif else begin
+            stop
+          endelse 
+        endelse 
+      endfor
+    endfor 
+  endfor 
+endfor
+
+foo = where( _ring_rads_legend eq 'Mi 6:1' )
+keep[foo] = 0
+moon = moon[where(keep)]
+m1 = m1[where(keep)]
+m2 = m2[where(keep)]
+order = order[where(keep)]
+bw = bw[where(keep)]
+ring_rads = _ring_rads[where(keep)]
+ring_rads_legend = _ring_rads_legend[where(keep)]
+ring_rads_index_outcome = _ring_rads_index_outcome[where(keep)]
+foo = where( ring_rads_legend eq 'Mi 2:1' )
+ring_rads_index_outcome[foo] = 4
+foo = where( ring_rads_legend eq 'Ja 7:6' )
+ring_rads_index_outcome[foo] = 4
+
+if not keyword_set(suff) then suff = ''
+if keyword_set(bending) then suffb = '_b' else suffb = ''
+if keyword_set(dolzr) then begin
+  today = current_time_6digit()
+  lzr, 'restorque_plot_'+today+suff+suffb
+  @plot_prepare
+  plot_color
+  !p.charsize = 1.5
+endif else device, decomposed=0
+if not keyword_exists(cmyk) then cmyk=1
+if !d.name eq 'PS' then device, cmyk=cmyk
+
+case suff of
+  '_a1': xr = [117,125]
+  '_a2': xr = [125,130]
+  '_a3': xr = [130,132.6]
+  '_a4': xr = [132.6,134.4]
+  '_a5': xr = [134.4,137]
+  '_bc': xr = [73,118]
+  '': xr = [60,144]
+endcase
+yr = [-15,0.5]
+xtit='Radius'+tkmtit()
+ytit='Log!D10!N Resonance Strength (T!UL!N!Dl,m!N/!Ms, km!U4!N sec!U-2!N)'
+plot, xr, yr, /xs, /ys, /nodata, xtit=xtit, ytit=ytit
+moonlist = moon[sort(moon)]
+moonlist = moonlist[uniq(moonlist)]
+nmoons = n_elements(moonlist)
+for k=0,nmoons-1 do begin
+  ;for b=0,1 do begin
+  if keyword_set(bending) then b=1 else b=0
+    foo = where( moon eq moonlist[k] and bw eq b, count )
+    if count gt 0 then begin
+     orderlist = order[foo]
+     orderlist = orderlist[sort(orderlist)]
+     orderlist = orderlist[uniq(orderlist)]
+     norder = n_elements(orderlist)
+     for o=0,norder-1 do begin
+      foo1 = where( order[foo] eq orderlist[o], c1 )
+      m1list = m1[foo[foo1]]
+      m1list = m1list[sort(m1list)]
+      m1list = m1list[uniq(m1list)]
+      nm = n_elements(m1list)
+      torq = dblarr(nm)
+      for m=0,nm-1 do begin
+        if abs(m1[foo[foo1[m]]]) eq 1 then begin
+          ; For apsidal resonance, not yet implemented in restorque.pro, 
+          ; enter values from LC82
+          case moonlist[k] of
+            606: torq = -1.39e18/1e20
+            607: begin
+                 mhyp = 5.6199e18   ;kg
+                 ahyp = 1481009.0d0 ;km
+                 mtit = 1.3452e23   ;kg
+                 atit = 1221870.0d0 ;km
+                 torq = -1.39e18/1e20 * (mhyp*atit^2/mtit/ahyp^2)^2
+            end 
+            608: torq = -7.17e12/1e20
+          endcase 
+        endif else begin
+          torq[m] = restorque( m1[foo[foo1[m]]], m2[foo[foo1[m]]], moonlist[k] )
+        endelse
+      endfor 
+      torq = alog10(abs(torq))
+      white = ctwhite()
+      clr = get_mooncolor( strmid(ring_rads_legend[foo[0]],0,2) )
+      oplot, [tkm(ring_rads[foo[foo1]])], [torq], co=clr
+      if ring_rads_legend[foo[foo1[0]]] eq 'Pan 92:93' then ll=c1-1 else ll=0
+      if ring_rads_legend[foo[foo1[0]]] eq 'Pr 3:1' then align=0 else align=1
+      if ring_rads_legend[foo[foo1[0]]] eq 'Pr 6:3' then align=0 else align=1
+      if ring_rads_legend[foo[foo1[0]]] eq 'Hy 1:0' then align=0 else align=1
+      if ring_rads_legend[foo[foo1[0]]] eq 'Hy -1:0 BW' then align=0 else align=1
+      if ring_rads_legend[foo[foo1[0]]] eq 'Ia 1:0' then ia=0 else ia=1
+      if ring_rads_legend[foo[foo1[0]]] eq 'Mi 5:1' then ia=0 else ia=1
+      if ring_rads_legend[foo[foo1[0]]] eq 'Pd 3:1' then ia=0 else ia=1
+      xyouts, tkm(ring_rads[foo[foo1[ll]]])-1, torq[ll]-.2*ia, charsize=1.5, $
+              ring_rads_legend[foo[foo1[ll]]], align=align, co=clr[0]
+      for m=0,nm-1 do begin
+        case ring_rads_index_outcome[foo[foo1[m]]] of
+          0: begin
+             solid_small_circles
+             oplot, [tkm(ring_rads[foo[foo1[m]]])], [torq[m]], ps=8, co=white
+             open_small_circles
+             oplot, [tkm(ring_rads[foo[foo1[m]]])], [torq[m]], ps=8, co=clr
+          end
+          1: begin
+             solid_circles
+             oplot, [tkm(ring_rads[foo[foo1[m]]])], [torq[m]], ps=8, co=clr
+          end 
+          2: begin
+             solid_circles
+             oplot, [tkm(ring_rads[foo[foo1[m]]])], [torq[m]], ps=8, co=white
+             open_circles
+             oplot, [tkm(ring_rads[foo[foo1[m]]])], [torq[m]], ps=8, co=clr
+             oplot, [tkm(ring_rads[foo[foo1[m]]])], [torq[m]], ps=7, co=clr
+          end
+          3: begin
+             solid_circles
+             oplot, [tkm(ring_rads[foo[foo1[m]]])], [torq[m]], ps=8, co=white
+             open_circles
+             oplot, [tkm(ring_rads[foo[foo1[m]]])], [torq[m]], ps=8, co=clr
+             oplot, [tkm(ring_rads[foo[foo1[m]]])], [torq[m]], ps=7, co=clr
+          end
+          4: begin
+             solid_squares
+             oplot, [tkm(ring_rads[foo[foo1[m]]])], [torq[m]], ps=8, co=clr
+          end 
+          5: begin
+             solid_small_circles
+             oplot, [tkm(ring_rads[foo[foo1[m]]])], [torq[m]], ps=8, co=white
+             open_small_circles
+             oplot, [tkm(ring_rads[foo[foo1[m]]])], [torq[m]], ps=8, co=clr
+          end
+        endcase 
+      endfor 
+     endfor
+    endif
+  ;endfor
+;if moonlist[k] eq 616 then stop
+endfor
+
+rads = [ 66.9, 74.658, 91.975, 117.507, 122.34, 136.78, 140.219 ]
+ints1 = rebin( [ [rads[1:5]], [rads[0:4]] ], 5, 1 )
+ints1 = [ ints1, rads[6] ]
+intnames = [ 'D', 'C', 'B', 'CD', 'A', 'F' ]
+for j=0,n_elements(rads)-1 do oplot, rads[j]*[1,1], [-1e10,1e10], l=1
+xyouts, ints1, replicate(-14.5,n_elements(ints1)), intnames, align=.5
+
+if keyword_set(dolzr) then clzr
+
+end

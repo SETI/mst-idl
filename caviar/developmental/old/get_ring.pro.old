@@ -1,0 +1,63 @@
+
+	pro get_ring,et,radius,startlon,stoplon,polera,poledec,n_points,ring,planet_id
+	
+	tstoplon=stoplon
+
+	if tstoplon lt startlon then tstoplon=tstoplon+360.0
+
+	lon_range=tstoplon-startlon
+
+	lonstep=lon_range/n_points
+
+	n_rings=n_elements(radius)
+
+	ring=lonarr(n_rings*n_points,3)
+
+	capN=(polera+90.0d0)*2.0d0*!dpi/360.0
+	capJ=(90.0d0-poledec)*2.0d0*!dpi/360.0
+
+	rot=dblarr(3,3)
+
+	rot[0,0]=cos(capN)
+	rot[1,0]=-sin(capN)*cos(capJ)
+	rot[2,0]=sin(capN)*sin(capJ)
+	rot[0,1]=sin(capN)
+	rot[1,1]=cos(capN)*cos(capJ)
+	rot[2,1]=-cos(capN)*sin(capJ)
+	rot[0,2]=0.0
+	rot[1,2]=sin(capJ)
+	rot[2,2]=cos(capJ)
+
+	xyz=dblarr(3)
+	J2000_xyz=dblarr(3)
+
+	for j=1,n_rings do begin
+
+	for i=(j-1)*n_points,((j-1)*n_points+n_points-1) do begin
+
+		ring_lon=((startlon+((i-((j-1)*n_points))*lonstep))*2.0d0*!dpi)/360.0d0
+
+		xyz[0]=radius[j-1]*cos(ring_lon)
+		xyz[1]=radius[j-1]*sin(ring_lon)
+		xyz[2]=0.0d0
+
+		d_J2000_xyz=rot##xyz
+		J2000_xyz[0:2]=d_J2000_xyz[0,0:2]
+
+		cspice_spkez,planet_id,et,'J2000','CN+S',-82l,state,ltime
+
+		rho_planet=state[0:2]
+		rho_ring=rho_planet+J2000_xyz
+
+        	cspice_recrad,rho_ring,range,RA,dec
+        	ring[i,1]=3600.0d3*RA*360.0d0/(2.0d0*!dpi)
+        	ring[i,2]=3600.0d3*dec*360.0d0/(2.0d0*!dpi)
+
+
+	endfor
+
+	endfor
+
+	return
+	end
+

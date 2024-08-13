@@ -1,0 +1,142 @@
+device, decomposed=0
+
+tvlct,indgen(256),indgen(256),indgen(256)
+
+icy_setup
+.run ucac2_subroutines_wrappers.pro
+
+sc=-82L
+
+nacmat=[[-0.00148701973d0,-0.000171828726d0,0.99999888d0],$
+[-0.999998729d0,-0.000575703737d0,-0.00148711843d0],$
+[0.000575958621d0,-0.99999982d0,-0.000170972424d0]]
+
+;camera parameters for Bill Owen, JPL interoffice
+;memorandum 312.E-2003-001
+na_cam_params=dblarr(12)
+na_cam_params[0]=2002.703;focal length NAC
+na_cam_params[1]=8.28d-6; epsilon2
+na_cam_params[2]=5.45d-6;epsilon5
+na_cam_params[3]=-19.67d-6;epsilon6
+na_cam_params[4]=83.33333333333333;Kx
+na_cam_params[5]=0.0;Kxy
+na_cam_params[6]=0.0;Kyx
+na_cam_params[7]=83.3428;Ky
+na_cam_params[8]=0.0;
+na_cam_params[9]=0.0;
+na_cam_params[10]=0.095;Big Omega
+na_cam_params[11]=3.0d-6;fov of one pixel
+wa_cam_params=dblarr(12)
+wa_cam_params[0]=200.7761;focal length WAC
+wa_cam_params[1]=60.89d-6; epsilon2
+wa_cam_params[2]=4.93d-6;epsilon5
+wa_cam_params[3]=-72.28d-6;epsilon6
+wa_cam_params[4]=83.33333333333333;Kx
+wa_cam_params[5]=0.0;Kxy
+wa_cam_params[6]=0.0;Kyx
+wa_cam_params[7]=83.34114;Ky
+wa_cam_params[8]=0.0;
+wa_cam_params[9]=0.0;
+wa_cam_params[10]=-0.018;Big Omega
+wa_cam_params[11]=3.0d-5;fov of one pixel
+
+vobs_planet=[0.0d0,0.0d0,0.0d0]
+
+cspice_furnsh,getenv("CAVIAR_KERNELS")
+
+image_name=' '
+print,' '
+print,'Image to point-='
+read,image_name
+print,' '
+
+ImageObj = OBJ_NEW('CassImg', DebugFlag=DebugFlag)
+ImageObj->ReadVic,image_name
+rawim=ImageObj->Image()
+im=rawim*252/max(rawim)
+im=byte(im)
+label=ImageObj->LabelArray()
+
+image_data,label,et,epoch,exposure,cam_name,pmat,nl,found
+
+if cam_name eq 'ISSNA' then cam_params=na_cam_params 
+if cam_name eq 'ISSNA' then fovsearch=0.7d0
+if cam_name eq 'ISSWA' then cam_params=wa_cam_params
+if cam_name eq 'ISSWA' then fovsearch=3.6d0
+
+window,1,xsize=nl,ysize=nl
+
+wset,1
+tv,im,/order
+
+cmat=nacmat##pmat
+
+pointing_ra_dec,cmat,RA,dec
+
+qmul_u2access,getenv("UCAC2_CAT"),epoch,RA,dec,fovsearch,5.0d0,20.0d0,ucac2_stars
+qmul_tycho2_access,epoch,RA,dec,fovsearch,tycho2_stars
+stars=tycho2_stars
+if cam_name eq 'ISSNA' then stars=[tycho2_stars,ucac2_stars]
+if cam_name eq 'ISSNA' then unique_stars,9.5,stars,u_stars
+if cam_name eq 'ISSNA' then stars=u_stars
+
+cspice_spkez,-82L,et,'J2000','NONE',0L,state,lighttime
+
+vobs=state[3:5]
+
+polera=40.58756d0;
+poledec=83.53684d0;RA and dec of Saturn N pole from  pck00007.tpc, epoch 2004 JAN 01 12:00:00. TDB
+
+get_planet,et,planet
+get_planet_name,planet[*,0],plan_names
+get_ring,et,[140219.0d0,136744.400d0,133423.53],0.0d0,360.0d0,polera,poledec,360,ring,699L
+
+image_coords,stars,cmat,vobs,cam_params,nl,coords
+image_coords,planet,cmat,vobs_planet,cam_params,nl,planet_coords
+image_coords,ring,cmat,vobs_planet,cam_params,nl,ring_coords
+
+symbol=6
+symbol_size=1.5
+ring_symbol=3
+ring_symbol_size=0.5
+planet_symbol=6
+planet_symbol_size=1.5
+
+xstart=round(coords[*,1])
+ystart=round(coords[*,0])
+x=xstart
+y=ystart
+
+xpstart=round(planet_coords[*,1])
+ypstart=round(planet_coords[*,0])
+xp=xpstart
+yp=ypstart
+
+xrstart=round(ring_coords[*,1])
+yrstart=round(ring_coords[*,0])
+xr=xrstart
+yr=yrstart
+
+
+plots,x,(nl-1)-y,psym=symbol,symsize=symbol_size,color=make_array(n_elements(stars[*,0]),value=cyan()),/device
+plots,xp,(nl-1)-yp,psym=planet_symbol,symsize=planet_symbol_size,color=make_array(n_elements(planet[*,0]),value=green()),/device
+plots,xr,(nl-1)-yr,psym=ring_symbol,symsize=ring_symbol_size,color=make_array(n_elements(ring[*,0]),value=blue()),/device
+
+star_names,stars,s_names
+
+xyouts,x+6,(nl-4)-y,s_names,color=make_array(n_elements(stars[*,0]),value=cyan()),/device
+xyouts,x+6,(nl-14)-y,strcompress(string(stars[*,3]/100.0),/remove_all),color=make_array(n_elements(stars[*,0]),value=cyan()),/device
+
+;xyouts,xp+6,(nl-4)-yp,strcompress(string(planet[*,0]),/remove_all),/device
+xyouts,xp+6,(nl-4)-yp,plan_names[*],color=make_array(n_elements(planet[*,0]),value=green()),/device
+
+num_objects=n_elements(planet[*,0])
+
+located_satellites=dblarr(num_objects,9)
+
+located_satellites[*,0:2]=planet[*,0:2]
+located_satellites[*,3:4]=planet_coords[*,0:1]
+located_satellites[*,5:6]=located_satellites[*,5:6]*0.0-1.0
+located_satellites[*,7:8]=located_satellites[*,5:6]*0.0-1.0
+
+

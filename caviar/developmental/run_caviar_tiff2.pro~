@@ -1,0 +1,11 @@
+if not keyword_set(filenames) then restore, 'stretch.sav'
+if not keyword_set(j1) then j1 = 0
+if not keyword_set(j2) then j2 = n_elements(filenames) - 1
+for jjj=j1,j2 do begin
+  image_name=filenames[jjj]
+  @caviar
+  @caviar_tiff2
+endfor
+
+end
+

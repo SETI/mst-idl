@@ -1,0 +1,15 @@
+pro get_color2
+
+tvlct,r,g,b,/get
+sub = lindgen(249)*(256/249)
+; Use v=128 rather than 255 for muted colors.
+; Position 255 must remain white for regular plotting.
+; In position 252, substitute gray for blue.
+; In position 253, substitute orange for yellow
+v = 160;128;255  ; For muted colors (particularly for gray)
+r = [r[sub], 0,v,0,v,255,v,255]
+g = [g[sub], v,0,v,v,128,0,255]
+b = [b[sub], v,0,0,v,0,v,255]
+tvlct, r, g, b
+
+end

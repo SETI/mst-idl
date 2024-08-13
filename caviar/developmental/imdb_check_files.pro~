@@ -1,0 +1,11 @@
+if not keyword_set(csv) then csv = '~/Desktop/images_since_210.csv'
+openr, 1, csv
+a = ''
+readf, 1, a
+tabloc = strpos( a, 'Image_Mid_Time' ) - 1
+while not eof(1) do begin
+  readf, 1, a
+  stop
+endwhile
+
+end

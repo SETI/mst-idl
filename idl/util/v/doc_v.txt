@@ -1,0 +1,660 @@
+									01/19/99
+V Program Reference
+===================
+
+ Summary
+ -------
+  - v_cross
+       Computes the n cross products between the given arrays of column
+       vectors.
+
+  - v_inner
+       Computes the n inner products between the given arrays of column
+       vectors.
+
+  - v_mag
+       Computes the n magnitudes of the given array of column vectors.
+
+  - v_rotate
+       Rotates the (N,3) column vectors, v, about the (N,3) column vectors,
+       n, by the angles theta.  The sin and cos of theta are given in
+       order to improve performance.
+
+  - v_rotate_11
+       Rotates the (nv,3,nt) column vectors, v, about the (nv,3,nt) column
+       vectors, n, by the (nv,nt) angles theta.  The sin and cos of theta are
+       given in order to improve performance.  Each vector in v is rotated
+       about the corresponding vector in n by the corresponding angle in theta.
+
+  - v_sqmag
+       Computes the n squared magnitudes of the given array of column vectors.
+
+  - v_transform_forward
+       Transforms vectors given rotation matrices and translation vectors.
+
+  - v_transform_reverse
+       Transforms vectors given rotation matrices and translation vectors.
+
+  - v_unit
+       Returns unit vectors in the directions given by v.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+V_CROSS
+-------
+
+
+ PURPOSE:
+       Computes the n cross products between the given arrays of column
+       vectors.
+
+ CATEGORY:
+       UTIL/V
+
+
+ CALLING SEQUENCE:
+       result = v_cross(v1, v2)
+
+
+ ARGUMENTS:
+  INPUT:
+       v1:     An array of n column vectors
+
+       v2:     An second array of n column vectors
+
+
+  OUTPUT:
+       NONE
+
+ RETURN:
+       Array of n cross products.
+
+
+ STATUS:
+       Completed.
+
+
+ MODIFICATION HISTORY:
+       Written by:     Spitale
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+V_INNER
+-------
+
+
+ PURPOSE:
+       Computes the n inner products between the given arrays of column
+       vectors.
+
+ CATEGORY:
+       UTIL/V
+
+
+ CALLING SEQUENCE:
+       result = v_inner(v1, v2)
+
+
+ ARGUMENTS:
+  INPUT:
+       v1:     An array of n column vectors
+
+       v2:     An second array of n column vectors
+
+
+  OUTPUT:
+       NONE
+
+ RETURN:
+       Array of n inner products.
+
+
+ STATUS:
+       Completed.
+
+
+ MODIFICATION HISTORY:
+       Written by:     Spitale
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+V_MAG
+-----
+
+
+ PURPOSE:
+       Computes the n magnitudes of the given array of column vectors.
+
+ CATEGORY:
+       UTIL/V
+
+
+ CALLING SEQUENCE:
+       result = v_mag(v)
+
+
+ ARGUMENTS:
+  INPUT:
+       v:      An array of n column vectors
+
+
+  OUTPUT:
+       NONE
+
+ RETURN:
+       Array of n magnitudes.
+
+
+ STATUS:
+       Completed.
+
+
+ MODIFICATION HISTORY:
+       Written by:     Spitale
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+V_ROTATE
+--------
+
+
+ PURPOSE:
+       Rotates the (N,3) column vectors, v, about the (N,3) column vectors,
+       n, by the angles theta.  The sin and cos of theta are given in
+       order to improve performance.
+
+
+ CATEGORY:
+       UTIL/V
+
+
+ CALLING SEQUENCE:
+       result = v_rotate(v, n, sin_theta, cos_theta)
+
+
+ ARGUMENTS:
+  INPUT:
+               v:      An array of N column vectors
+
+               n:      An array of N column vectors
+
+       sin_theta:      Sine of rotation angle theta
+
+       cos_theta:      Cosine of rotation angle theta
+
+
+  OUTPUT:
+       NONE
+
+ RETURN:
+       If the arguments have dimensions v(N,3), n(N,3) and sin_theta(M),
+       cos_theta(M) then the result has dimensions (N,3,M)
+
+
+ RESTRICTIONS:
+       v and n must have exactly the same dimensions.
+       sin_theta and cos_theta must be 1-dimensional arrays of any length
+       as long as the lengths are the same.  Note that if only one theta
+       is specified, the arguments must be given as [sin_theta], [cos_theta]
+       instead of as scalars.
+
+ STATUS:
+       Completed.
+
+
+ MODIFICATION HISTORY:
+       Written by:     Spitale
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+V_ROTATE_11
+-----------
+
+
+ PURPOSE:
+       Rotates the (nv,3,nt) column vectors, v, about the (nv,3,nt) column
+       vectors, n, by the (nv,nt) angles theta.  The sin and cos of theta are
+       given in order to improve performance.  Each vector in v is rotated
+       about the corresponding vector in n by the corresponding angle in theta.
+
+
+ CATEGORY:
+       UTIL/V
+
+
+ CALLING SEQUENCE:
+       result = v_rotate_11(v, n, sin_theta, cos_theta)
+
+
+ ARGUMENTS:
+  INPUT:
+               v:      An array of N column vectors
+
+               n:      An array of N column vectors
+
+       sin_theta:      Sine of rotation angle theta
+
+       cos_theta:      Cosine of rotation angle theta
+
+
+  OUTPUT:
+       NONE
+
+ RETURN:
+       If the arguments have dimensions v(nv,3,nt), n(nv,3,nt) and
+       sin_theta(nv,nt), cos_theta(nv,nt) then the result has dimensions
+       (nv,3,nt).
+
+
+ RESTRICTIONS:
+       v and n must have exactly the same dimensions.
+       sin_theta and cos_theta must be 1-dimensional arrays of any length
+       as long as the lengths are the same.  Note that if only one theta
+       is specified, the arguments must be given as [sin_theta], [cos_theta]
+       instead of as scalars.
+
+ STATUS:
+       Completed.
+
+
+ MODIFICATION HISTORY:
+       Written by:     Spitale
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+V_SQMAG
+-------
+
+
+ PURPOSE:
+       Computes the n squared magnitudes of the given array of column vectors.
+
+
+ CATEGORY:
+       UTIL/V
+
+
+ CALLING SEQUENCE:
+       result = v_sqmag(v)
+
+
+ ARGUMENTS:
+  INPUT:
+               v:      An array of n column vectors
+
+  OUTPUT:
+       NONE
+
+ RETURN:
+       An array of n squared magnitudes
+
+
+ STATUS:
+       Completed.
+
+
+ MODIFICATION HISTORY:
+       Written by:     Spitale
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+V_TRANSFORM_FORWARD
+-------------------
+
+
+ PURPOSE:
+       Transforms vectors given rotation matrices and translation vectors.
+
+
+ CATEGORY:
+       UTIL/V
+
+
+ CALLING SEQUENCE:
+       result = v_transform_forward(M, p, v)
+
+
+ ARGUMENTS:
+  INPUT:
+       M:      array of nt (nel x nel) rotation matrices
+       p:      array of nt nel-element column vectors
+       v:      v is array (nv,nel,nt) of nel-element column vectors
+
+  OUTPUT:
+       NONE
+
+ RETURN:
+       Array (nv,nel,nt) of nel-element transformed column vectors.
+
+ PROCEDURE:
+       Vectors are first rotated using M and then translated using p.
+
+ STATUS:
+       Completed.
+
+
+ MODIFICATION HISTORY:
+       Written by:     Spitale
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+V_TRANSFORM_REVERSE
+-------------------
+
+
+ PURPOSE:
+       Transforms vectors given rotation matrices and translation vectors.
+
+
+ CATEGORY:
+       UTIL/V
+
+
+ CALLING SEQUENCE:
+       result = v_transform_reverse(M, p, v)
+
+
+ ARGUMENTS:
+  INPUT:
+       M:      array of nt (nel x nel) rotation matrices
+       p:      array of nt nel-element column vectors
+       v:      v is array (nv,nel,nt) of nel-element column vectors
+
+  OUTPUT:
+       NONE
+
+ RETURN:
+       Array (nv,nel,nt) of nel-element transformed column vectors.
+
+ PROCEDURE:
+       Vectors are first translated using p and then rotated using M.
+
+ STATUS:
+       Completed.
+
+
+ MODIFICATION HISTORY:
+       Written by:     Spitale
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+V_UNIT
+------
+
+
+ PURPOSE:
+       Returns unit vectors in the directions given by v.
+
+
+ CATEGORY:
+       UTIL/V
+
+
+ CALLING SEQUENCE:
+       result = v_unit(v)
+
+
+ ARGUMENTS:
+  INPUT:
+               v:      An array of n column vectors
+
+  OUTPUT:
+       NONE
+
+ RETURN:
+       An array of n unit vectors
+
+
+ STATUS:
+       Completed.
+
+
+ MODIFICATION HISTORY:
+       Written by:     Spitale
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

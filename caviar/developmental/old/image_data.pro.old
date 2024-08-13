@@ -1,0 +1,29 @@
+
+	pro image_data,label,et,epoch,exposure,cam_name,pmat,nl,found
+
+	sclk = label[1,76]
+	exposure = label[1,29]
+	exposure = double(exposure)/1000.0d0
+	cam_name =label[1,63]
+	nl=long(label[1,8])
+
+	sc=-82L
+
+	cspice_scencd,sc,sclk,sclkdp
+	cspice_sct2e,sc,sclkdp,et 
+
+	et=et-(exposure*0.5d0)
+
+	cspice_ckgp,-82000L,sclkdp,1000.0d0,'J2000',pmat,clkout,found
+
+	cspice_timout,et,'YYYY-DOYTHR:MN:SC.###::UTC',21,ctime
+
+	year=strmid(ctime,0,4)
+	doy=strmid(ctime,5,3)
+	
+	doy=double(doy)
+	year=double(year)
+	epoch=year+(doy/365.25)
+
+	return
+	end

@@ -1,0 +1,16 @@
+icyN0057_Makefile is the file to use to build the dynamic library
+ucac2_subroutines.so. The file Makefile is identical to icyN0057_Makefile
+
+idl5.4_ucac2_subroutines.so and idl6.0_ucac2_subroutines.so are
+built for idl versions 5.4 and 6.0 using the N0057 ICY package 
+compiled for idl5.4 & 6.0 respectively.
+
+The ICY package is available for download from the naif anonymous 
+ftp site
+
+naif.jpl.nasa.gov:/pub/naif/toolkit/IDL/
+
+For IDL 5.4 and earlier change 
+
+icyN0057_ucac2_subroutines_c_wrappers to ucac2_subroutines_c_wrappers 
+whereever it appears in the Makefile 

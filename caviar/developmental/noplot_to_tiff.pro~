@@ -1,0 +1,5 @@
+noplot = 1
+outim = rawim>stmin<stmax
+outim = (outim-min(outim))*255/(max(outim)-min(outim))
+outim = byte(outim)
+write_tiff, image_name+'.tiff', outim

@@ -1,0 +1,19 @@
+function unwrap_phase, phase, wrap1=wrap, wrapsign=wrapsign, radians=radians
+
+if n_params() eq 0 then begin
+  print, 'Syntax:  Result = UNWRAP_PHASE( phase, wrap=, wrapsign= )'
+  retall
+endif
+
+nph = n_elements(phase)
+wrap = get_phase_wrap( phase, wrapsign=wrapsign, radians=radians )
+
+if keyword_set(radians) then qq=2*!dpi else qq=360
+out = phase
+for jj=1,n_elements(wrap)-2 do begin
+  out[wrap[jj]:nph-1] = out[wrap[jj]:nph-1] + qq*wrapsign[jj]
+endfor
+
+return, out
+
+end

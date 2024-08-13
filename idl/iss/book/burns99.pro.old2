@@ -1,0 +1,19 @@
+!p.multi = [0,2,2]
+!p.charsize = 1.5
+!y.margin = 0
+!y.omargin = [4,2]
+nv = 1000
+v = findgen(nv)/100
+plot, [0.5,nv/100], [.003,1.1], /nodata, /xs, /ys, /xlog, /ylog, $
+;      ytit='F!De!N (dotted) or Relative dM!Di!N/dt (solid)', $
+      xtit='Source Moon Radius R/R!Dcritt!N'
+oplot, v[100:nv-1], v[100:nv-1]^(-9./4), co=ctred();, l=1
+oplot, v[0:100], v[0:100]^0, co=ctred();, l=1
+oplot, v, v^2/100, co=ctblue()
+oplot, v[100:nv-1], v[100:nv-1]^(-1./4)
+oplot, v[0:100], v[0:100]^2
+xyouts, .6, .2, co=ctblue(), 'Ejecta produced!C(!MFYR!U2!N, arbitrary units)'
+xyouts, .6, .07, co=ctred(), 'Fraction of ejecta!Cescaping moon''s!Cgravity (F!De!N)'
+xyouts, 1.3, .01, 'Ejecta contributed!Cto dusty ring!C(dM/dt, arbitrary units)'
+
+end

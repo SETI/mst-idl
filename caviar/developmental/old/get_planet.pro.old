@@ -1,0 +1,288 @@
+
+	pro get_planet,et,planet
+
+	planet=lonarr(31,3)
+
+	cspice_spkez,699L,et,'J2000','CN+S',-82l,state,ltime
+	rho=state[0:2]
+	cspice_recrad,rho,range,RA,dec
+	RA=3600.0d3*RA*360.0d0/(2.0d0*!dpi)
+	dec=3600.0d3*dec*360.0d0/(2.0d0*!dpi)
+	planet[0,1]=RA
+	planet[0,2]=dec
+	planet[0,0]=699
+
+	cspice_spkez,601L,et,'J2000','CN+S',-82l,state,ltime
+	rho=state[0:2]
+	cspice_recrad,rho,range,RA,dec
+	RA=3600.0d3*RA*360.0d0/(2.0d0*!dpi)
+	dec=3600.0d3*dec*360.0d0/(2.0d0*!dpi)
+	planet[1,1]=RA
+	planet[1,2]=dec
+	planet[1,0]=601
+
+	cspice_spkez,602L,et,'J2000','CN+S',-82l,state,ltime
+	rho=state[0:2]
+	cspice_recrad,rho,range,RA,dec
+	RA=3600.0d3*RA*360.0d0/(2.0d0*!dpi)
+	dec=3600.0d3*dec*360.0d0/(2.0d0*!dpi)
+	planet[2,1]=RA
+	planet[2,2]=dec
+	planet[2,0]=602
+
+	cspice_spkez,603L,et,'J2000','CN+S',-82l,state,ltime
+	rho=state[0:2]
+	cspice_recrad,rho,range,RA,dec
+	RA=3600.0d3*RA*360.0d0/(2.0d0*!dpi)
+	dec=3600.0d3*dec*360.0d0/(2.0d0*!dpi)
+	planet[3,1]=RA
+	planet[3,2]=dec
+	planet[3,0]=603
+
+	cspice_spkez,604L,et,'J2000','CN+S',-82l,state,ltime
+	rho=state[0:2]
+	cspice_recrad,rho,range,RA,dec
+	RA=3600.0d3*RA*360.0d0/(2.0d0*!dpi)
+	dec=3600.0d3*dec*360.0d0/(2.0d0*!dpi)
+	planet[4,1]=RA
+	planet[4,2]=dec
+	planet[4,0]=604
+
+	cspice_spkez,605L,et,'J2000','CN+S',-82l,state,ltime
+	rho=state[0:2]
+	cspice_recrad,rho,range,RA,dec
+	RA=3600.0d3*RA*360.0d0/(2.0d0*!dpi)
+	dec=3600.0d3*dec*360.0d0/(2.0d0*!dpi)
+	planet[5,1]=RA
+	planet[5,2]=dec
+	planet[5,0]=605
+
+	cspice_spkez,606L,et,'J2000','CN+S',-82l,state,ltime
+	rho=state[0:2]
+	cspice_recrad,rho,range,RA,dec
+	RA=3600.0d3*RA*360.0d0/(2.0d0*!dpi)
+	dec=3600.0d3*dec*360.0d0/(2.0d0*!dpi)
+	planet[6,1]=RA
+	planet[6,2]=dec
+	planet[6,0]=606
+
+
+	cspice_spkez,607L,et,'J2000','CN+S',-82l,state,ltime
+	rho=state[0:2]
+	cspice_recrad,rho,range,RA,dec
+	RA=3600.0d3*RA*360.0d0/(2.0d0*!dpi)
+	dec=3600.0d3*dec*360.0d0/(2.0d0*!dpi)
+	planet[7,1]=RA
+	planet[7,2]=dec
+	planet[7,0]=607
+
+	cspice_spkez,608L,et,'J2000','CN+S',-82l,state,ltime
+	rho=state[0:2]
+	cspice_recrad,rho,range,RA,dec
+	RA=3600.0d3*RA*360.0d0/(2.0d0*!dpi)
+	dec=3600.0d3*dec*360.0d0/(2.0d0*!dpi)
+	planet[8,1]=RA
+	planet[8,2]=dec
+	planet[8,0]=608
+
+	cspice_spkez,609L,et,'J2000','CN+S',-82l,state,ltime
+	rho=state[0:2]
+	cspice_recrad,rho,range,RA,dec
+	RA=3600.0d3*RA*360.0d0/(2.0d0*!dpi)
+	dec=3600.0d3*dec*360.0d0/(2.0d0*!dpi)
+	planet[9,1]=RA
+	planet[9,2]=dec
+	planet[9,0]=609
+
+	cspice_spkez,610L,et,'J2000','CN+S',-82l,state,ltime
+	rho=state[0:2]
+	cspice_recrad,rho,range,RA,dec
+	RA=3600.0d3*RA*360.0d0/(2.0d0*!dpi)
+	dec=3600.0d3*dec*360.0d0/(2.0d0*!dpi)
+	planet[10,1]=RA
+	planet[10,2]=dec
+	planet[10,0]=610
+
+	cspice_spkez,611L,et,'J2000','CN+S',-82l,state,ltime
+	rho=state[0:2]
+	cspice_recrad,rho,range,RA,dec
+	RA=3600.0d3*RA*360.0d0/(2.0d0*!dpi)
+	dec=3600.0d3*dec*360.0d0/(2.0d0*!dpi)
+	planet[11,1]=RA
+	planet[11,2]=dec
+	planet[11,0]=611
+
+	cspice_spkez,612L,et,'J2000','CN+S',-82l,state,ltime
+	rho=state[0:2]
+	cspice_recrad,rho,range,RA,dec
+	RA=3600.0d3*RA*360.0d0/(2.0d0*!dpi)
+	dec=3600.0d3*dec*360.0d0/(2.0d0*!dpi)
+	planet[12,1]=RA
+	planet[12,2]=dec
+	planet[12,0]=612
+
+	cspice_spkez,613L,et,'J2000','CN+S',-82l,state,ltime
+	rho=state[0:2]
+	cspice_recrad,rho,range,RA,dec
+	RA=3600.0d3*RA*360.0d0/(2.0d0*!dpi)
+	dec=3600.0d3*dec*360.0d0/(2.0d0*!dpi)
+	planet[13,1]=RA
+	planet[13,2]=dec
+	planet[13,0]=613
+
+	cspice_spkez,614L,et,'J2000','CN+S',-82l,state,ltime
+	rho=state[0:2]
+	cspice_recrad,rho,range,RA,dec
+	RA=3600.0d3*RA*360.0d0/(2.0d0*!dpi)
+	dec=3600.0d3*dec*360.0d0/(2.0d0*!dpi)
+	planet[14,1]=RA
+	planet[14,2]=dec
+	planet[14,0]=614
+
+	cspice_spkez,615L,et,'J2000','CN+S',-82l,state,ltime
+	rho=state[0:2]
+	cspice_recrad,rho,range,RA,dec
+	RA=3600.0d3*RA*360.0d0/(2.0d0*!dpi)
+	dec=3600.0d3*dec*360.0d0/(2.0d0*!dpi)
+	planet[15,1]=RA
+	planet[15,2]=dec
+	planet[15,0]=615
+
+	cspice_spkez,616L,et,'J2000','CN+S',-82l,state,ltime
+	rho=state[0:2]
+	cspice_recrad,rho,range,RA,dec
+	RA=3600.0d3*RA*360.0d0/(2.0d0*!dpi)
+	dec=3600.0d3*dec*360.0d0/(2.0d0*!dpi)
+	planet[16,1]=RA
+	planet[16,2]=dec
+	planet[16,0]=616
+
+	cspice_spkez,617L,et,'J2000','CN+S',-82l,state,ltime
+	rho=state[0:2]
+	cspice_recrad,rho,range,RA,dec
+	RA=3600.0d3*RA*360.0d0/(2.0d0*!dpi)
+	dec=3600.0d3*dec*360.0d0/(2.0d0*!dpi)
+	planet[17,1]=RA
+	planet[17,2]=dec
+	planet[17,0]=617
+
+	cspice_spkez,618L,et,'J2000','CN+S',-82l,state,ltime
+	rho=state[0:2]
+	cspice_recrad,rho,range,RA,dec
+	RA=3600.0d3*RA*360.0d0/(2.0d0*!dpi)
+	dec=3600.0d3*dec*360.0d0/(2.0d0*!dpi)
+	planet[18,1]=RA
+	planet[18,2]=dec
+	planet[18,0]=618
+
+	cspice_spkez,619L,et,'J2000','CN+S',-82l,state,ltime
+	rho=state[0:2]
+	cspice_recrad,rho,range,RA,dec
+	RA=3600.0d3*RA*360.0d0/(2.0d0*!dpi)
+	dec=3600.0d3*dec*360.0d0/(2.0d0*!dpi)
+	planet[19,1]=RA
+	planet[19,2]=dec
+	planet[19,0]=619
+
+	cspice_spkez,620L,et,'J2000','CN+S',-82l,state,ltime
+	rho=state[0:2]
+	cspice_recrad,rho,range,RA,dec
+	RA=3600.0d3*RA*360.0d0/(2.0d0*!dpi)
+	dec=3600.0d3*dec*360.0d0/(2.0d0*!dpi)
+	planet[20,1]=RA
+	planet[20,2]=dec
+	planet[20,0]=620
+
+	cspice_spkez,621L,et,'J2000','CN+S',-82l,state,ltime
+	rho=state[0:2]
+	cspice_recrad,rho,range,RA,dec
+	RA=3600.0d3*RA*360.0d0/(2.0d0*!dpi)
+	dec=3600.0d3*dec*360.0d0/(2.0d0*!dpi)
+	planet[21,1]=RA
+	planet[21,2]=dec
+	planet[21,0]=621
+
+	cspice_spkez,622L,et,'J2000','CN+S',-82l,state,ltime
+	rho=state[0:2]
+	cspice_recrad,rho,range,RA,dec
+	RA=3600.0d3*RA*360.0d0/(2.0d0*!dpi)
+	dec=3600.0d3*dec*360.0d0/(2.0d0*!dpi)
+	planet[22,1]=RA
+	planet[22,2]=dec
+	planet[22,0]=622
+
+	cspice_spkez,623L,et,'J2000','CN+S',-82l,state,ltime
+	rho=state[0:2]
+	cspice_recrad,rho,range,RA,dec
+	RA=3600.0d3*RA*360.0d0/(2.0d0*!dpi)
+	dec=3600.0d3*dec*360.0d0/(2.0d0*!dpi)
+	planet[23,1]=RA
+	planet[23,2]=dec
+	planet[23,0]=623
+
+	cspice_spkez,624L,et,'J2000','CN+S',-82l,state,ltime
+	rho=state[0:2]
+	cspice_recrad,rho,range,RA,dec
+	RA=3600.0d3*RA*360.0d0/(2.0d0*!dpi)
+	dec=3600.0d3*dec*360.0d0/(2.0d0*!dpi)
+	planet[24,1]=RA
+	planet[24,2]=dec
+	planet[24,0]=624
+
+	cspice_spkez,625L,et,'J2000','CN+S',-82l,state,ltime
+	rho=state[0:2]
+	cspice_recrad,rho,range,RA,dec
+	RA=3600.0d3*RA*360.0d0/(2.0d0*!dpi)
+	dec=3600.0d3*dec*360.0d0/(2.0d0*!dpi)
+	planet[25,1]=RA
+	planet[25,2]=dec
+	planet[25,0]=625
+
+	cspice_spkez,626L,et,'J2000','CN+S',-82l,state,ltime
+	rho=state[0:2]
+	cspice_recrad,rho,range,RA,dec
+	RA=3600.0d3*RA*360.0d0/(2.0d0*!dpi)
+	dec=3600.0d3*dec*360.0d0/(2.0d0*!dpi)
+	planet[26,1]=RA
+	planet[26,2]=dec
+	planet[26,0]=626
+
+	cspice_spkez,627L,et,'J2000','CN+S',-82l,state,ltime
+	rho=state[0:2]
+	cspice_recrad,rho,range,RA,dec
+	RA=3600.0d3*RA*360.0d0/(2.0d0*!dpi)
+	dec=3600.0d3*dec*360.0d0/(2.0d0*!dpi)
+	planet[27,1]=RA
+	planet[27,2]=dec
+	planet[27,0]=627
+
+	cspice_spkez,628L,et,'J2000','CN+S',-82l,state,ltime
+	rho=state[0:2]
+	cspice_recrad,rho,range,RA,dec
+	RA=3600.0d3*RA*360.0d0/(2.0d0*!dpi)
+	dec=3600.0d3*dec*360.0d0/(2.0d0*!dpi)
+	planet[28,1]=RA
+	planet[28,2]=dec
+	planet[28,0]=628
+
+	cspice_spkez,629L,et,'J2000','CN+S',-82l,state,ltime
+	rho=state[0:2]
+	cspice_recrad,rho,range,RA,dec
+	RA=3600.0d3*RA*360.0d0/(2.0d0*!dpi)
+	dec=3600.0d3*dec*360.0d0/(2.0d0*!dpi)
+	planet[29,1]=RA
+	planet[29,2]=dec
+	planet[29,0]=629
+
+	cspice_spkez,630L,et,'J2000','CN+S',-82l,state,ltime
+	rho=state[0:2]
+	cspice_recrad,rho,range,RA,dec
+	RA=3600.0d3*RA*360.0d0/(2.0d0*!dpi)
+	dec=3600.0d3*dec*360.0d0/(2.0d0*!dpi)
+	planet[30,1]=RA
+	planet[30,2]=dec
+	planet[30,0]=630
+
+
+	return
+	end

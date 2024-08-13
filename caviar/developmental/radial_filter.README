@@ -1,0 +1,29 @@
+
+How to Run:
+Execute ns_radscan script - it calls radial_filter.pro
+
+plot_bksub.ns and make_hist.ns were just tools used to visualize the data. 
+
+1. spice kernels are used to determine the orientation of the image
+2. using the geometry information of the image, polygons are constructed in a normalized unit space to enclose a given radius, then are converted into pixel space. This method is used to work with any scaling or sample altering.
+3. Image is scaled by a predetermined factor, default 10: converts each pixel encompassed by a polygon into 100 sub-pixels. 
+4. Only done for one radius at a time to minimize memory usage
+5. Average value is calculated for that radius
+6. Parallel array is created to store a running average of the average radial values for corresponding pixels (really don't know a good way to phrase this)
+Clarification Example: Pixel 1 is used in the calculation of radii A and B. The array element corresponding to Pixel 1 will store the average of radius A and radius B. 
+7. This was tested in sub-pixel space, but the minor improvements in the results did not justify the memory usage or extended computation time.
+8. Once all valid radii are scanned, the parallel array is subtracted from the original image, giving a radially subtracted image
+
+
+val[i] = polyflux( polygon/_nl, rawim, _nl, _nl, zoomfactor, errbar=_errbar, radscan_np=_np, mask=mask )
+
+val is the array that we need to subtract from the image
+radi is the array binned in radii
+
+so val is calculated given a polygon, this "nl" factor, and the rawim
+so to edo the subtraction, this polygon and nl need to be used
+nl is just the dimention of the image (1024)
+_nl = nl - offset*2
+offset = 0 (most of the time)
+
+The POLYFILLV function returns a vector containing the subscripts of the array elements contained inside a polygon defined by vectors. 

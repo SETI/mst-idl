@@ -1,0 +1,12 @@
+function cyan
+
+tvlct,r,g,b,/get
+sub = lindgen(253)*(256/253)
+r = [r[sub], 0,0,0]
+g = [g[sub], 0,0,255]
+b = [b[sub], 0,0,255]
+tvlct, r, g, b
+
+return,255
+
+end

@@ -1,0 +1,137 @@
+;yy = 0
+rrname = 'Pan 13:12'
+colon = strpos( rrname, ':' )
+if colon ne -1 then begin
+  space = [ rstrpos( rrname, ' ', colon ), $
+            strpos( rrname, ' ', colon ) ]
+  if space[1] eq -1 then space[1] = strlen(rrname)
+  mm = float(strmid( rrname, space[0]+1, colon-space[0]-1 ))
+endif else stop, 'rrname not recognizable as a resonance.'
+
+if keyword_set(yy) then oplot, yy[*,0], yy[*,1], ps=-4, co=green()
+if keyword_set(zz) then oplot, zz[*,0], zz[*,1], ps=-5, co=blue()
+if keyword_set(yy) then yz = yy else yz = 0
+clr = green()
+ps = -4
+print, 'Draw lower boundary of wavelet signal to be used.'
+for q=0,1 do begin
+  cursor, x, y, 3, /data
+  while !mouse.button eq 1 do begin
+    if not keyword_set(yz) then yz = [[x],[y]] else begin
+      oplot, yz[*,0], yz[*,1], ps=ps, co=0
+      yz = [ yz, [[x],[y]] ]
+      nyz = n_elements(yz[*,0])
+      yz = yz[ sort(yz[*,0]), * ]
+    endelse
+    oplot, yz[*,0], yz[*,1], ps=ps, co=clr
+    cursor, x, y, 3, /data
+  endwhile
+  if q eq 0 then begin
+    yy = yz
+    nyy = nyz
+    if keyword_set(zz) then yz = zz else yz = yz[[0,nyy-1],*]
+    clr = blue()
+    ps = -5
+    print, 'Draw upper boundary of wavelet signal to be used.'
+  endif else begin
+    zz = yz
+    nzz = nyz
+  endelse
+endfor
+; Translate radii and wavenumbers into array indices
+nx = n_elements(radi)
+ny = n_elements(wavenum)
+yy1 = [ [interpol( indgen(nx), tkm(radi), yy[*,0] )], $
+        [interpol( indgen(ny), wavenum, yy[*,1] )] ]
+zz1 = [ [interpol( indgen(nx), tkm(radi), zz[*,0] )], $
+        [interpol( indgen(ny), wavenum, zz[*,1] )] ]
+
+; Zero out the wavelet for all locations outside the drawn boundary
+wave1 = wave
+wave1[0:yy1[0,0],*] = 0
+wave1[yy1[nyy-1,0]+1:nx-1,*] = 0
+for j=long(yy1[0,0]+1),long(yy1[nyy-1,0]) do begin
+  ymin = interpol(yy1[*,1],indgen(nyy),interpol(indgen(nyy),yy1[*,0],j))
+  wave1[j,ymin+1:ny-1] = 0
+  ymax = interpol(zz1[*,1],indgen(nzz),interpol(indgen(nzz),zz1[*,0],j))
+  wave1[j,0:ymax-1] = 0
+endfor
+power1 = abs(wave1^2)  ; This array is for plotting only.
+power1[where(power1 eq 0)] = min(abs(wave^2))
+
+; Reconstruct filtered signal from wave1
+if param eq 6 then cdelta = 0.776 else stop, 'Need to grapple with cdelta for param ne 6.'
+psi0 = !dpi^(-0.25)
+vfilt = wavelet_dj * sqrt(wavelet_dt) / (cdelta*psi0) * $
+                               ( float(wave1)  # (1./sqrt(wavelet_scale)) )
+vrejec = val - vfilt
+
+totphase = unwrap_phase(get_phase( total(wave1,2), wrap=totwrap ))
+window, 20, ys=1000, xpos=640
+
+for q=0,1 do begin
+
+!y.omargin=[4,2]
+oldpm=!p.multi
+!p.multi=[0,1,5]
+chsz = 2;1.5
+xr = [ yy[0,0], yy[nyy-1,0] ]
+xtn = replicate(' ',20)
+sh = 10
+plot, tkm(radi), val, /xs, /ys, xr=xr, xtickn=xtn, ytit='I/F', chars=chsz, yma=[sh,0]
+contour, alog10(abs(wave^2)), tkm(radi), wavenum, /xs, /ys, xr=xr, $
+    yr=wavelet_yr, /fill, levels=wavelet_levels, $
+    c_colors=wavelet_colors, xtickn=xtn, ytit='Wavenumber (radians/km)', $
+    chars=chsz, yma=[sh,-sh]
+plot, tkm(radi), vfilt, /xs, /ys, xr=xr, xtickn=xtn, ytit='I/F', chars=chsz, yma=[2*sh,-sh]
+if q eq 1 then begin
+  xx0 = min(where( radi gt rres ))
+  vma = (!y.crange[1]-!y.crange[0])/2
+  vmodel = fdensity_wave5( radi[xx0:n_elements(radi)-1], a=-vma/10, xi_d=10, mm=mm, phi=phase0, rres=rres, sigma=sigma )
+  oplot, tkm(radi[xx0:n_elements(radi)-1]), vmodel-mean(vmodel), co=green()
+endif
+contour, alog10(power1), tkm(radi), wavenum, /xs, /ys, xr=xr, $
+    yr=wavelet_yr, /fill, nlevels=15, levels=wavelet_levels, $
+    c_colors=wavelet_colors, xtickn=xtn, ytit='Wavenumber (radians/km)', $
+    chars=chsz, yma=[2*sh,-2*sh]
+if q eq 1 then plot_wavemodel, rres, rrname, sigma, color=green()
+plot, tkm(radi), totphase, /xs, /ys, xr=xr, $
+    xtit='Radius'+tkmtit(), ytit='Unwrapped Phase', chars=chsz, yma=[0,-2*sh]
+!y.omargin=0
+!p.multi=oldpm
+
+solid_diamonds
+oplot, tkm(ring_rads), replicate(!y.crange[1],n_elements(ring_rads)), ps=8, co=cyan(), /noclip
+xyouts, tkm(ring_rads), replicate(!y.crange[1]-(!y.crange[1]-!y.crange[0])*.025,n_elements(ring_rads)), ring_rads_legend, co=cyan(), align=1, orient=90
+if q eq 1 then oplot, [tkm(rres)], [!y.crange[1]], ps=4, co=green(), /noclip
+
+if q eq 0 then begin
+  cursor, r0, y, 3
+  cursor, xdv0, y, 4, /device
+  x0 = min(where( tkm(radi) gt r0 ))
+  plots, xdv0*[1,1], [0,!d.y_size], /device, l=1, color=red()
+  cursor, r1, y, 3
+  cursor, xdv1, y, 4, /device
+  x1 = max(where( tkm(radi) lt r1 ))
+endif else plots, xdv0*[1,1], [0,!d.y_size], /device, l=1, color=red()
+plots, xdv1*[1,1], [0,!d.y_size], /device, l=1, color=red()
+oplot, tkm(radi[x0:x1]), totphase[x0:x1], color=red()
+
+if q eq 0 then begin
+  thoukm = get_thoukm(radi)  ; Poly_fit does not do well with .04% change in x
+  fit1 = poly_fit( radi[x0:x1]-thoukm, totphase[x0:x1], 2, chisq=chisq )
+  zpt1 = -fit1[1] / fit1[2] / 2
+  rres = zpt1 + thoukm
+  phase0 = ( poly(zpt1,fit1) - 45 ) mod 360
+  sigma = 2*!pi/3.08/rres^4*60330.^4*(mm-1)/(fit1[2]*2*!pi/180)
+endif else begin
+  oplot, tkm(radi), poly( radi-thoukm, fit1 ), co=green(), l=1
+  oplot, [tkm(rres)], [poly(zpt1,fit1)], ps=4, co=green()
+endelse
+
+endfor
+
+end
+
+; Check wavelet_wake
+; Check fit_wavelet

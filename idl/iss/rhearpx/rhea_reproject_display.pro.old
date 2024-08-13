@@ -1,0 +1,164 @@
+restore, 'rhea_reproject.sav'
+restore, 'spreadsheet.sav'
+sz = size(__imrz)
+xs = sz[1]
+ys = sz[2]
+nx = 2
+ny = 5
+marg = 30
+window, xs=(xs+marg)*nx, ys=(ys+marg)*ny+marg*0.5
+thresh = replicate(3e-7,nf)
+rms = fltarr(nf)
+for j=0l,nf do begin
+  if ( j mod (nx*ny) eq 0 and j ne 0 ) or j eq nf then begin
+    if j eq nf then begin
+      ; Sample ring width
+      rrhea = xs/(6-1.5)
+      ycen = marg*0.5 + 0.5*ys
+      theta = findgen(361)*!pi/180
+      restore, 'rhea_reproject_ringwidth.sav'
+      foo = where( strmid(spreadsheet[14,*],11,1) eq 'L' )
+      ww = [mean(width[foo]),max(width[foo])]
+      tt = 'Rhea Ring Contours for '+[ 'an average low-phase image', $
+               'highest low-phase opening angle used ('+$
+               strmid(spreadsheet[0,where(width eq max(width[foo]))],0,11)+')' ]
+      for k=0,1 do begin
+        xcen = marg*0.5+(xs+marg)*k - 1.5*rrhea
+        tv, fltarr(xs,ys)+100, marg*0.5+(xs+marg)*k, marg*0.5
+        for r=2,4 do begin
+          xx = xcen + r*rrhea*sin(theta)
+          yy = ycen + ww[k]*cos(theta)
+          foo = where( xx gt marg*0.5+(xs+marg)*k )
+          plots, /device, xx[foo], yy[foo]
+          xyouts, /device, align=0.5, chars=1.5, $
+                  marg*0.5+(xs+marg)*k + xs*0.5, marg*0.5 + ys + marg/4, tt[k]
+        endfor
+      endfor 
+    endif 
+    if keyword_set(dolzr) then begin
+      tifffile = 'rhea_reproject_display'+strtrim(j/nx/ny,2)+'.tiff'
+      outim = tvrd()
+      write_tiff, tifffile, reverse( outim, 2 )
+    endif else stop
+    if j eq nf then goto, next
+    tv, replicate( 0, (xs+marg)*nx, (ys+marg)*ny+marg*0.5 )
+  endif 
+  rms[j] = stddev((__imrz[*,*,j])[where(__imrz[*,*,j] ne 0)])
+  thresh[j] = rms[j]/2
+  tvscl, __imrz[*,*,j]>(-thresh[j])<thresh[j], $
+         marg*0.5+(xs+marg)*(j mod nx), $
+         marg*0.5+(ys+marg)*((nx*ny-1-(j mod (nx*ny)))/nx)
+  xyouts, /device, align=0.5, chars=1.5, $
+          marg*0.5+(xs+marg)*(j mod nx) + xs*0.5, $
+          marg*0.5+(ys+marg)*((nx*ny-1-(j mod (nx*ny)))/nx) + ys + marg/4, $
+          spreadsheet[14,j]+strmid(spreadsheet[0,j],0,11)+' ('+strtrim(j,2)+')'
+endfor
+next:
+
+window
+lims = [ [0,5], [6,11], [12,25], [26,31], [32,39], [40,47], [48,64] ]
+group = [ '072/RHEARPXLP 1', '072/RHEARPXLP 2', '087/RHEARPXLP', $
+          '100/RHEARPXHP', '104/RHEARPXLP 1', '104/RHEARPXLP 2', $
+          '109/RHEARPXLP' ]
+groupshort = [ '072-1', '072-2', '087', '100', '104-1', '104-2', '109' ]
+ngrp = n_elements(group)
+if keyword_set(findfile('rms_grp1.sav')) then restore, 'rms_grp1.sav'
+
+solid_small_circles
+if keyword_set(dolzr) then begin
+  lzr, 'rhea_reproject_rms'
+  @plot_prepare
+  plot_color
+endif
+!p.multi = [0,2,2]
+!y.margin = 0
+!y.omargin = [4,2]
+;plot, rms, xr=[0,nf]-0.5, /xs, ps=8, xtickle=1e-10, ytit='RMS I/F', $
+;      xtickv=rebin(lims,1,ngrp), xtickn=groupshort, xticks=ngrp-1
+;for k=0,ngrp-2 do oplot, mean([lims[1,k],lims[0,k+1]])*[1,1], !y.crange, l=1
+plot, rms, xr=[0,nf]-0.5, /xs, yr=[5e-7,3e-5], /ys, ps=8, xtickle=1e-10, $
+      xtickv=rebin(lims,1,ngrp), xtickn=replicate(' ',20), xticks=ngrp-1, $
+      ytit='RMS I/F', /ylog
+for k=0,ngrp-2 do oplot, mean([lims[1,k],lims[0,k+1]])*[1,1], 10^!y.crange, l=1
+hot = where( rms gt 1e-5, nhot )
+oplot, hot, rms[hot], ps=8, co=ctred()
+solid_triangles
+if keyword_set(rms_grp1) then oplot, rebin(lims,1,ngrp), rms_grp1, ps=8
+solid_small_circles
+!p.multi[0] = !p.multi[0] - 1
+plot, width, xr=[0,nf]-0.5, /xs, yr=[0,19], /ys, ps=8, xtickle=1e-10, $
+      xtickv=rebin(lims,1,ngrp), xtickn=groupshort, xticks=ngrp-1, $
+      ytit='Ring Width (pixels)'
+for k=0,ngrp-2 do oplot, mean([lims[1,k],lims[0,k+1]])*[1,1], !y.crange, l=1
+if keyword_set(dolzr) then clzr else stop
+
+group = [ group[0:2], '087/RHEARPXLP (not hot)', group[3:6], $
+          '109/RHEARPXLP (not hot)' ]
+lims = [ [lims[*,0:2]], [lims[*,2:6]], [lims[*,6]] ]
+ngrp = n_elements(group)
+rms_grp = fltarr(ngrp)
+savefile = 'rhea_reproject_grp.sav'
+if keyword_set(findfile(savefile)) then restore, savefile else begin
+  imrz_grp = fltarr(xs,ys,ngrp)
+  for k=0,ngrp-1 do begin
+    print, strtrim(k,2)+' / '+strtrim(ngrp,2)
+    use = lindgen(lims[1,k]-lims[0,k]+1) + lims[0,k]
+    if strmid( group[k], 15, 7 ) eq 'not hot' then for j=0,nhot-1 do begin
+      use = use[where( use ne hot[j] )]
+    endfor
+    for x=0l,xs-1 do for y=0l,ys-1 do begin
+      foo = where( __imrz[x,y,use] ne 0, count )
+      if count gt 0 then begin
+        imrz_grp[x,y,k] = mean(__imrz[x,y,use[foo]])
+      endif 
+    endfor
+    rms_grp[k] = stddev((imrz_grp[*,*,k])[where(imrz_grp[*,*,k] ne 0)])
+  endfor
+  imrz_tot = fltarr(xs,ys)
+  print, strtrim(ngrp,2)+' / '+strtrim(ngrp,2)
+  use = vec_remove( lindgen(ngrp), where( strmid(group,15,7) eq 'not hot' )-1 )
+  for x=0l,xs-1 do for y=0l,ys-1 do begin
+    foo = where( imrz_grp[x,y,use] ne 0, count )
+    if count gt 0 then begin
+      imrz_tot[x,y] = total( imrz_grp[x,y,use[foo]] / rms_grp[use[foo]] ) / $
+                      total( 1 / rms_grp[use[foo]] )
+    endif 
+  endfor
+  imrz_tot = imrz_tot
+  save, imrz_grp, imrz_tot, group, lims, ngrp, rms_grp, filename=savefile
+endelse
+
+window, xs=(xs+marg)*nx, ys=(ys+marg)*ny+marg*0.5
+for j=0l,ngrp+1 do begin
+  if ( j mod (nx*ny) eq 0 and j ne 0 ) or j eq ngrp+1 then begin
+    if keyword_set(dolzr) then begin
+      tifffile = 'rhea_reproject_grp_display'+strtrim(j/nx/ny,2)+'.tiff'
+      outim = tvrd()
+      write_tiff, tifffile, reverse( outim, 2 )
+    endif
+    if j eq ngrp+1 then goto, next2
+    tv, replicate( 0, (xs+marg)*nx, (ys+marg)*ny+marg*0.5 )
+  endif 
+  if j eq ngrp then begin
+    thresh = stddev((imrz_tot)[where(imrz_tot ne 0)])
+    tvscl, imrz_tot>(-thresh)<thresh, $
+           marg*0.5+(xs+marg)*(j mod nx), $
+           marg*0.5+(ys+marg)*((nx*ny-1-(j mod (nx*ny)))/nx)
+    xyouts, /device, align=0.5, chars=1.5, $
+            marg*0.5+(xs+marg)*(j mod nx) + xs*0.5, $
+            marg*0.5+(ys+marg)*((nx*ny-1-(j mod (nx*ny)))/nx) + ys + marg/4, $
+            'Total'
+  endif else begin
+    thresh = rms_grp[j]/2
+    tvscl, imrz_grp[*,*,j]>(-thresh)<thresh, $
+           marg*0.5+(xs+marg)*(j mod nx), $
+           marg*0.5+(ys+marg)*((nx*ny-1-(j mod (nx*ny)))/nx)
+    xyouts, /device, align=0.5, chars=1.5, $
+            marg*0.5+(xs+marg)*(j mod nx) + xs*0.5, $
+            marg*0.5+(ys+marg)*((nx*ny-1-(j mod (nx*ny)))/nx) + ys + marg/4, $
+            group[j]
+  endelse 
+endfor
+next2:
+
+end

@@ -1,0 +1,169 @@
+function resloc_kappa2, r
+  common resloc1, gm, prad, j2, j4, j6, omegasat
+  return, gm / r^3 * ( 1 - j2*3/2*(prad/r)^2 + j4*45/8*(prad/r)^4 - j6*175/16*(prad/r)^6 )
+end
+
+function resloc_omega2, r
+  common resloc1, gm, prad, j2, j4, j6, omegasat
+  return, gm / r^3 * ( 1 + j2*3/2*(prad/r)^2 - j4*15/8*(prad/r)^4 + j6*35/16*(prad/r)^6 )
+end
+
+function resloc_nu2, r
+  return, 2*resloc_omega2(r) - resloc_kappa2(r)
+end
+
+function resloc_rsat_root, r
+  common resloc1, gm, prad, j2, j4, j6, omegasat
+  return, resloc_omega2(r) - omegasat^2
+end
+
+function resloc_rres_root_bw, r
+  common resloc2, patternspeed, m
+  return, sqrt(resloc_omega2(r)) - sqrt(resloc_nu2(r))/m - patternspeed
+end
+
+function resloc_rres_root_dw, r
+  common resloc2, patternspeed, m
+  return, sqrt(resloc_omega2(r)) - sqrt(resloc_kappa2(r))/m - patternspeed
+end
+
+; Calculate Resonance Locations
+; Method and values based on Lissauer and Cuzzi, AJ 87, 1051 (1982)
+function resloc, _l, _m, j, res_descrip=res_descrip, short=short, lc82=lc82, $
+	omegasat=omegasat, kappasat=kappasat, rsat=rsat, satnames=satnames, $
+	bending=bending, omegares=omegares, p=_p, k=_k, docalcs=docalcs, $
+        altconfig=altconfig
+
+if n_params() eq 0 then begin
+  print, 'Syntax:  Result = RESLOC( l, m, j, [res_descrip=] )
+  print, 'Returns the radial location (in km) of the l:(m-1) inner Lindblad resonance of satellite j.  The list of satellite names can be returned in keyword satnames.  The satellite''s orbital and radial frequencies can be returned in keywords omegasat and kappasat.'
+  retall;
+endif
+
+common resloc1, gm, prad, j2, j4, j6, _omegasat
+common resloc2, patternspeed, m
+
+; The corresponding resonance is l:(m-1) so the following is 2:1
+;if not keyword_set(_l) then _l=2
+;if not keyword_set(_m) then _m=2
+; ...and this is 5:4
+if not keyword_set(_l) then _l=5
+if not keyword_set(_m) then _m=5
+l = double(_l) & m = double(_m)
+if keyword_set(_p) or keyword_set(_k) then begin
+  if keyword_set(_p) then p = _p else p = 0
+  if keyword_set(_k) then k = _k else k = 0
+endif else begin
+  if keyword_set(bending) then begin
+    p = 1 * sign(l)
+    k = l - m - p
+  endif else begin
+    k = l - m
+    p = 0
+  endelse
+endelse
+
+; I originally wrote this routine with an idiosyncratic system of assigning 
+; the number j to a moon.  I'm keeping this system, but here make it compatible
+; with NAIF codes.
+if j ge 601 and j le 618 then begin
+  j = j - 601
+  index = [ 5, 6, 11, 12, 13, 7, 8, 9, 14, 4, 3, -1, -1, -1, 0, 1, 2, 10 ]
+  j = index[j]
+endif
+
+if keyword_set(short) then begin
+  satnames = [ 'At', 'Pr', 'Pd', 'Ep', 'Ja', 'Mi', 'En', 'Ti', 'Hy', 'Ia', $
+	'Pan', 'Te', 'Di', 'Rh', 'Ph' ]
+endif else begin
+  satnames = [ 'Atlas', 'Prometheus', 'Pandora', 'Epimetheus', 'Janus', $
+	'Mimas', 'Enceladus', 'Titan', 'Hyperion', 'Iapetus', 'Pan', $
+	'Tethys', 'Dione', 'Rhea', 'Phoebe' ]
+endelse
+if keyword_set(lc82) then begin
+  ; The original values used by Lissauer and Cuzzi 1982
+  ; Saturn's mass multiplied by Newton's Constant
+  gm = 37929141.6d ;km^3/s^2
+  ; Saturn radius
+  prad = 60330.0d0 ; km
+  ; Saturn gravity harmonics
+  j2 = 16299.1d-6
+  j4 = -916.7d-6
+  j6 = 81.3d-6
+  ; Satellite orbital periods
+  _periodsat = [ 51993.4d, 52962.8d, 54304.5d, 59989.6d, 60019.0d, 81425.0d, $
+		 118387.0d, 1377684.0d, 1838592.0d, 6854112.0d ]
+endif else begin
+  ; Saturn mass, radius, and harmonics from JPL kernel cpck05May2004.tpc
+  gm = 37931289.4836 ;km^3/s^2
+  prad = 60330.0d0 ;km
+  j2 = 0.016292243237d
+  j4 = -0.000928716077d
+  j6 = 0.000088845313
+  ; Satellite orbital periods from JPL Horizons queried on 30 July 2004 for
+  ; epoch JD 2453187.5 (1 July 2004).  See resloc.email for details of query.
+  ; Converting from days per orbit to seconds per orbit
+  _periodsat = [ 0.6019, 0.612986, 0.628804, 0.694590, 0.694590, 0.9424218, $
+	1.370218, 15.945421, 21.276609, 79.330183, 0.5750, 1.887802, $
+	2.736915, 4.517500, 550.48 ] * 86400
+  ; Janus and Epimetheus semimajor axes from Cooper and Murray (2004)
+  _periodsat[3:4] = 2*!dpi / sqrt(resloc_omega2([151413.,151462.]))
+  if keyword_set(altconfig) then begin
+    ; Previous to the most recent Janus/Epimetheus switch
+    _periodsat[3:4] = 2*!dpi / sqrt(resloc_omega2([151492.,151442.]))
+  endif
+  ; Most recent values from Mike Evans, private communication, 2004.
+  ; Converting Mike's numbers from degrees per day to seconds per orbit.
+  _periodsat[0] = 360 * 86400 / 598.3140135
+  _periodsat[1] = 360 * 86400 / 587.28512
+  _periodsat[2] = 360 * 86400 / 572.78823
+  if not keyword_set(altconfig) then begin
+    _periodsat[3] = 360 * 86400 / 518.48038
+    _periodsat[4] = 360 * 86400 / 518.23982
+  endif
+  _periodsat[10] = 360 * 86400 / 626.03172
+endelse
+
+; Select which satellite we're using, then calculate mean motion and 
+; write description
+if not keyword_set(j) then j = 0
+periodsat = _periodsat[j]
+omegasat = 2 * !dpi / periodsat
+_omegasat = omegasat
+res_descrip = satnames[j] + ' ' + strtrim(fix(l),2) + ':' + strtrim(fix(m-1),2)
+if keyword_set(bending) then res_descrip = res_descrip + ' BW'
+
+; Start with provisional satellite orbital radius (fx_root wants a 3-element
+; vector for reasons I don't understand)
+rsat0 = ( gm / omegasat^2 ) ^ (1./3) + [-5,0,5]
+; Find precise satellite orbital radius
+rsat = fx_root( rsat0, 'resloc_rsat_root', /double )
+; Using radius, find satellite epicyclical frequency
+kappasat = sqrt( resloc_kappa2(rsat) )
+; Vertical frequency can be simply calculated from the mean motion and the 
+; epicyclic frequency (Shu et al 1983).
+nusat = sqrt( 2*omegasat^2 - kappasat^2 )
+; Calculate pattern speed
+patternspeed = omegasat + k/m*kappasat + p/m*nusat
+
+; Start with provisional resonance location
+if abs(l) eq 1 and m eq 1 then begin
+  ; Apsidal precession rate omega-kappa ~ sqrt(gm/r^3) * 3/2*j2*(prad/r)^2
+  ; is set equal to satellite mean motion, then solve for r
+  rres0 = ( gm / omegasat^2 * 9/4 * j2^2 * prad^4 ) ^ (1./7) + [-5,0,5]
+  ; Nodal precession rate omega-mu is the negative of this, but same estimate.
+endif else begin
+  rres0 = ( gm / omegasat^2 / l^2 * (m-1)^2 ) ^ (1./3) + [-5,0,5]
+endelse
+; Find precise resonance location
+if keyword_set(bending) then begin
+  rres = fx_root( rres0, 'resloc_rres_root_bw', /double )
+endif else begin
+  rres = fx_root( rres0, 'resloc_rres_root_dw', /double )
+endelse
+omegares = sqrt(resloc_omega2(rres))
+if keyword_set(docalcs) then stop
+
+return, rres
+
+end

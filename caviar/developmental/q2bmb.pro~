@@ -1,0 +1,7 @@
+repoint_array[1,v]=x_move
+repoint_array[2,v]=xmsig
+repoint_array[3,v]=y_move
+repoint_array[4,v]=ymsig
+save, repoint_array, filename='repoint.sav'
+
+end

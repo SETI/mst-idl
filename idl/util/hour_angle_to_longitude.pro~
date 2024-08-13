@@ -1,0 +1,3 @@
+function hour_angle_to_longitude, hour_angle, subsolar
+
+hour_angle - 12

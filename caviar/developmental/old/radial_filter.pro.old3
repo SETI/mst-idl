@@ -1,0 +1,242 @@
+;NOTE: This routine performs the radial subtraction
+
+pro radial_filter, rbksub_im,  _rawim, radi, val, et, polera, poledec, cam_params, nl, $
+       cmat, vobs_planet, mnrad=mnrad, mxrad=mxrad, mnlon=mnlon, mxlon=mxlon,$
+       resfac=resfac, zoomfactor=zoomfactor, noscan=noscan, phi=phi, $
+       nocrop=nocrop, errbar=errbar, radscan_np=radscan_np, crays=_cray, $
+       cray_space=cray_space, color=color, vertical=vertical, ansalon=ansalon, $
+       radarray=radarray, lonarray=lonarray, outofplane=outofplane, $
+       primary=primary, median=median, blank_cray=blank_cray
+
+; This version of radial scan uses the polyflux algorithm created by Bob Hogan
+; as part of Casvu. 
+
+;initialize variables used in subtraction
+;rbksub_im is returned as the background subtracted image (called bksub_img in ns_radscan)
+;ns_count_sub keeps track of how many times a given pixel is used in a radius calculation
+
+rawim = _rawim
+ns_tmp_arrsize = size(_rawim,/dimensions)
+rbksub_im = fltarr(ns_tmp_arrsize(0), ns_tmp_arrsize(1))
+ns_count_sub = intarr(ns_tmp_arrsize(0), ns_tmp_arrsize(1))
+
+;creates a mask for the image to deal with edges. Don't worry too much about this
+
+;nocrop = 1
+mask = bytarr(nl,nl) + 1
+if not keyword_set(nocrop) then begin
+  ; Image edges are often dodgy.
+;  rawim = rawim[2:nl-3,2:nl-3]
+  offset = 0;2
+mask[0:1,*] = 0
+mask[*,0:1] = 0
+mask[nl-2:nl-1,*] = 0
+mask[*,nl-2:nl-1] = 0
+endif else offset = 0
+_nl = nl - offset*2
+if not keyword_set(resfac) then resfac = 1.5   ; Governs bin spacing
+if not keyword_set(zoomfactor) then zoomfactor = 10  ; Governs pixel division
+
+if not (keyword_set(mnrad) and keyword_set(mxrad) and keyword_set(mnlon) and keyword_set(mxlon)) then begin
+  if keyword_set(outofplane) then stop
+endif
+if not keyword_set(mnrad) then mnrad = min(radarray)
+if not keyword_set(mxrad) then mxrad = max(radarray)
+if not keyword_set(mnlon) then mnlon = min(lonarray)
+if not keyword_set(mxlon) then mxlon = max(lonarray)
+
+; Set the active window to #1 (the main Caviar display), but only if it exists.
+winset, 1, no_w1
+
+state = 0
+nnn = 360
+have_already_rerun = 0
+phi_rerun_polygon:
+mnrad = (double(mnrad))[0]
+mxrad = (double(mxrad))[0]
+mnlon = (double(mnlon))[0]
+mxlon = (double(mxlon))[0]
+if not keyword_set(primary) then primary=699L
+if keyword_set(vertical) then begin
+
+;get_rz:
+;using cylindrical coords, specify r and z, evluate at input anaslon (degrees)
+;Converts Saturn's coordinate system to J2000 so the spice kernels can be queried
+;The contant et is just used in the spice kernel query
+;outputs: nnn is number of points, radscan_region contains the geometry information for the ring 
+;mnrad- radius
+;mnlon and mxlon are the min and max longitudes
+;rest are constants used for spice kernel queries and deal with our particular system
+
+  get_rz,et,mnrad,mnlon,mxlon,polera,poledec,nnn,radscan_region1,primary,state=state,ansalon=ansalon
+  get_rz,et,mxrad,mnlon,mxlon,polera,poledec,nnn,radscan_region2,primary,state=state,ansalon=ansalon
+endif else begin
+
+;get_ring does the same as get_rz, but doesn't consider vertical components
+
+  get_ring,et,mnrad,mnlon,mxlon,polera,poledec,nnn,radscan_region1,primary,state=state
+  get_ring,et,mxrad,mnlon,mxlon,polera,poledec,nnn,radscan_region2,primary,state=state
+endelse
+
+;image_coords
+;This takes the geometry information from the spice kernel query and maps it to the image (output radscan_region_coords)
+;other variables are just constants that are used to accomodate our system
+;This calculates everything in J2000 coords, which is the same format as the get_rz/get_ring output
+
+image_coords,radscan_region1,cmat,vobs_planet,cam_params,nl,radscan_region1_coords
+image_coords,radscan_region2,cmat,vobs_planet,cam_params,nl,radscan_region2_coords
+
+;Merge the data from the parallel geometry calculations. Not too sure why they are parallelized like this since
+;the inputs look identical. Guessing that primary and/or state gets changed. Don't see any obvious changes though
+
+radscan_region_coords = [ radscan_region1_coords, reverse(radscan_region2_coords), radscan_region1_coords[0,*] ]
+if not keyword_set(color) then color=green()
+if not keyword_set(no_w1) then plots, round(radscan_region_coords[*,1]), (nl-1)-round(radscan_region_coords[*,0]), linestyle=0, color=color, /device, thick=2
+
+;Bin the previous calculations according to the image
+
+if keyword_set(phi) then begin
+
+  if not keyword_set(have_already_rerun) then begin
+    ; Path length along inner/outer edge
+    nbins = long( resfac * mean([ path_length(radscan_region1_coords), $
+                                  path_length(radscan_region2_coords) ]) )
+    nnn = long(nbins) + 1
+    have_already_rerun = 1
+    goto, phi_rerun_polygon
+  endif  
+  radbins = findgen(nbins+1) / (nbins) * (mxlon-mnlon) + mnlon
+  inner_coords = radscan_region_coords[nnn*2-1:nnn*2,*]
+
+endif else begin
+
+  ; Mean length, in pixels, from inner to outer edge
+  nbins = long( resfac * mean(sqrt( $
+     (radscan_region1_coords[*,0]-radscan_region2_coords[*,0])^2 + $
+     (radscan_region1_coords[*,1]-radscan_region2_coords[*,1])^2 )) )
+  radbins = findgen(nbins+1) / (nbins) * (mxrad-mnrad) + mnrad
+  inner_coords = radscan_region1_coords
+
+endelse
+
+;Set up variables which will store the output
+;cray generally means cosmic ray. if the _cray keyword is set, then a few coordinate transformations happen
+;Typically not set
+
+radi = ( radbins[1:nbins] + radbins[0:nbins-1] ) / 2
+val = fltarr(nbins)
+radscan_np = fltarr(nbins)
+errbar = fltarr(nbins)
+if keyword_set(_cray) then begin
+  p2radec,cam_params,cmat,nl,_cray[*,0],_cray[*,1],cray_RA,cray_dec
+  p2ralon,cmat,et,polera,poledec,-82L,cray_RA,cray_dec,crayr,crayl
+  if not keyword_exists(cray_space) then cray_space = 4
+  for j=-cray_space,cray_space do for k=-cray_space,cray_space do begin
+    mask[(_cray[*,1]+j)>0<(nl-1),(_cray[*,0]+k)>0<(nl-1)] = 0
+  endfor
+endif
+
+;Now create a polygon which will enclose the pixels for a given radius
+;built from the binned geometry calculations. 
+;polygons are normalized to a unit space
+
+if not keyword_set(noscan) then for i=0,nbins-1 do begin
+  if i mod fix(float(nbins)/20) eq 0 then begin
+    if not keyword_set(no_w1) then begin
+      plots, round(inner_coords[*,1]), (nl-1)-round(inner_coords[*,0]), $
+             linestyle=0, color=color, /device 
+    endif else print, i, ' / ', nbins
+  endif
+  if keyword_set(phi) then begin
+    polygon = radscan_region_coords[ [i,i+1,nnn*2-2-i,nnn*2-1-i], * ]
+    inner_coords = polygon[ [0,3], * ]
+  endif else begin
+    if keyword_set(vertical) then begin
+      get_rz,et,radbins[i+1],mnlon,mxlon,polera,poledec,nnn,outer,primary,state=state,ansalon=ansalon
+    endif else begin
+      get_ring,et,radbins[i+1],mnlon,mxlon,polera,poledec,nnn,outer,primary,state=state
+    endelse
+    image_coords,outer,cmat,vobs_planet,cam_params,nl,outer_coords
+    polygon = [ inner_coords, reverse(outer_coords) ] - offset
+    inner_coords = outer_coords
+  endelse
+  ; get_ring gives [x,y] coords in rows [1,0].  
+  ; polyflux wants them in rows [0,1]
+  polygon = rotate( polygon, 7 )
+
+;print,_nl, zoomfactor
+
+;see the radial background subtraction section below to see how polyflux works
+
+  val[i] = polyflux( polygon/_nl, rawim, _nl, _nl, zoomfactor, errbar=_errbar, radscan_np=_np, mask=mask, median=median )
+  radscan_np[i] = _np
+  errbar[i] = _errbar
+
+; RADIAL BACKGROUND SUBTRACTION HAPPENS HERE
+; This part is the meat of polyflux
+
+if val[i] gt 0 then begin 
+
+;map the unit polygon to the image
+  nx = _nl * zoomfactor
+  ny = _nl * zoomfactor
+  
+  ix = nx*polygon[*,0]/_nl + .5*zoomfactor
+  iy = ny*polygon[*,1]/_nl + .5*zoomfactor
+
+;store the pixels enclosed in the polygon in p
+  p = polyfillv(ix,iy,nx,ny)
+  
+;remap to image
+  xx = (p mod nx)/zoomfactor
+  yy = (p / nx) / zoomfactor
+  im = xx + yy*_nl
+
+ ;  foo = where(rbksub_im[im] eq 0, count)
+
+  ;if count eq n_elements(im) then continue else if count gt 0 then im = vec_remove(im,foo)
+
+;  if keyword_set(mask) then begin
+;    foo = where(mask[im] gt 0, ns_radscan_np)
+;    ns_radscan_np = ns_radscan_np / float(zoomfactor)^2
+;    if ns_radscan_np eq 0 then continue else im=im[foo]
+;  endif
+
+; rbksub_im[im] = rbksub_im[im] - val[i]
+
+;keep a rolling average of values at a given radius, kept track on a per pixel basis since
+;the same pixel can be used in multiple radius calculations
+rbksub_im[im] = rbksub_im[im] + val[i]
+ns_count_sub[im] = ns_count_sub[im] + 1
+
+endif ;if val[i] gt 0
+
+endfor
+
+; rbksub_im
+
+foo = where(ns_count_sub ne 0)
+
+;if tmp_notzero eq -1 then rbksub_im = rbksub_im / ns_count_sub
+;else rbksub_im(tmp_notzero) = rbksub_im(tmp_notzero) / ns_count_sub[tmp_notzero]
+
+rbksub_im[foo] = rbksub_im[foo] / ns_count_sub[foo]
+
+;subtract the radial background from the image
+rbksub_im = _rawim - rbksub_im
+
+; If both _cray and blank_cray are set, then set cray locations to zero
+if keyword_set(_cray) and keyword_set(blank_cray) then begin
+  rbksub_im[_cray[*,1],_cray[*,0]] = 0
+endif
+
+;clean up
+foo = where( val eq -1, count )
+if count gt 0 then begin
+  val = vec_remove( val, foo )
+  radi = vec_remove( radi, foo )
+  radscan_np = vec_remove( radscan_np, foo )
+  errbar = vec_remove( errbar, foo )
+endif
+
+end

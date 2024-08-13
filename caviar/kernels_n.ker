@@ -1,0 +1,18 @@
+
+\begindata
+KERNELS_TO_LOAD = (
+                '/home/sauron2/iss/NAIF/fk/vg2_v02.tf',
+                '/home/sauron2/iss/NAIF/ik/vg2_issna_v02.ti',
+                '/home/sauron2/iss/NAIF/ik/vg2_isswa_v01.ti',
+		'/home/sauron2/iss/NAIF/lsk/naif0010.tls',
+                '/home/sauron2/iss/NAIF/sclk/vg200022.tsc',
+ 		'/home/sauron2/iss/NAIF/pck/pck00010.tpc',
+                '/home/sauron2/iss/NAIF/spk/vgr2_nep081.bsp',
+                '/home/sauron2/iss/NAIF/spk/de430.bsp',
+                '/home/sauron2/iss/NAIF/spk/Voyager_2.m05016u.merged.bsp',
+                '/home/sauron2/iss/NAIF/spk/voyager_2.ST+1992_m05208u.merged.bsp',
+                '/home/sauron2/iss/NAIF/ck/vgr2_super.bc',
+                '/home/sauron2/iss/NAIF/ck/vg2_nep_version1_type1_iss_sedr.bc'
+                   )
+\begintext
+

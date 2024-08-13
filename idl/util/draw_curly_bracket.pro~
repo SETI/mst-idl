@@ -1,0 +1,6 @@
+function draw_curly_bracket, xlims, ylims, vertical=vertical, invert=invert, $
+                             xx=xx, yy=yy
+
+xcurve = sin( findgen(91)*!pi/180 )
+ycurve = cos( findgen(91)*!pi/180 )
+xx = [ xcurve

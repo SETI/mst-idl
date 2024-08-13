@@ -1,0 +1,6 @@
+image_coords,stars,cmat,vobs,cam_params,nl,coords
+image_coords,planet,cmat,vobs_planet,cam_params,nl,planet_coords
+image_coords,ring,cmat,vobs_planet,cam_params,nl,ring_coords
+
+dont_match_stars,stars,coords,planet,planet_coords,found_star_coords,flux,unknown_objects,1.5,$
+cam_params,cmat,et,nl,polera,poledec,-82L

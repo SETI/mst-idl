@@ -1,0 +1,208 @@
+if !version.arch eq 'ppc' or !d.n_colors eq 16777216 then device, decomposed=0
+;if !version.arch eq 'ppc' then device, decomposed=0
+
+if not keyword_set(noplot) then tvlct,indgen(256),indgen(256),indgen(256)
+
+icy_setup
+;.run ucac2_subroutines_wrappers.pro
+
+sc=-82L
+point_descrip = ''
+
+nacmat=[[-0.00148701973d0,-0.000171828726d0,0.99999888d0],$
+[-0.999998729d0,-0.000575703737d0,-0.00148711843d0],$
+[0.000575958621d0,-0.99999982d0,-0.000170972424d0]]
+
+;camera parameters for Bill Owen, JPL interoffice
+;memorandum 312.E-2003-001
+na_cam_params=dblarr(12)
+na_cam_params[0]=2002.703;focal length NAC
+na_cam_params[1]=8.28d-6; epsilon2
+na_cam_params[2]=5.45d-6;epsilon5
+na_cam_params[3]=-19.67d-6;epsilon6
+na_cam_params[4]=83.33333333333333;Kx
+na_cam_params[5]=0.0;Kxy
+na_cam_params[6]=0.0;Kyx
+na_cam_params[7]=83.3428;Ky
+na_cam_params[8]=0.0;
+na_cam_params[9]=0.0;
+na_cam_params[10]=0.095;Big Omega
+na_cam_params[11]=3.0d-6;fov of one pixel
+wa_cam_params=dblarr(12)
+wa_cam_params[0]=200.7761;focal length WAC
+wa_cam_params[1]=60.89d-6; epsilon2
+wa_cam_params[2]=4.93d-6;epsilon5
+wa_cam_params[3]=-72.28d-6;epsilon6
+wa_cam_params[4]=83.33333333333333;Kx
+wa_cam_params[5]=0.0;Kxy
+wa_cam_params[6]=0.0;Kyx
+wa_cam_params[7]=83.34114;Ky
+wa_cam_params[8]=0.0;
+wa_cam_params[9]=0.0;
+wa_cam_params[10]=-0.018;Big Omega
+wa_cam_params[11]=3.0d-5;fov of one pixel
+
+vobs_planet=[0.0d0,0.0d0,0.0d0]
+
+kind = 'SPK'
+cspice_ktotal, kind, spkcount
+if spkcount eq 0 or keyword_set(reloadkernels) then begin &$
+   cspice_furnsh,getenv("CAVIAR_KERNELS") &$
+   if keyword_set(useoldkernels) then begin &$
+      print, 'Loading (old) predicted kernels' &$
+      print, 'Reconstructed kernels exist for this date, ' +$
+                            'and should be used for best accuracy.' &$
+      cspice_furnsh,getenv("CAVIAR_KERNELS")+'.pred' &$
+   endif &$
+endif else if not keyword_set(silent) then begin &$
+   print, '-------------' &$
+   print, 'NOTE: Caviar has detected kernels already loaded.  If these kernels did not come' &$
+   print, 'from Caviar''s kernels.ker file, there may be trouble.  Not loading further kernels.' &$
+   print, '-------------' &$
+endif
+
+if not keyword_set(image_name) then begin &$
+  image_name=' ' &$
+  print,' ' &$
+  print,'Image to point-=' &$
+  read,image_name &$
+  print,' ' &$
+endif
+
+ImageObj = OBJ_NEW('CassImg', DebugFlag=DebugFlag)
+ImageObj->ReadVic,image_name
+rawim=ImageObj->Image()
+fix_badlines, image_name, rawim, nobadlines=nobadlines
+@restore_stretch1
+_rawim = _rawim - min(_rawim)
+;_rawim = (_rawim)^(1./6)
+im=_rawim*248/max(_rawim)
+im=byte(im)
+label=ImageObj->LabelArray()
+
+image_data,label,et,epoch,exposure,cam_name,pmat,nl,found
+if cam_name eq 'ISSNA' then cam_params=na_cam_params 
+if cam_name eq 'ISSNA' then fovsearch=0.7d0
+if cam_name eq 'ISSWA' then cam_params=wa_cam_params
+if cam_name eq 'ISSWA' then fovsearch=3.6d0
+cmat = nacmat ## pmat
+cmat_nominal = cmat
+
+@restore_point
+pointing_ra_dec,cmat,RA,dec
+
+if not keyword_set(noplot) then window,1,xsize=nl,ysize=nl,title='IDL 1: '+image_name
+
+if not keyword_set(noplot) then wset,1
+if not keyword_set(noplot) then tv,im,/order
+
+polera=40.58756d0;
+poledec=83.53684d0;RA and dec of Saturn N pole from  pck00007.tpc, epoch 2004 JAN 01 12:00:00. TDB
+
+if keyword_exists(_nostars) then nostars=_nostars
+if not keyword_set(nostars) then nostars=0
+if keyword_set(noplot) then nostars=1
+if not keyword_set(nostars) and not keyword_set(tychoonly) and not keyword_set(brightstar) then if (cam_name eq 'ISSNA' and not keyword_set(fewerstars)) or keyword_set(morestars) then qmul_u2access,getenv("UCAC2_CAT"),epoch,RA,dec,fovsearch,5.0d0,20.0d0,ucac2_stars
+if not keyword_set(nostars) then qmul_tycho2_access,epoch,RA,dec,fovsearch,tycho2_stars
+if not keyword_set(nostars) then stars=tycho2_stars
+if not keyword_set(nostars) and not keyword_set(tychoonly) then if cam_name eq 'ISSNA' and not keyword_set(fewerstars) then stars=[tycho2_stars,ucac2_stars]
+if keyword_set(nostars) then stars = [[0l],[0],[0],[0]]
+if cam_name eq 'ISSNA' then unique_stars,9.5,stars,u_stars
+if cam_name eq 'ISSNA' then stars=u_stars
+if keyword_set(brightstar) then bright_star, stars, brightstar, nostars=nostars
+if keyword_set(maglim) then begin &$
+  foo = where( strcompress(string(stars[*,3]/100.0),/remove_all) lt maglim, $
+               count ) &$
+  if count eq 0 then print, 'All stars have magnitudes greater than '+$
+                            strtrim(maglim,2)+', so none were removed.' &$
+  if count gt 0 and count lt n_elements(stars[*,3]) then begin &$
+    stars = stars[foo,*] &$
+    print, 'Using stars with mangitudes below '+strtrim(maglim,2) &$
+  endif &$
+endif
+
+cspice_spkez,-82L,et,'J2000','NONE',0L,state,lighttime
+
+vobs=state[3:5]
+
+get_planet,et,planet
+if keyword_set(noplanets) then planet = [[0],[0],[0],[0]]
+get_planet_name,planet[*,0],plan_names
+
+@calculate_keywords
+;light_time = keywords.ringplane_aimpoint_distance[0]/299792.458d0
+;noltime = 1
+
+@restore_ring_rads1
+if keyword_set(norings) then ring_rads_legend = ''
+if keyword_set(norings) then ring_rads = 0
+if not keyword_set(ring_rads_legend) then ring_rads_legend = ''
+if not keyword_set(ring_rads) then ring_rads = 0
+;ring_rads_legend=ring_rads_legend[[9]]
+;ring_rads=ring_rads[[9]]
+;ring_rads_legend=vec_remove(ring_rads_legend,[0,1,7,8])
+;ring_rads=vec_remove(ring_rads,[0,1,7,8])
+ring_num = n_elements(ring_rads)
+if not keyword_set(silent) then print,ring_rads_legend
+
+;ring_rads[0]=112680
+@get_lon_lims1
+if not keyword_set(ring_npoints) then ring_npoints = 360
+get_ring,et,ring_rads,startlon,stoplon,polera,poledec,ring_npoints,ring,699L,light_time=light_time
+
+image_coords,stars,cmat,vobs,cam_params,nl,coords
+image_coords,planet,cmat,vobs_planet,cam_params,nl,planet_coords
+image_coords,ring,cmat,vobs_planet,cam_params,nl,ring_coords
+
+xstart=round(coords[*,1])
+ystart=round(coords[*,0])
+x=xstart
+y=ystart
+
+xpstart=round(planet_coords[*,1])
+ypstart=round(planet_coords[*,0])
+xp=xpstart
+yp=ypstart
+
+xrstart=round(ring_coords[*,1])
+yrstart=round(ring_coords[*,0])
+xr=xrstart
+yr=yrstart
+
+if keyword_set(streaks) then get_streaks, label, nacmat,stars, cam_params, x_streaks, y_streaks 
+@plot_streaks ; added MMH 10/31/08
+
+@plot_stars
+@plot_planets
+@plot_rings
+@restore_cray1
+@plot_cray
+cray_thresh = 0
+
+
+
+num_objects=n_elements(planet[*,0])
+
+located_satellites=dblarr(num_objects,9)
+
+located_satellites[*,0:2]=planet[*,0:2]
+located_satellites[*,3:4]=planet_coords[*,0:1]
+located_satellites[*,5:6]=located_satellites[*,5:6]*0.0-1.0
+located_satellites[*,7:8]=located_satellites[*,5:6]*0.0-1.0
+
+if not keyword_exists(radscan_long) then radscan_long = 1
+;if not keyword_exists(plot_vgr) then plot_vgr = 1
+if keyword_set(noplot) then plot_vgr = 0
+
+@reset_radscan
+val = 0
+radi = 0
+@restore_radscan1
+;if keyword_set(radi) and keyword_set(noplot) then begin & print,'Keyword NoPlot is set.  Stopping prematurely to avoid plotting radial scan.' & stop
+if keyword_set(plot_vgr) then !p.multi=[0,1,2]
+if keyword_set(plot_vgr) then radscan_double = 1
+@plot_radscan1
+@restore_vgr_pps1
+@plot_vgr_pps1
+
+@print_keywords

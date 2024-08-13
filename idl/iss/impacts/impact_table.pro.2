@@ -1,0 +1,313 @@
+if not keyword_exists(fwhm) then fwhm = 0;1
+if not keyword_exists(linesam) then linesam = 1
+if not keyword_exists(printim) then printim = 1
+dash = '-'
+
+if not keyword_set(dirs) then begin
+  dirs_2005 = '007/HIPHASE'
+  dirs_2009 = [ '116/EQXSHADOW005', '116/SATELLORB', '116/EQXSHADOW013' ]
+  if keyword_set(only2005) then begin
+    dirs = dirs_2005
+  endif else if keyword_set(only2009) then begin
+    dirs = dirs_2009
+  endif else begin
+    dirs = [ dirs_2005, dirs_2009 ]
+  endelse 
+  basedir = '/home/borogove/iss/images/'
+  ndirs = n_elements(dirs)
+endif
+
+alphabet = [ 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', $
+             'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', $
+             'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', $
+             'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z' ]
+cspice_furnsh, getenv("CAVIAR_KERNELS")
+savefile = '~/idl/iss/impacts/impact_table.sav'
+if keyword_set(only2005) then savefile = savefile + '.2005'
+if keyword_set(only2009) then savefile = savefile + '.2009'
+if keyword_set(findfile(savefile)) then restore, savefile else begin
+
+  jg = -1l  ; global index parameter
+  for k=0,ndirs-1 do begin
+    lcenbnd = 0
+    ;restore, basedir + dirs[k] + '/prop_reproj.sav'
+    restore, basedir + dirs[k] + '/prop_reproj_redge.sav'
+    if strmid(dirs[k],0,3) eq '116' then begin
+      restore, basedir + dirs[k] + '/fit_propellers_redge1_*.sav'
+    endif else begin
+      restore, basedir + dirs[k] + '/fit_propellers_redge1.sav'
+    endelse 
+    restore, basedir + dirs[k] + '/fit_propellers_redge_peak3.sav'
+    nn = n_elements(prop_reproj)
+    _use = prop_radx[0,*] ne 0
+    restore, basedir + dirs[k] + '/stretch.sav'
+    restore, basedir + dirs[k] + '/et.sav'
+    if keyword_set(findfile(basedir+dirs[k]+'/prop_reproj_res.sav')) then begin
+      restore, basedir + dirs[k] + '/prop_reproj_res.sav'
+      prop_reproj_res = 1
+      prop_reproj_res_fac = 0.2d0
+    endif else prop_reproj_res = 0
+    lastimage = ''
+    abc = -1
+_use[*] = 1
+    foo = where( _use, nuse )
+
+    if strmid(dirs[k],0,3) eq '116' then begin
+      peak_ioverf = [ fltarr(nn-1), peak_ioverf ]
+      peak_tau = [ fltarr(nn-1), peak_tau ]
+      ea = [ fltarr(nn-1), ea ]
+      ea_sigma = [ fltarr(nn-1), ea_sigma ]
+      const = [ fltarr(nn-1), const ]
+    endif else begin
+      lcenbnd_sigma = fltarr(1,nn)
+      fit1 = fltarr(2,nn)
+      sigma1 = fltarr(2,nn)
+      age = fltarr(nn)
+      sigma_age = fltarr(nn)
+    endelse 
+    for jj=0,nuse-1 do begin
+
+      j = foo[jj]
+      jg = jg + 1
+
+      image_name = images[ prop_reproj[j].images ]
+
+      radlon = [ prop_radx[j], lcenbnd[j] ]
+      if radlon[1] eq 0 then radlon[1] = 180  ; Keep get_ring from barfing
+      radlon_sigma = [ abs(prop_radx_sigma[j]), lcenbnd_sigma[j] ]
+      dl = 0.0d0
+
+      if image_name ne lastimage then begin
+        abc = -1
+        filestem = strmid( image_name, 0, strpos(image_name,'.IMG') )
+        jjj = (where( filestem eq $
+                      strmid( filenames, 0, strlen(filestem) ), count ))[0]
+        if count ne 1 then stop, 'Not a single match to filenames.'
+        restore, basedir + dirs[k] + '/' + filestem + '.offset'
+        @get_cam_params
+      endif
+      abc = abc + 1
+      get_ring, _et[jjj], radlon[0], 0, 0, polera, poledec, n_elements(foo), $
+                impacts, 699l, lons=radlon[1]
+      image_coords, impacts, cmat, [[0],[0],[0]], cam_params, nl, xy
+
+      if dirs[k] eq '007/HIPHASE' then _match = 'C'+strtrim(jj+1,2)
+      if dirs[k] eq '116/EQXSHADOW005' then _match = 'C '
+      if dirs[k] eq '116/SATELLORB' then _match = 'A1'
+      if dirs[k] eq '116/EQXSHADOW013' then _match = 'A2'
+
+      if not keyword_set(impact_name) then begin
+        impact_name = strmid(dirs[k],0,3)+'-'+$
+                      string(jjj,fo='(I03)')+'-'+alphabet[abc]
+        match = _match
+        jgj = j
+        _dirs = dirs[k]
+        _image_name = image_name
+        __et = _et[jjj]
+        _radlon = radlon
+        _radlon_sigma = radlon_sigma
+        _xy = reform(xy)
+        _edgebnd = edgebnd[*,j]
+        _ledgebnd = ledgebnd[*,j]
+        _fit1 = fit1[*,j]
+        _sigma1 = sigma1[*,j]
+        _age = age[j]
+        _sigma_age = sigma_age[j]
+        _subtractavg = subtractavg[j]
+        _peak_ioverf = peak_ioverf[j]
+        _peak_tau = peak_tau[j]
+        _ea = ea[j]
+        _ea_sigma = ea_sigma[j]
+        _const = const[j]
+      endif else begin
+        impact_name = [ impact_name, strmid(dirs[k],0,3)+'-'+$
+                        string(jjj,fo='(I03)')+'-'+alphabet[abc] ]
+        match = [ match, _match ]
+        jgj = [ jgj, j ]
+        _dirs = [ _dirs, dirs[k] ]
+        _image_name = [ _image_name, image_name ]
+        __et = [ __et, _et[jjj] ]
+        _radlon = [ [_radlon], [radlon] ]
+        _radlon_sigma = [ [_radlon_sigma], [radlon_sigma] ]
+        _xy = [ [_xy], [reform(xy)] ]
+        _edgebnd = [ [_edgebnd], [edgebnd[*,j]] ]
+        _ledgebnd = [ [_ledgebnd], [ledgebnd[*,j]] ]
+        _fit1 = [ [_fit1], [fit1[*,j]] ]
+        _sigma1 = [ [_sigma1], [sigma1[*,j]] ]
+        _age = [ _age, age[j] ]
+        _sigma_age = [ _sigma_age, sigma_age[j] ]
+        _subtractavg = [ _subtractavg, subtractavg[j] ]
+        _peak_ioverf = [ _peak_ioverf, peak_ioverf[j] ]
+        _peak_tau = [ _peak_tau, peak_tau[j] ]
+        _ea = [ _ea, ea[j] ]
+        _ea_sigma = [ _ea_sigma, ea_sigma[j] ]
+        _const = [ _const, const[j] ]
+      endelse
+
+      lastimage = image_name
+
+    endfor
+
+  endfor
+  nimpact = n_elements(jgj)
+
+  save, impact_name, jgj, nimpact, _dirs, _image_name, __et, _radlon, $
+        _radlon_sigma, _xy, match, _edgebnd, _ledgebnd, _fit1, _sigma1, $
+        _age, _sigma_age, _subtractavg, _peak_ioverf, _peak_tau, $
+        _ea, _ea_sigma, _const, filename=savefile
+
+endelse 
+
+olddir = ''
+lastimage = ''
+for jg1=0l,nimpact-1 do begin
+
+  jg = jg1
+  if jg1 eq 0 then begin
+    if keyword_set(tex) then begin
+    endif else begin
+      print, 'Name   Image      [line,sample]   Radius (km)    '+$
+             ' Longitude  Length   Orientation   Inferred Age (hr)   '+$
+             'Peak I/F    Peak tau     Equiv. Area'
+    endelse 
+  endif
+
+  if _dirs[jg] ne olddir and not keyword_set(nodash) then begin
+    if keyword_set(tex) then begin
+      if not keyword_set(hline) then print, '\hline'
+      hline = 1
+      ndash = 0
+    endif else begin
+      ndash = 159
+    endelse 
+    if keyword_set(ndash) then print, strjoin(replicate( dash, ndash ))
+  endif
+  olddir = _dirs[jg]
+
+  ppfo = '(F5.1)'
+  sgfo = '(F4.1)'
+  rafo = '(I7)'
+  rasgfo = '(I2)'
+  lnfo = '(F7.2)'
+  lnsgfo = '(F4.2)'
+  iffo = '(F7.5)'
+  if strmid(_dirs[jg],0,3) eq '116' then begin
+    taufo = '(F5.3)'
+    eafo = '(F7.2)'
+    easgfo = '(F6.2)'
+  endif else begin
+    taufo = '(F7.5)'
+    eafo = '(F7.3)'
+    easgfo = '(F6.3)'
+  endelse 
+  extratxt = '                '
+  extratxt1a = '                '
+  extratxt1 = '                                  '
+  if keyword_set(tex) then begin
+    space2 = ' & '
+    space3 = ' & '
+    ;comma = ' & '
+    comma = ','
+    obrack = '[ '
+    cbrack = ' ]'
+    pm = ' & '
+    pm1 = ' \pm '
+    pm1_aux = '$'
+    extratxt = ' & \multicolumn{2}{c}{} '
+    extratxt1a = ' & '
+    extratxt1 = ' & \multicolumn{2}{c}{} & \multicolumn{2}{c}{} '
+    finish = '\\'
+    it1 = ''
+    it2 = ''
+    deg = '^\circ'
+  endif else begin
+    space2 = '  '
+    space3 = '      '
+    comma = ','
+    obrack = '['
+    cbrack = ']'
+    pm = '+-'
+    pm1 = '+-'
+    pm1_aux = ''
+    finish = ''
+    it1 = ''
+    it2 = ''
+    deg = ''
+  endelse 
+  if keyword_set(forpaper) then begin
+    xyfo = '(I4)'
+  endif else begin
+    xyfo = '(F6.1)'
+  endelse 
+  if _image_name[jg] ne lastimage then begin
+    imname = strmid(_image_name[jg],0,11)
+  endif else imname = '     "     '
+  lastimage = _image_name[jg]
+  if keyword_set(match) then text = match[jg] else text = impact_name[jg]
+  text = text+space2+imname
+  text = text+space2+obrack+string(_xy[0,jg],fo=xyfo)+comma+$
+         string(_xy[1,jg],fo=xyfo)+cbrack
+  if _radlon_sigma[0,jg] gt 9.5 then begin
+    text = text+space2+string(round(_radlon[0,jg]/10)*10,fo=rafo)
+    if not keyword_set(forpaper) then text = text+pm+$
+           string(round(_radlon_sigma[0,jg]/10)*10,fo=rasgfo)
+  endif else begin
+    text = text+space2+string(_radlon[0,jg],fo=rafo)
+    if not keyword_set(forpaper) then text = text+pm+$
+           string(_radlon_sigma[0,jg]>1,fo=rasgfo)
+  endelse
+  text = text+space2+string(_radlon[1,jg],fo=lnfo)+pm1_aux+deg+pm1_aux
+  if not keyword_set(forpaper) then text = text+pm+$
+         string(_radlon_sigma[1,jg],fo=lnsgfo)
+  length = (_ledgebnd[1,jg]-_ledgebnd[0,jg])*!dpi/180*_radlon[0,jg]
+  if keyword_set(forpaper) and _dirs[jg] eq '007/HIPHASE' then begin
+    lonsm = 6
+    dlonx = 0.001846
+    text = text+space2+pm1_aux+string(length,fo='(I4)')+pm1+$
+           string(lonsm*dlonx*!dpi/180*_radlon[0,jg],fo='(I2)')+pm1_aux
+  endif else begin
+    text = text+space2+string(round(length/10)*10,fo='(I4)')
+  endelse
+  if keyword_set(_fit1[1,jg]) then begin
+    text = text+space2+pm1_aux+$
+           string(abs(_fit1[1,jg])*180/!dpi/_radlon[0,jg]*180/!dpi,fo=lnfo)+$
+           deg+pm1+$
+           string(_sigma1[1,jg]*180/!dpi/_radlon[0,jg]*180/!dpi,fo=lnsgfo)+$
+           deg+pm1_aux
+    if not keyword_set(forpaper) then begin
+      text = text+space3+pm1_aux+string(_age[jg],fo=ppfo)+pm1+$
+             string(_sigma_age[jg],fo=sgfo)+pm1_aux
+    endif
+  endif else begin
+    if not keyword_set(forpaper) then text = text+extratxt1a+extratxt1a
+  endelse 
+  if keyword_set(_peak_ioverf[jg]) then begin
+    text = text+space3+string(_peak_ioverf[jg],fo=iffo)+$
+           space3+string(_peak_tau[jg],fo=taufo)
+    if _ea_sigma[jg] gt 100 then begin
+      text = text+space2+pm1_aux+string(round(_ea[jg]/10),fo='(I6)')+'0'+pm1+$
+             string(round(_ea_sigma[jg]/10),fo='(I5)')+'0'+pm1_aux
+    endif else if _ea_sigma[jg] gt 10 then begin
+      text = text+space2+pm1_aux+string(round(_ea[jg]),fo='(I7)')+pm1+$
+             string(round(_ea_sigma[jg]),fo='(I6)')+pm1_aux
+    endif else begin
+      text = text+space2+pm1_aux+$
+             string(_ea[jg],fo=eafo)+pm1+string(_ea_sigma[jg],fo=eafo)+pm1_aux
+    endelse 
+  endif else begin
+    text = text+space3+' '+space3+' '+space3+' '
+  endelse 
+  if keyword_set(_peak_ioverf[jg]) or not keyword_set(forpaper) then begin
+    print, text + finish
+  endif
+  if not keyword_set(forpaper) then hline = 0
+  next:
+
+endfor
+
+if keyword_set(tex) then begin
+endif else begin
+  print, strjoin(replicate( dash, ndash ))
+endelse
+
+end

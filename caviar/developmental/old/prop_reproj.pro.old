@@ -1,0 +1,471 @@
+; For identified propeller-candidate locations in any image, make a 
+; reprojected image for all corresponding locations in all images. 
+if keyword_set(example) or keyword_set(figure) then begin
+  savefile = '~/idl/iss/propellers/prop_table.sav'
+  if not keyword_set(_radlon) then restore, savefile
+  dirs = _dirs[ uniq(_dirs) ]
+  ndirs = n_elements(dirs)
+  for k=0,ndirs-1 do begin
+    restore, '/home/borogove/iss/images/'+dirs[k]+'/prop_reproj.sav'
+    if k eq 0 then begin
+      _prop_reproj = prop_reproj[jgj[where( _dirs eq dirs[k] )]]
+      _images = images[jgj[where( _dirs eq dirs[k] )]]
+    endif else begin
+      _prop_reproj = [ _prop_reproj, $
+                       prop_reproj[jgj[where( _dirs eq dirs[k] )]] ]
+      _images = [ _images, images[jgj[where( _dirs eq dirs[k] )]] ]
+    endelse 
+  endfor 
+  prop_reproj = _prop_reproj
+  images = _images
+  if keyword_set(example) then begin
+    foo = [ (where( prop_name eq 'SOI-41-A' ))[0], $
+            (where( prop_name eq '013-08-B' ))[0], $
+            (where( prop_name eq '013-12-H' ))[0], $
+            (where( prop_name eq '013-20-A' ))[0], $
+            (where( prop_name eq '028-34-J' ))[0], $
+            (where( prop_name eq '032-45-A' ))[0], $
+            (where( prop_name eq '046-11-C' ))[0], $
+            (where( prop_name eq '046-12-A' ))[0] ]
+    nprop = n_elements(foo)
+    figure = 1
+  endif else begin
+    foo = where( images eq images, nprop )
+  endelse
+  duplicates = prop_reproj.duplicates
+  text = ''
+  j = 0l
+  k = 0l
+  if not keyword_exists(onepage) then onepage = 1
+  cantmatch = 1
+  goto, nextpage1
+endif
+if not keyword_set(findfile('propellers.sav')) then begin
+  stop, '.run prop_anal first'
+endif else restore, 'propellers.sav'
+if not keyword_set(findfile('prop_reproj.sav')) then begin
+  images = image[uniq( image, sort(image) )]
+  restore, 'et.sav'
+  restore, 'stretch.sav'
+  cspice_furnsh, getenv("CAVIAR_KERNELS")
+  x = 3
+  ;; SOI/SOISPTURN
+  ;dr = 1.8d0
+  ;dl = 0.002d0
+  propsuff = '.cray1'
+  ;; 013/ALPSCOOCC and 046/RDHRESSCN
+  ;dr = 10.0d0
+  ;dl = 0.005d0
+  ; 028/RDHRESSCN and 013/AZSCNHIPH001
+  dr = 16.0d0
+  dl = 0.015d0
+  ;; 031/RDHRCOMP and 032/RDHRCOMP
+  ;dr = 12.5d0
+  ;dl = 0.009d0
+  resfac = 4;1;4
+  for j=0l,nf-1 do begin
+    image_name = images[j]
+    print, strtrim(j,2)+' / '+strtrim(nf,2)+'   '+image_name
+    rawim = read_vicar( image_name )
+    fix_badlines, image_name, rawim
+    filestem = strmid( image_name, 0, strpos(image_name,'.IMG') )
+    ; These files must exist, or prop_anal would not have run
+    jjj = (where( filestem eq $
+                  strmid( filenames, 0, strlen(filestem) ), count ))[0]
+    if count ne 1 then stop, 'Not a single match to filenames.'
+    if not keyword_set(propsuff) then propsuff = '.cray'
+    restore, filestem+propsuff
+    restore, filestem+'.offset'
+    @get_cam_params
+    prop_lon_corr = prop_lon - sqrt(caviar_omega2(prop_rad)) * 180 / !dpi * $
+                               ( image_num - image_nums[j] )
+    foo = where( image eq images[j] )
+    get_ring, _et[jjj], prop_rad, 0, 0, polera, poledec, n_elements(foo), $
+              props, 699l, lons=prop_lon_corr
+    image_coords, props, cmat, [[0],[0],[0]], cam_params, nl, coords
+    if max(coords[foo]-cray) gt 1 then stop, 'Mismatch between coords and cray'
+    foo = where( coords[*,0] ge -x and coords[*,0] lt 1023+x and $
+                 coords[*,1] ge -x and coords[*,1] lt 1023+x, count )
+    duplicates = lonarr(count)
+    k = 0l
+    while k le count-1 do begin
+      ; Check for duplicates
+      foo1 = where( prop_rad[foo] gt prop_rad[foo[k]] - dr and $
+                    prop_rad[foo] lt prop_rad[foo[k]] + dr and $
+                    prop_lon_corr[foo] gt prop_lon_corr[foo[k]] - dl and $
+                    prop_lon_corr[foo] lt prop_lon_corr[foo[k]] + dl and $
+                    foo ne foo[k] and image[foo] ne image[foo[k]], count1 )
+      if count1 le 1 then foo1 = foo1[0] else begin
+        print, k, foo1
+        print, foo[[k,foo1]]
+        print, prop_rad[foo[[k,foo1]]]
+        print, prop_lon_corr[foo[[k,foo1]]]
+        stop
+      endelse
+      if count1 gt 0 then begin
+        tostay = ([k,foo1])[(where( image[foo[[k,foo1]]] eq image_name, $
+                                    count2 ))[0]]
+        if count2 ne 1 then stop, 'error1'
+        togo = ([k,foo1])[(where( image[foo[[k,foo1]]] ne image_name, $
+                                  count2 ))[0]]
+        if count2 ne 1 then stop, 'error2'
+        duplicates[tostay] = foo[togo]
+        duplicates = vec_remove( duplicates, where( foo eq foo[togo] ) )
+        foo = vec_remove( foo, where( foo eq foo[togo] ) )
+        count = count - 1
+        if k eq togo then k = k - 1
+      endif
+      k = k + 1
+    endwhile
+    for k=0,count-1 do begin
+      mnrad = prop_rad[foo[k]] - dr
+      mxrad = prop_rad[foo[k]] + dr
+      mnlon = prop_lon_corr[foo[k]] - dl
+      mxlon = prop_lon_corr[foo[k]] + dl
+      rx = 0 & ry = 0
+      caviar_reproject, byte(rawim*0), rawim, mnrad, mxrad, mnlon, mxlon, $
+                        _et[jjj], polera, poledec, cam_params, nl, cmat, $
+                        [[0],[0],[0]], ry, rx, 0, resfac, /silent, /noplot, $
+                        raw_reprojected_image=rrpi
+      if not keyword_set(prop_reproj) then begin
+        prop_reproj = { images:j, prop:foo[k], $
+                        primary:(image[foo[k]] eq image_name), $
+                        duplicates:duplicates[k], $
+                        xy:[rx,ry,round([coords[foo[k],0],coords[foo[k],1]])], $
+                        radlon:[mnrad,mxrad,mnlon,mxlon,prop_rad[foo[k]],$
+                                prop_lon_corr[foo[k]]], $
+                        rrpi:ptr_new(rrpi) }
+      endif else begin
+        prop_reproj = [ prop_reproj, { images:j, prop:foo[k], $
+                        primary:(image[foo[k]] eq image_name), $
+                        duplicates:duplicates[k], $
+                        xy:[rx,ry,round([coords[foo[k],0],coords[foo[k],1]])], $
+                        radlon:[mnrad,mxrad,mnlon,mxlon,prop_rad[foo[k]],$
+                                prop_lon_corr[foo[k]]], $
+                        rrpi:ptr_new(rrpi) } ]
+      endelse
+    endfor
+  endfor
+  save, images, prop_reproj, filename='prop_reproj.sav'
+endif else restore, 'prop_reproj.sav'
+duplicates = 0
+
+if keyword_set(nomatch) or keyword_set(cantmatch) then begin
+  foo = where( prop_reproj.primary eq 1, nprop )
+  foo1 = where( prop_reproj.primary eq 0, count )
+  mask1 = lonarr( n_elements(prop_rad) ) - 1
+  if count gt 0 then mask1[ prop_reproj[foo1].prop ] = foo1
+  mask2 = lonarr( n_elements(prop_reproj) ) - 1
+  mask2[foo] = mask1
+  if keyword_set(nomatch) then begin
+    foo = where( prop_reproj.primary eq 1 and prop_reproj.duplicates eq 0 and $
+                 mask2 ne -1, nprop )
+    duplicates = mask2[foo]
+  endif else begin
+    foo = where( prop_reproj.primary eq 1 and prop_reproj.duplicates eq 0 and $
+                 mask2 eq -1, nprop )
+    duplicates = 1
+  endelse
+endif
+if keyword_set(match) then begin
+  foo = where( prop_reproj.primary eq 1 and $
+               prop_reproj.duplicates ne 0, nprop )
+  duplicates = lonarr(nprop) - 1
+  k = 0l
+  while k le nprop-1 do begin
+    foo1 = (where( prop_reproj[foo].duplicates eq prop_reproj[foo[k]].prop, $
+                   count1 ))[0]
+    if count1 gt 1 then stop, 'error3.'
+    if count1 gt 0 then begin
+      duplicates[k] = foo[foo1]
+      duplicates = vec_remove( duplicates, where( foo eq foo[foo1] ) )
+      foo = vec_remove( foo, where( foo eq foo[foo1] ) )
+      nprop = nprop - 1
+    endif
+    k = k + 1
+  endwhile
+endif
+if not keyword_set(duplicates) then stop, 'Please set either match=1 or nomatch=1 or cantmatch=1'
+if keyword_set(cantmatch) then text='One marked feature, no corresponding location (can''t match)'
+if keyword_set(nomatch) then text='One marked feature, corresponding location not marked (no match)'
+if keyword_set(match) then text='Two marked features (match)'
+j = 0l
+k = 0l
+if not keyword_exists(onepage) then onepage = 1
+nextpage1:
+if keyword_set(dolzr) then begin
+  spawn, 'pwd', pwd
+  lslashes = rstrpos( pwd, '/' )
+  lslashes = [ lslashes, rstrpos( pwd, '/', lslashes ) ]
+  if keyword_set(cantmatch) then suff='_cantmatch'
+  if keyword_set(nomatch) then suff='_nomatch'
+  if keyword_set(match) then suff='_match'
+  if keyword_set(figure) then suff=''
+  if keyword_set(onepage) then suff=suff+'_'+strtrim(k,2)
+  if keyword_set(example) then begin
+    lzr, 'prop_reproj_example'
+    plot_color
+    loadct, 0
+  endif else if keyword_set(figure) then begin
+    if keyword_set(lastland) and k eq 4 then begin
+      lzr, 'prop_reproj_figure_land' + suff
+    endif else if keyword_set(firstland) and k eq 0 then begin
+      lzr, 'prop_reproj_figure_land' + suff
+    endif else begin
+      lzr, 'prop_reproj_figure' + suff, /port
+    endelse 
+  endif else begin
+    lzr, 'prop_reproj_' + $
+         strmid( pwd, lslashes[1]+1, lslashes[0]-lslashes[1]-1 ) + $
+         strlowcase(strmid( pwd, lslashes[0]+1, 1000 )) + suff
+  endelse 
+  @plot_prepare
+endif else begin
+  window, ys=!d.x_size * 9.5 / 7
+endelse
+nextpage2:
+; Four columns, with 5% of the total width as a margin between them, in cm
+if keyword_set(example) then begin
+  xmargin = 0.02
+  ncol = 4
+endif else if keyword_set(figure) then begin
+  if keyword_set(lastland) and k eq 4 then begin
+    xmargin = 0.02
+    ncol = 8
+  endif else if keyword_set(firstland) and k eq 0 then begin
+    xmargin = 0.03
+    ncol = 7
+  endif else begin
+    xmargin = 0.03
+    ncol = 5
+  endelse
+endif else begin
+  xmargin = 0.05
+  ncol = 4
+endelse
+x0 = !d.x_size * (1+xmargin)/ncol * indgen(ncol)
+xcen = x0 + !d.x_size * ( (1+xmargin)/ncol - xmargin )/2
+xsmax = !d.x_size * ( (1+xmargin)/ncol - xmargin )
+; Five rows, with 3% of the total width as a margin between them, in cm
+if keyword_set(example) then begin
+  ymargin = 0.03
+  nrow = 4
+endif else if keyword_set(figure) then begin
+  if keyword_set(lastland) and k eq 4 then begin
+    ymargin = 0.03
+    nrow = 7
+  endif else if keyword_set(firstland) and k eq 0 then begin
+    ymargin = 0.03
+    nrow = 7
+  endif else begin
+    ymargin = 0.02
+    nrow = 10
+  endelse
+endif else begin
+  ymargin = 0.03
+  nrow = 5
+endelse
+;y0 = !d.y_size * (1+ymargin)/nrow * [4,3,2,1,0];reverse(indgen(nrow))
+y0 = !d.y_size * (1+ymargin)/nrow * reverse(indgen(nrow))
+ycen = y0 + !d.y_size * ( (1+ymargin)/nrow - ymargin )/2
+if keyword_set(example) then ycen = ycen + [300,1200,0,0]
+ysmax = !d.y_size * ( (1+ymargin)/nrow - ymargin )
+rownum = -1
+help,xsmax,ysmax,ncol,nrow
+nextprop:
+m = 0l
+rownum = rownum + 1
+for m=0,ncol-1 do begin
+  if keyword_set(cantmatch) then begin
+    if m ne 0 then j = j + 1
+    if j eq nprop then goto, finish1
+    jj = foo[j]
+  endif else begin
+    if m ne 0 and (m mod 2) eq 0 then j = j + 1
+    if j eq nprop then goto, finish1
+    if (m mod 2) eq 0 then jj = foo[j] else jj = duplicates[j]
+  endelse
+  if jj ge 0 then begin
+    aspectratio = float((prop_reproj[jj].xy)[0]) / (prop_reproj[jj].xy)[1]
+    if aspectratio gt xsmax/ysmax then begin
+      xs = xsmax
+      ys = xsmax/aspectratio
+      x = x0[m]
+      y = ycen[rownum] - ys/2
+    endif else begin
+      xs = ysmax*aspectratio
+      ys = ysmax
+      x = xcen[m] - xs/2
+      y = y0[rownum]
+    endelse
+    if n_tags(prop_reproj) eq 8 then begin
+      rrpi = *(prop_reproj[jj].rrpi)
+      rrpi_hist = *(prop_reproj[jj].rrpi4)
+    endif else begin
+      rrpi = *(prop_reproj[jj].rrpi)
+      rrpi_hist = *(prop_reproj[jj].rrpi)
+    endelse
+    f = 10
+    foo1 = where( rrpi eq 0, count )
+    if count gt 0 then begin
+      (rrpi)[foo1] = median(rrpi)
+    endif
+    ;stmin = median(rrpi) - stddev(rrpi)*f
+    ;stmax = median(rrpi) + stddev(rrpi)*f
+    ;hist = histogram(rrpi,nbins=300,locations=locations)
+    ;gfit = gaussfit( locations, hist, aa )
+    ;stmin = aa[1] - aa[2]*f
+    ;stmax = aa[1] + aa[2]*f
+    if not keyword_exists(hthresh) then begin
+      if keyword_set(figure) then hthresh = 0 else hthresh = 5
+    endif 
+    run_histogram, rrpi_hist, stmin, stmax, threshold=hthresh, /nocrop, $
+                   /silent, locations=locations, hist=hist
+    if keyword_set(figure) then begin
+      ; Adjust stretch by hand
+      case prop_name[foo[j]] of
+        'SOI-41-A':  stmin=0
+        'SOI-42-A':  stmin=0
+        'SOI-42-B':  begin
+          stmin=0
+          stmax=.02
+        end 
+        'SOI-42-C':  stmin=0
+        '013-08-B':  stmax=.012
+        '013-08-F':  stmax=.0103
+        '013-09-B':  stmax=.0105 
+        '013-10-A':  stmin=.008
+        '013-10-B':  stmin=.0073
+        '013-10-C':  stmin=.0073
+        '013-11-B':  stmin=.008
+        '013-11-C':  stmin=.008
+        '013-12-G':  stmin=.0063
+        '013-12-I':  stmax=.0088
+        '013-12-J':  stmax=.0088
+        '013-14-L':  begin
+          stmin=.0055
+          stmax=.0085
+        end 
+        '013-14-O':  stmax=.0087
+        '013-14-Q':  stmax=.0087
+        '013-15-E':  begin
+          stmin=.006
+          stmax=.008
+        end 
+        '013-16-A':  begin
+          stmin=.006
+          stmax=.008
+        end 
+        '031-47-B':  stmax=.0735
+        '032-44-A':  stmax=.078
+        '032-45-A':  stmax=.074
+        '046-10-O':  stmax=.088
+        '046-10-P':  stmax=.0865
+        '046-11-D':  stmin=.085
+        else: begin
+        end 
+      endcase 
+    endif 
+    unget_color
+    tvscl, rrpi>stmin<stmax, x, y, xs=xs, ys=ys
+    if keyword_set(example) then if keyword_set(doplot) then begin
+      sz = size(rrpi)
+      ;plots, /device, x+[0.,1,1,0,0]*xs, y+[0.,0,1,1,0]*ys, color=ctred()
+      if __pp[7,foo[j]] eq 0 then begin
+        ppp = __pp[*,foo[j]]
+        if keyword_set(fwhm) then ppp[2:3] = ppp[2:3] * sqrt(2*alog(2))
+        xxx = findgen(1000)/999*2*ppp[2]
+        plots, x+( xxx + ppp[4]-ppp[2] + .5 )/sz[1]*xs, $
+               y+( ppp[5] + ppp[3]* sqrt( 1 - (( xxx - ppp[2] )/$
+                                               ppp[2])^2 ) + .5 )/sz[2]*ys, $
+               /device, color=ctred()
+        plots, x+( xxx + ppp[4]-ppp[2] + .5 )/sz[1]*xs, $
+               y+( ppp[5] - ppp[3]* sqrt( 1 - (( xxx - ppp[2] )/$
+                                               ppp[2])^2 ) + .5 )/sz[2]*ys, $
+               /device, color=ctred()
+      endif else begin
+        for q=-1,1,2 do begin
+          ppp = __pp[*,foo[j]]
+          if keyword_set(system1) then begin
+            p1 = [ ppp[0:3], ppp[4]+q*ppp[6]+q*ppp[2], ppp[5]-q*ppp[7], 0, 0 ]
+          endif else begin
+            p1 = [ ppp[0:3], ppp[4]+q*ppp[6], ppp[5]-q*ppp[7], 0, 0 ]
+          endelse 
+          if keyword_set(fwhm) then p1[2:3] = p1[2:3] * sqrt(2*alog(2))
+          xxx = findgen(1000)/999*2*p1[2]
+          plots, x+( xxx + p1[4]-p1[2] + .5 )/sz[1]*xs, $
+                 y+( p1[5] + p1[3]*sqrt( 1 - (( xxx - p1[2] )/$
+                                              p1[2])^2 ) + .5 )/sz[2]*ys, $
+                 /device, color=ctred()
+          plots, x+( xxx + p1[4]-p1[2] + .5 )/sz[1]*xs, $
+                 y+( p1[5] - p1[3]* sqrt( 1 - (( xxx - p1[2] )/$
+                                               p1[2])^2 ) + .5 )/sz[2]*ys, $
+                 /device, color=ctred()
+        endfor
+      endelse
+    endif
+    if keyword_set(checkstretch) then begin
+      window, 1, xs=320, ys=512, ypos=300
+      !p.multi = [0,1,2]
+      plot, locations, hist
+      oplot, [stmin,stmin,stmax,stmax], !y.crange[[0,1,1,0]], l=1
+      plot, locations, hist, yr=[0,5]
+      oplot, [stmin,stmin,stmax,stmax], !y.crange[[0,1,1,0]], l=1
+      window, xs=(size(rrpi))[1], ys=(size(rrpi))[2]
+      !p.multi = 0
+      tvscl, rrpi>stmin<stmax
+      stop, stmin, stmax, '   '+prop_name[j]
+    endif
+    if keyword_set(example) then begin
+      pntext = prop_name[jj]
+      if not keyword_set(doplot) then begin
+        xyouts, /device, align=.5, xcen[m], charsize=1.5, $
+                !d.y_size/nrow*(nrow-rownum) - !d.y_ch_size*0, pntext
+      endif
+    endif else if keyword_set(figure) then begin
+      pntext = prop_name[jj]
+      if keyword_set(match[jj]) then pntext = pntext + ' (' + $
+                                              strmid(match[jj],4,100) + ')'
+      xyouts, /device, align=.5, xcen[m], y+ys, pntext
+    endif else begin
+      xyouts, /device, align=.5, xcen[m], y+ys+!d.y_ch_size*1.5, $
+              strmid(images[prop_reproj[jj].images],0,11)+$
+              ', x='+strtrim(prop_reproj[jj].xy[2],2)+$
+              ', y='+strtrim(prop_reproj[jj].xy[3],2)+$
+              '!Crad='+string(prop_reproj[jj].radlon[4],fo='(F9.2)')+$
+              ' km, lon='+string(prop_reproj[jj].radlon[5],fo='(F7.3)')+'!Uo!N'
+    endelse 
+  endif
+endfor
+j = j + 1
+if keyword_set(example) then begin
+  if keyword_set(doplot) then begin
+    doplot = 0
+  endif else begin
+    j = j - ncol
+    doplot = 1
+    goto, nextprop
+  endelse
+endif
+if j eq nprop then begin
+  finish1:
+  if not keyword_set(figure) then begin
+    xyouts, /device, 0, -!d.y_ch_size, chars=1.5, text+' -- '+strtrim(k+1,2)
+  endif
+  if keyword_set(dolzr) then clzr
+  goto, finish
+endif else if j/ncol mod nrow eq 0 then begin
+  if not keyword_set(figure) then begin
+    xyouts, /device, 0, -!d.y_ch_size, chars=1.5, text+' -- '+strtrim(k+1,2)
+  endif 
+  k = k + 1
+  if keyword_set(dolzr) then begin
+    if keyword_set(onepage) then clzr else goto, nextpage2
+  endif else stop
+  goto, nextpage1
+endif
+goto, nextprop
+
+finish:
+
+end

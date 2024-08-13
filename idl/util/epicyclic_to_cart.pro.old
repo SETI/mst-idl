@@ -1,0 +1,86 @@
+function h_root, r0
+  common h1, h
+  return, h - r0^2*sqrt(caviar_omega2(r0))
+end
+
+function ex_root, x
+  common h2, v, e, f
+  return, [ e*cos(f) - v - (1+v)*(-x[0]^2+x[0]*cos(x[1])+x[0]^2*cos(2*x[1])), $
+            e*sin(f) - (1+v)*(x[0]*sin(x[1])+x[0]^2*sin(2*x[1])) ]
+end
+
+function epicyclic_to_cart, epicyclic, vel=vel, mu=gm, musat=musat, debug=debug, verbose=verbose, convert=convert
+
+if n_params() eq 0 then begin
+  print, 'Syntax:  Result = EPICYCLIC_TO_CART( epicyclic, vel=vel )'
+  print, 'Converts epicyclic elements, introduced by Borderies and Longaretti (1987),'
+  print, 'back into Cartesian coordinates.'
+endif
+
+stop, 'This version of EPICYCLIC_TO_CART is deprecated in favor of the new version based on Renner and Sicardy (2006)'
+
+; Get Saturn mass and radius and J2
+if keyword_set(musat) then saturn_constants, gm=gm, prad=prad, j2=j2
+if not keyword_set(gm) then stop, 'Must specify central mass mu'
+if not keyword_set(prad) then stop, 'Must specify central body radius prad'
+if not keyword_set(j2) then stop, 'Must specify gravity harmonic J2'
+
+if keyword_set(convert) then convm = 'Converting...' else convm = 'Convert?'
+; Check that semimajor axis is in km
+if mean(epicyclic[*,0]) lt prad then begin
+  print, 'epicyclic appears to be in Rsat instead of km.  '+convm
+  if not keyword_set(convert) then stop
+  epicyclic[*,0] = epicyclic[*,0] * prad
+endif
+
+; Check that angles are in radians
+if max(epicyclic[*,2:5])-min(epicyclic[*,2:5]) gt 6.3 then begin
+  print, 'epicyclic appears to be in degrees instead of radians.  '+convm
+  if not keyword_set(convert) then stop
+  epicyclic[*,2:5] = epicyclic[*,2:5] * !dpi / 180
+endif
+
+; Unpack epicyclic elements from the array epicyclic
+r0 = epicyclic[*,0]
+epsilon = epicyclic[*,1]
+i = epicyclic[*,2]
+long_node = epicyclic[*,3]
+theta00 = total( epicyclic[*,3:4], 2 )
+xi = epicyclic[*,5]
+nr = n_elements(r0)
+
+; Calculate frequencies
+omega = sqrt(caviar_omega2(r0))
+kappa = sqrt(caviar_kappa2(r0))
+
+; Calculate positions and velocities in the orbit plane, from BL87 Eqs 34 to 37
+r = r0 * ( 1 + 1.5*epsilon^2 - epsilon*cos(xi) - 0.5*epsilon^2*cos(2*xi) )
+theta = theta00 + xi - 1.5*xi*epsilon^2 + 2*epsilon*sin(xi) + $
+        1.25*epsilon^2*sin(2*xi)
+rdot = kappa * r0 * ( epsilon*sin(xi) + epsilon^2*sin(2*xi) )
+thetadot = omega * ( 1 - 1.5*epsilon^2 + 2*epsilon*cos(xi) + $
+                     2.5*epsilon^2*cos(2*xi) )
+posprime = [ [r*cos(theta)], [r*sin(theta)], [replicate(0.0d0,nr)] ]
+velprime = [ [rdot*cos(theta)-r*sin(theta)*thetadot], $
+             [rdot*sin(theta)+r*cos(theta)*thetadot], $
+             [replicate(0.0d0,nr)] ]
+;posprime = polar_to_cart([ [replicate(0.0d0,nr)], [theta], [r] ])
+;velprime = polar_to_cart([ [replicate(0.0d0,nr)], [r*thetadot], [rdot] ])
+
+foo = where( i ne 0, count )
+if count ne 0 then begin
+  stop, 'WARNING:  non-zero i has not been fully tested.'
+  ; Rotate position and velocity about the line of nodes, by angle inclination
+  n = [ [cos(long_node)], [sin(long_node)], [replicate(0.0d0,nr)] ]
+  pos = v_rotate( posprime, n, sin(i), cos(i) )
+  vel = v_rotate( velprime, n, sin(i), cos(i) )
+endif else begin
+  pos = posprime
+  vel = velprime
+endelse
+
+if keyword_set(debug) then stop
+
+return, pos
+
+end

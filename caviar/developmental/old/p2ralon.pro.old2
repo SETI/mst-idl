@@ -1,0 +1,84 @@
+
+	pro p2ralon,cmat,et,polera,poledec,sc,RA,dec,radius,lon,light_time=light_time
+
+	capN=(polera+90.0d0)*2.0d0*!dpi/360.0
+	capJ=(90.0d0-poledec)*2.0d0*!dpi/360.0
+
+	rot=dblarr(3,3)
+
+	rot[0,0]=cos(capN)
+	rot[1,0]=-sin(capN)*cos(capJ)
+	rot[2,0]=sin(capN)*sin(capJ)
+	rot[0,1]=sin(capN)
+	rot[1,1]=cos(capN)*cos(capJ)
+	rot[2,1]=-cos(capN)*sin(capJ)
+	rot[0,2]=0.0
+	rot[1,2]=sin(capJ)
+	rot[2,2]=cos(capJ)
+
+	rho=dblarr(3)
+	xyz=dblarr(3)
+	xyz_J2000=dblarr(3)
+	rho_J2000=dblarr(3)
+	xyz_rp=dblarr(3)
+
+	r=1.0d0*cos(2.0d0*!dpi*dec/360.0d0)
+	rho_J2000[0]=r*cos(2.0d0*!dpi*RA/360.0d0)
+	rho_J2000[1]=r*sin(2.0d0*!dpi*RA/360.0d0)
+	rho_J2000[2]=(sin(2.0d0*!dpi*dec/360.0d0))/1.0d0
+
+	trot=transpose(rot)
+
+	d_rho=trot##rho_J2000
+
+	rho[0:2]=d_rho[0,0:2]	
+
+	light_time=0.0d0
+
+;	for i=0,19 do begin
+
+        ; Note that setting the aberration correction argument (abcorr)
+        ; to 'LT' corrects for light travel time on the fly.  'CN' uses
+        ; a "converged Newtonian" which we probably don't need.  Adding
+        ; '+S' causes it to do stellar aberration as well.  See spk.req
+	cspice_spkez,699L,et-light_time,'J2000','NONE',sc,state,ltime
+;	cspice_spkez,699L,et-light_time,'J2000','CN+S',sc,state,ltime
+;	cspice_spkez,sc,et-light_time,'J2000','NONE',0L,state1,ltime
+;	cspice_spkez,sc,699L-light_time,'J2000','NONE',0L,state2,ltime
+
+;	state=state2-state1
+
+	xyz_J2000=-state[0:2]
+
+	d_xyz=trot##xyz_J2000
+	xyz[0:2]=d_xyz[0,0:2]
+
+	if xyz[2] lt 0.0 and rho[2] le 0.0 then begin
+        	radius=0.0d0
+		lon=0.0d0
+		return
+	endif
+
+	if xyz[2] gt 0.0 and rho[2] ge 0.0 then begin
+		radius=0.0d0
+		lon=0.0d0
+		return
+	endif
+
+	length=abs(xyz[2]/rho[2])
+
+	light_time=(length*norm(rho))/299792.458d0
+
+;	endfor
+
+	xyz_rp=xyz+(length*rho)
+
+	radius=norm(xyz_rp)
+
+	lon=(360.0d0*atan(xyz_rp[1],xyz_rp[0]))/(2.0d0*!dpi)
+
+	if lon lt 0.0 then lon=lon+360.0d0
+
+	return
+	end
+

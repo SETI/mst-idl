@@ -1,0 +1,10 @@
+.run get_image_mid_time
+
+foo = where( imt_filenames eq 'W1467351601', count )
+if count ne 1 then stop
+foo = foo[0]
+pan_lon0 = 21.4   ; longitude (in degrees) for W1467351601
+pan_mean_motion = .007246  ; degrees per day
+pan_lon = pan_lon0 - ( imt[foo] - imt )*86400*pan_mean_motion
+save, imt_filenames, pan_lon, filename='~/idl/iss/pan_longitude.sav'
+

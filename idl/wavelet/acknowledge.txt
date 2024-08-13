@@ -1,0 +1,14 @@
+Notice: Please acknowledge the use of this software in any publications: ``Wavelet software was provided by C. Torrence and G. Compo, and is available at URL: http://paos.colorado.edu/research/wavelets/''.  Please send a copy of such publications to either C. Torrence or G. Compo: 
+
+ Dr. Christopher Torrence
+ Research Systems, Inc.
+ 4990 Pearl East Circle
+ Boulder, CO 80301, USA
+ E-mail: chris@researchsystems.com
+
+ Dr. Gilbert P. Compo
+ NOAA/CIRES Climate Diagnostics Center
+ Campus Box 216
+ University of Colorado
+ Boulder CO 80309-0216, USA.
+ E-mail: gpc@cdc.noaa.gov

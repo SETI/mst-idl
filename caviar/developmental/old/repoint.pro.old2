@@ -1,0 +1,90 @@
+edgefit = findpeak( rpi, rrpi, mnrad, mxrad, mnlon, mxlon, yy=yy )
+ll = edgefit[0,*]
+rr = edgefit[2,*]
+nll = n_elements(ll)
+
+sm = 200
+ll = ll[sm:nll-sm-1]
+rr = smooth(smooth(rr,sm),sm)
+rr = rr[sm:nll-sm-1]
+
+;resam = 30
+;ind = lindgen(nll/resam)*resam
+;ll = ll[ind]
+;rr = rr[ind]
+
+window, 9
+if max(rr)-min(rr) gt 1e4 then tkmbase = 100000 else if max(rr)-min(rr) gt 1.3e3 then tkmbase=10000 else tkmbase = 1000
+thoukm = min(rr) - (min(rr) mod tkmbase)
+ytit = 'Radius - '+strtrim(long(thoukm),2)+' km'
+plot, ll, rr-thoukm, /xs, /ys, xtit='Lontigude (deg)', ytit=ytit
+
+reply = ''
+while reply eq '' do begin
+  print, 'Proceed?  (y/n)'
+  read, reply
+  if reply eq 'n' then stop else if reply ne 'y' then reply=''
+endwhile
+!p.multi = [0,2,2]
+
+;_ff = fltarr(251,3)
+;for k=0,251 do begin
+;rres = 88500.+k
+rres = ring_rads[9];88670.5;133907.;133813.7
+get_ring,et,rres,startlon,stoplon,polera,poledec,3600,ring1,699L,light_time=light_time
+get_ring,et,rr,0,0,polera,poledec,nll,ring_fit,699L,lons=ll,light_time=light_time
+image_coords, ring1, cmat, vobs_planet, cam_params, nl, coords, x=x1, y=y1
+x1 = coords[*,1]
+y1 = coords[*,0]
+image_coords, ring_fit, cmat, vobs_planet, cam_params, nl, coords, x=x_fit, y=y_fit
+x_fit = coords[*,1]
+y_fit = coords[*,0]
+
+plot, x1, y1, /xs, /ys, xtit='x', ytit='y'
+oplot, x_fit, y_fit, co=green()
+
+if keyword_set(horiz) then begin
+  temp = x1
+  x1 = y1
+  y1 = temp
+  temp = x_fit
+  x_fit = y_fit
+  y_fit = temp
+  t1 = 'x'
+  t2 = 'dy/dx'
+  t3 = 'y'
+endif else begin
+  t1 = 'y'
+  t2 = 'dx/dy'
+  t3 = 'x'
+endelse
+
+dx1 = deriv( y1, x1 )
+dx_fit = deriv( y_fit, x_fit )
+y1a = interpol( y1, dx1, dx_fit )
+
+plot, y1, dx1, /xs, /ys, xtit=t1, ytit=t2
+oplot, y_fit, dx_fit, co=green()
+oplot, y1a, dx_fit, co=blue()
+plot, y_fit, y_fit-y1a, /xs, xtit=t1, ytit='delta '+t1
+dy = mean(y_fit-y1a)  ;stddev also
+;print, dy
+
+;ff = poly_fit(y_fit,y_fit-y1a,1)
+;_ff[k,*] = [[ff],[rres]]
+;;plot_blank
+;endfor
+
+x1a = interpol( x1, y1, y1a )
+plot, x_fit, x_fit-x1a, /xs, /ys, xtit=t3, ytit='delta '+t3
+dx = mean(x_fit-x1a)
+
+if keyword_set(horiz) then begin
+  x_move = dy
+  y_move = -dx
+endif else begin
+  x_move = dx
+  y_move = -dy
+endelse
+
+end

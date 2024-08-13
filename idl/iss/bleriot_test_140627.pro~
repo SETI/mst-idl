@@ -1,0 +1,4 @@
+cspice_furnsh, getenv("CAVIAR_KERNELS")+'.prop'
+
+
+end

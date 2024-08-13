@@ -1,0 +1,40 @@
+if not keyword_set(filenames) then restore, 'stretch.sav'
+window, 1, xs=1024, ys=1024
+;if not keyword_set(movie_min) then print, 'Set movie_min= to the min stretch value.'
+;if not keyword_set(movie_min) then retall
+;if not keyword_set(movie_max) then print, 'Set movie_max= to the max stretch value.'
+;if not keyword_set(movie_max) then retall
+if keyword_set(movie_filenums) then begin
+  movie_filenames=filenames[movie_filenums] 
+endif else begin
+  movie_filenames=filenames
+  movie_filenums=indgen(n_elements(filenames))
+endelse
+unget_color
+if not keyword_set(movie_increment) then movie_increment = 1
+for j=0,n_elements(movie_filenames)-1,movie_increment do begin
+  print, strtrim(j,2)+' ('+strtrim(movie_filenums[j],2)+') / '+$
+         strtrim(n_elements(movie_filenames),2)+'     '+movie_filenames[j]
+  im = read_vicar(movie_filenames[j])
+  run_histogram, im, stmin, stmax, fail=fail, fullhist=fullhist
+  if keyword_exists(movie_min) then stmin=movie_min
+  if keyword_exists(movie_max) then stmax=movie_max
+  print, 'Brightness levels: '+string(stmin)+string(stmax)
+  if keyword_set(movie_gamma) then gamma_ct, movie_gamma
+;  if keyword_set(movie_ct) then loadct, ct
+  tvscl, /order, im>stmin<stmax
+  if keyword_set(immax) then begin
+    ; This is specially meant to check diffring_exposures.pro
+    nl = (size(im))[1]
+    x = float(nl)/512
+    plots, immax[0,movie_filenums[j]], nl-1-immax[1,movie_filenums[j]], $
+           /device, ps=3, color=red()
+    plots, immax[0,movie_filenums[j]] + [-1,1,1,-1,-1]*3*x, /device, $
+           nl-1-immax[1,movie_filenums[j]] + [-1,-1,1,1,-1]*3*x, color=red()
+  endif
+  if keyword_set(movie_wait) then begin
+    if movie_wait eq -1 then stop else wait, movie_wait
+  endif
+endfor
+
+end

@@ -1,0 +1,5 @@
+if flag eq 1 and max(rad)-min(rad) lt 4 then begin &$
+  flag = 2 &$
+  tkmbase = 100 &$
+  thoukm = 0 &$
+endif

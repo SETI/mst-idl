@@ -1,0 +1,121 @@
+;Written by Bob Hogan
+;This routine calculates the flux of a given polygon
+
+Function polyflux,poly,image,inx,iny,f,errbar=errbar,radscan_np=radscan_np
+
+;   image : image data
+;   poly  : polynomial array  ( 2-D )  poly(*,0) = x   poly(*,1) = y
+;   inx   : image x size
+;   iny   : image y size
+;     f   : zoom factor  > 1  recommend 10
+
+;   find image pixels touched by polygon
+; i.e., ui contains all pixels that are cut through by the polygon
+; Note that if a line connecting two polygon points passes through a pixel's
+; square of influence, but no polygon points actually reside in the square,
+; that pixel will not be flagged here.
+
+;    ix  = floor(inx*poly(*,0)) 
+;    iy  = floor(iny*poly(*,1))
+;    u   = ix(uniq(ix,sort(ix)))
+;
+;    for i  = 0,n_elements(u)-1 do begin
+;
+;        ii = where   (u (i) eq ix) 
+;
+;        yu = iy(ii( uniq(iy(ii),sort(iy(ii)) )  ))
+;        xu = make_array(n_elements(yu),/int,value = u(i))
+;
+;        if n_elements(uy) eq 0 then uy =     yu $
+;                               else uy = [uy,yu]
+;        if n_elements(ux) eq 0 then ux =     xu $
+;                               else ux = [ux,xu]
+;
+;    endfor
+;    ui  = ux + uy*inx
+
+
+;   define refined image dimensions 
+;   # pixels is f^2 time the number of input image pixels
+
+
+    nx    = inx*f
+    ny    = iny*f
+
+
+;   convert poly units (normalized) to image units
+
+    ; There was an error here.  The .5 was not being multiplied by f.
+    ix  = nx*poly[*,0] + .5*f 
+    iy  = ny*poly[*,1] + .5*f
+
+;   find image pixels inside polygon 
+; imm contains each pixel inside the polygon, repeated the appropriate number
+; of times.  Pixels entirely within the polygon are repeated f^2 times.
+
+    p   = polyfillv(ix,iy,nx,ny)
+    radscan_np = 0
+    errbar = 0
+    if p[0] eq -1 then return, -1
+    radscan_np = n_elements(p)
+
+    xx  = (p mod nx)/f
+    yy  = (p   / nx)/f
+    im  = xx + yy*inx 
+    if radscan_np gt 1 then errbar = stddev(image[im])
+    return, mean(image[im])
+;    imm = make_array(n_elements(im),/byte,value = 1)
+
+;; Illustration:
+;plot, nx*poly[*,0], ny*poly[*,1], ys=16
+;for x=0,inx-1 do oplot, replicate(x*f,iny), lindgen(iny)*f, ps=3
+;oplot, p mod nx, p/nx, ps=3, co=blue()
+;oplot,xx*f,yy*f,ps=-4,co=cyan()                                
+;immm=im[uniq(im,sort(im))]
+;nimm=lonarr(n_elements(immm))
+;for j=0,n_elements(immm)-1 do nimm[j]=n_elements(where(immm[j] eq im))
+;oplot,(immm[where(nimm eq f^2)] mod inx)*f, (immm[where(nimm eq f^2)]/inx)*f, ps=4, co=red() 
+;oplot, ux*f, uy*f, ps=-4, co=yellow()
+    
+; Note that ui (ux and uy) does not contain a complete set of the pixels 
+; sliced by the polygon, because of limits in the resolution of the curve.
+
+;    flux  = 0.d0
+;    area  = flux
+;    for i = 0l,nui-1 do begin
+;
+;        ; For each pixel in ui (sliced by the polygon), add to the area
+;        ; the number normalized by the zoom factor, and to the flux the
+;        ; same amount multiplied by the image value.
+;        ii  = where(im eq ui(i),ni)
+;        if ni gt 0 then begin
+;
+;           imm(ii) = 0
+;           area    = double(ni)/double(f*f)              + area
+;           flux    = double(ni)/double(f*f)*image(ui(i)) + flux
+;
+;        endif
+;
+;    endfor
+
+;; Illustration:
+;oplot, p[where(imm eq 0)] mod nx, p[where(imm eq 0)]/nx, ps=3, co=yellow()
+; For pixels not in ui (ostensibly not sliced by the polygon, though this is
+; imperfect), add the total number of pixels to area (i.e., assume all are 
+; entirely within the polygon), and the sum of the image values to flux.
+
+;    ii   = where(imm eq 1,ni)
+;    if ni gt 0 then begin
+;
+;    up   = im(ii(uniq( im(ii),sort(im(ii)) )))
+;    area = double(n_elements(up))  + area
+;    flux = total(image(up))        + flux
+;
+;    endif
+;
+;    if area ne 0 then return,flux/area $
+;                 else return,0.d0
+
+End
+
+

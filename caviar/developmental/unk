@@ -1,0 +1,3 @@
+
+tv,im,/order
+plots,round(unknown_objects[*,1]),round(nl-1-unknown_objects[*,0]),psym=symbol,symsize=symbol_size,/device

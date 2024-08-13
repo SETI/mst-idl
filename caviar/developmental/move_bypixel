@@ -1,0 +1,4 @@
+x_move = float(x_move) & y_move = float(y_move)
+object_offset = [ x_move/nl, -y_move/nl ]
+@object_offset_to_cmat
+;@disp

@@ -1,0 +1,231 @@
+24 May 2004, M.W.Evans@qmul.ac.uk
+
+***************************************************************
+
+Installation instructions for developmental version of CaVIaR
+
+Brief users guide to developmental version of CaVIaR
+
+***************************************************************
+
+
+
+A. INSTALLATION
+
+
+
+download code in http://fawlty.maths.qmul.ac.uk/caviar/developmental/
+
+there is a gzipped file of everything in this directory
+
+You will also require the UCAC2 & Tycho2 catalogues
+
+in http://fawlty.maths.qmul.ac.uk/caviar/star_catalogues/ there are ISO
+images of the 3 UCAC2 CDs and the complete Tycho2 dataset.
+
+The naif ICY interface between SPICE and IDL is also required. This is 
+obtainable via anonymous ftp from
+
+naif.jpl.nasa.gov:/pub/naif/toolkit/IDL/
+
+or the N0057 PC version is 
+http://fawlty.maths.qmul.ac.uk/caviar/icy.tar.Z
+ 
+Doug Minck's WCStools is needed for the interface with the Tycho2 catalogue
+http://tdc-www.harvard.edu/software/wcstools/
+
+or alternately (for a slightly older version)
+
+http://fawlty.maths.qmul.ac.uk/caviar/wcstools-3.5.1
+
+
+and of course IDL. The code definitely works under IDL 5.4 and 6.0 on PCs and 6.0 
+for Macs runnung OSX. It should work for all other 5.* versions on PCs.
+
+
+
+1. make sure you've compiled the ICY package using the version of gcc and IDL installed on your machine.
+2. compile WCStools if necessary
+3. compile the dynamical library, ucac2_subroutines.so (in the directory ucac2_access at
+   http://fawlty.maths.qmul.ac.uk/caviar/developmental/). A PC_Linux version for IDL6.0 and IDL5.4
+   are already included. The 6.0 library should work for IDL 5.5 and up.
+
+4. set the necessary environmental variables. e.g this is the relevant portion of my .tcshrc file
+   (the developmental CaVIaR code is in /home/mwe/nav/current/ on my machine) 
+
+setenv IDL_PATH "+/usr/local/rsi/idl_6.0:/home/mwe/nav/current"
+
+
+setenv TY2_PATH 	"/home/mwe/star_catalogues/tycho2"
+setenv CAVIAR_KERNELS   "/home/mwe/nav/current/kernels.ker"
+setenv UCAC2_CAT        "/home/mwe/star_catalogues/ucac2/u2/"
+setenv ICY_PATH         "/usr/local/naif/cspice_N0057/icy_idl6.0/lib/"
+setenv UCAC2_SHARE	"/home/mwe/ucac2_access/idl6.0_ucac2_subroutines.so"
+
+
+note that the trailing forward slash (/) IS necessary in the path for the UCAC2_CAT
+environmental variable. The interface code expects it and can't find the UCAC2 datafiles if
+it is absent. ICY_PATH contains the path to the files icy.so & icy.dlm
+
+
+4. kernels.ker is that file that contains the list of all the SPICE kernels to be loaded. 
+   Change the filenames/paths as required. All the kernels I'm currently using are in
+   http://fawlty.maths.qmul.ac.uk/caviar/kernels/ . Remeber that the order that kernels are 
+   loaded IS important, if the same period is covered by two or more kernels then the information
+   is taken from the LAST one loaded.
+
+
+
+A major caveat here is that this code is still under development and is in pretty constant flux. I'm 
+in the process of changing the proceedure names so that they all begin with "caviar_", I'm told that
+this is called "keeping the namespace clean". Occasional bugs come to light in the completed code and 
+I'm fixing them as they make themselves known. 
+     There is no nice GUI interface, everything is done from the commandline using scripts. There will
+be a nice GUI interface "real soon now". I was adding functionality as the need arose, initially I needed 
+to do astrometry so that functionality is pretty much complete. Recently I've been prodded to incorporate 
+reprojection in the the ring plane and thats what I'm currently working on.
+     The code is supplied "as is", its a prototype version still under development.
+A few pieces of code have been adapted from various sources. These sources are
+1. The FORTRAN routines for interfacing with the catalogue included on the UCAC2 catalogue distribution discs
+2. The IDL routine zoom.pro  
+No code from any other source has been adapted.
+The NAIF ICY package the WCStools package & an IDL implementation of DAOPHOT is used. No code from any other 
+source is used in the software.
+
+CaVIaR is being developed at Queen Mary, University of London by Mike Evans & Kevin Beurle under the direction
+of Prof. C.D. Murray for the analysis of Cassini ISS imaging. 
+
+
+B. BRIEF USERS GUIDE
+
+
+
+1. Start IDL
+
+
+2. The @top-level' script is called "caviar" so at the idl commandline type @caviar i.e.
+
+IDL>@caviar
+
+this reads the kernels, initialises ICY and prompts for an image data file to be inputted.
+
+
+type in the name of the Cassini image file to be input e.g.
+
+....
+Image to point-=
+:/images/1463/N1463309634_2.IMG
+....
+
+
+you should now be presented with the image with various things superimposed.
+a). Star positions (the centre of the boxes), names and magnitudes in cyan
+b). Satellite poisitions and names in green
+c). Circular features in the ring plane in blue (currently the F ring, outer
+    edge of the A ring and the inner edge of the Encke gap)
+
+The positions are all calculated using the nominal pointing in the appropriate C Kernel in
+the list in kernels.ker . The pointing will usually be slightly off.
+
+3. You can stretch the image, the script ct does this
+
+IDL>@ct
+
+This is the basic IDL strecth tool. Drag the sliders to stretch the image.
+You may also change the colour table if you want. The colours of the star/satellite
+positions/labels will change (usually white) at this point, don't worry about it 
+they'll re-appear later. 
+
+For astrometry, stretch the image until stars are clearly visible.
+
+to recover the star/satellite label colours type use the script, disp
+
+IDL>@disp
+
+4. The pointing used to calculated the positions of the stars/satellites can be changed interactively
+   using the mouse via the script, move.
+
+IDL>@move
+
+left clicking and dragging on the image moves the stars/satellites in that direction (actually what is 
+happening is that the assumed pointing of the camera when the image was shuttered, used to calculate the
+star/satellite positions, is being changed so that the positions in the image move in the direction of 
+the drag).
+    By clicking and dragging, the calculated star positions can be made to match with the positions of the 
+stars in the image. You could also point using ring edges or satellites or all three.
+    To exit move and recover the commandline simply right click (you might have to right click twice).
+
+5. Automatic pointing. The method described in 4.) is accurate to within 1-2 pixels or so, good enough for many
+   purposes. Greater accuracy can be obtained by automatically fitting to star positions. Carry out the proceedure
+   in step 4)., so that stars are within their respective boxes, as close to the centre of the box as possible.
+
+	the script,f, finds starlike objects in the frame (it calls an implementation of DAOPHOT)
+
+	fm is the same script with different parameters that will locate more objects
+
+IDL>@f
+
+	the script, match, matches the located objects to the positions of catalogue stars
+
+IDL>@match 
+
+	the script ,point, then calculates pointing using these matched objects/positions. The stars
+        used for pointing and their positions are superimposed on the image
+
+IDL>@point
+
+	to display all objects using the fitted pointing use the script, disp
+
+IDL>@disp
+
+	you can re_stretch the image using ct
+
+IDL>@ct
+
+
+	using, disp after stretching redisplays the labels in the correct colours.
+
+6. Zooming a portion of an image. Use the script, z
+
+IDL>@z
+
+	moving the cursor over the image opens a zoom window. The centre of the zoom window (the pixel with 
+        the red cross in it) corresponds to the position of the cursor in the main image. The line,sample and DN 
+	value of the pixel under the cursor are displayed in the zoom window. Left clicking displays
+        the calculated RA & dec and radius & longitude of the centre pixel, assuming that its in the ring plane. 
+        Right clicking exits the zoom window. N.B. don't try and stretch the image while the zoom window is open, 
+        its best to close the stretch window before opening a zoom window.
+
+7. Reprojection (under development). To reproject a portion of an image into the ring plane (i.e. radius-longitude 
+   space). Only use images that have been automatically pointed. Only use for rings.
+
+	use the script, kidz (don't ask, I said its what I'm working on)
+
+IDL>@kidz
+
+	left click on a pixel. Two green lines are superimposed on the image. One of constant radius (in the ring 
+        plane) the other of constant longitude. Move the cursor and left click on another pixel. These two pixels
+        define the region to be reprojected which will now be outlined in green (note that the projection takes place 
+        in the prograde direction i.e. if the first pixel is at longitude 20 deg and the second at 10 deg then the
+        reprojected region will consist of the 350 degrees of longitude between 20 and 10 NOT the 10 degrees between 
+        10 and 20). 
+		Right click to accept this region and exit back to the commandline.
+
+	then to reproject this region use the script, r
+
+IDL>@r
+
+	the reprojection appears in a new window. The wait could be several tens of seconds.
+
+	The reprojected image will appear in a separate window. Left clicking on the reprojected image
+	displays the radius and longitude of that pixel. Middle clicking (or clicking the mouse wheel in 
+	my case) displays, in a new window, the brightness profile along the selected longitude--middle 
+        clicking and dragging can be quite fun. Right clicking on the reprojected images returns you
+        to the commandline and makes the main image window the active one.
+
+
+	This doesn't work for some images and simply crashes, I haven't tracked down the cause yet. The
+        image I used in development, which is does work for, is N1463414414_1.IMG
+ 
+
+ 

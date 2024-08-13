@@ -1,0 +1,18 @@
+; This script assumes nothing except the variable image_name
+; Remember to set the variable sat to an appropriate value (618l for Pan).
+
+ImageObj = OBJ_NEW('CassImg', DebugFlag=DebugFlag) 
+ImageObj->ReadVic,image_name 
+label=ImageObj->LabelArray() 
+cspice_furnsh,getenv('CAVIAR_KERNELS')
+image_data,label,et,epoch,exposure,cam_name,pmat,nl,found
+
+polera=40.58756d0;
+poledec=83.53684d0;RA and dec of Saturn N pole from  pck00007.tpc, epoch 2004 JAN 01 12:00:00. TDB
+
+cspice_spkez, sat, et, 'J2000', 'NONE', 699l, state, ltime
+sat_xyz = j2000_to_saturn( reform(state[0:2],1,3), polera, poledec )
+sat_polar = cart_to_polar(sat_xyz)
+sat_polar[0:1] = sat_polar[0:1] * 180 / !dpi
+
+end

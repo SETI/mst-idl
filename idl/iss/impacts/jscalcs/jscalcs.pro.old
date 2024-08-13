@@ -1,0 +1,123 @@
+; Knowns and ranges
+r1 = dindgen(601)*100 + 80000  ; km
+r2 = 129380.0d0  ; km
+deltat = 35.0d0  ; seconds
+deltaa = 100.0d0  ; km
+mu = 37931207.7d0  ;km^3/s^2
+
+deltat = deltat*.5
+
+; Initial guesses
+if not keyword_set(base) then base = 1
+if not keyword_exists(fix_cap_e) then fix_cap_e = 1
+case base of
+  1: begin
+     aa = reverse(dindgen(601))/600*40000 + 185000
+     aa_old = aa/2              ; Just to initiate the while loop
+     ;aa = replicate( 200000.0d0, 601 )
+     test = max(abs(( aa_old - aa )/aa))
+  end
+  2: begin
+     ee = reverse(dindgen(601))/600*.1 + 0.5
+     ;ee[*] = .35
+     ee_old = ee/2
+     test = max(abs(( ee_old - ee )/ee))
+  end
+endcase
+if keyword_set(jsplotcase) then begin
+  aa = reverse(dindgen(601))/600*40000 + 185000 ;200000.0d0
+  ee = reverse(dindgen(601))/600*.1 + 0.5
+  pomega = (2-ee)*!dpi
+  f1 = 2*!dpi - pomega
+  f2 = !dpi - pomega
+  cap_e1 = acos(( 1 - (1-ee^2) / (1+ee*cos(f1)) )/ee)
+  cap_e2 = - acos(( 1 - (1-ee^2) / (1+ee*cos(f2)) )/ee)
+  nn = sqrt( mu / aa^3 )
+  case fix_cap_e of
+    0: tt = ( 2*!dpi + cap_e2 - cap_e1 + ee*(sin(cap_e2)-sin(cap_e1)) )/nn
+    1: tt = ( 2*!dpi + cap_e2 - cap_e1 + ee*(sin(cap_e1)-sin(cap_e2)) )/nn
+  endcase
+  goto, plots
+endif
+if keyword_set(showcontradiction) then begin
+  aa = reverse(dindgen(601))/600*40000 + 185000 ;200000.0d0
+  ee = reverse(dindgen(601))/600*.1 + 0.5
+  !p.multi = [0,2,2]
+  plot, tkm(r1), tkm(aa), yr=[0,400], /xs, /ys, $
+        xtit='R1 (1000 km)', ytit='a (1000 km)', $
+        tit='Solid line is approximately as plotted by JS!CDotted line assumes the solid-line e in the other plot.'
+  oplot, tkm(r1), tkm( 2*r1*r2/(r1+r2) / (1-ee^2) ), l=1
+  plot, tkm(r1), ee, yr=[0,2], /xs, /ys, $
+        xtit='R1 (1000 km)', ytit='e or pomega', $
+        tit='Solid lines are approximately as plotted by JS!CDotted lines assume the solid-line a in the other plot.'
+  oplot, tkm(r1), sqrt( 1 - 2*r1*r2/(r1+r2) / aa ), l=1
+  oplot, tkm(r1), ( 2*!dpi - acos( (1-r1/r2) / (1+r1/r2) / ee ) )/!dpi, l=1
+  oplot, tkm(r1), 2-ee
+  stop
+endif
+
+; Calculations
+while test gt 1e-6 do begin
+  case base of
+    1: ee = sqrt( 1 - 2*r1*r2/(r1+r2) / aa )
+    2: aa = 2*r1*r2/(r1+r2) / (1-ee^2)
+  endcase
+  ;pomega = - acos( (1-r1/r2) / (1+r1/r2) / ee )
+  ;f1 = - pomega
+  ;f2 = - !dpi - pomega
+  ;cap_e1 = acos(( 1 - (1-ee^2) / (1+ee*cos(f1)) )/ee)
+  ;cap_e2 = - acos(( 1 - (1-ee^2) / (1+ee*cos(f2)) )/ee)
+  pomega = 2*!pi - acos( (1-r1/r2) / (1+r1/r2) / ee )
+  f1 = 2*!dpi - pomega
+  f2 = !dpi - pomega
+  cap_e1 = acos(( 1 - (1-ee^2) / (1+ee*cos(f1)) )/ee)
+  cap_e2 = - acos(( 1 - (1-ee^2) / (1+ee*cos(f2)) )/ee)
+  nn = sqrt( mu / aa^3 )
+  case fix_cap_e of
+    0: tt = ( 2*!dpi + cap_e2 - cap_e1 + ee*(sin(cap_e2)-sin(cap_e1)) )/nn
+    1: tt = ( 2*!dpi + cap_e2 - cap_e1 + ee*(sin(cap_e1)-sin(cap_e2)) )/nn
+  endcase
+  aa_new = 3.0d0/2 * deltaa / deltat * tt
+  !p.multi = [0,2,2]
+  plots:
+  plot, [80,140], [0,400], /xs, /ys, /nodata, $
+        xtit='R1 (1000 km)', ytit='a (1000 km)'
+  oplot, tkm(r1), tkm(aa*(1+ee)), co=ctblue()
+  oplot, tkm(r1), tkm(aa*(1-ee)), co=ctgreen()
+  oplot, tkm(r1), tkm(aa), co=ctred()
+  if base eq 1 and not keyword_set(jsplotcase) then begin
+    oplot, tkm(r1), tkm(aa_new), l=1, co=ctred()
+  endif
+  oplot, !x.crange, [136.8,136.8], l=2
+  plot, [80,140], [0,2], /xs, ys=9, /nodata, xtit='R1 (1000 km)', $
+        ytit='[e,pomega/pi]=[blue,red]'
+  axis, yaxis=1, /ys, yr=!y.crange*180, ytit='pomega (!Uo!N)', yticki=90
+  oplot, tkm(r1), pomega/!dpi, co=ctred()
+  oplot, tkm(r1), ee, co=ctblue()
+  if base eq 2 then oplot, tkm(r1), ee, l=1, co=ctblue()
+  plot, [80,140], [-1,1], /xs, ys=9, /nodata, xtit='R1 (1000 km)', $
+        ytit='[f/pi,E/pi]=[solid,dotted], [1,2]=[red,blue], radians'
+  axis, yaxis=1, /ys, yr=!y.crange*180, yticki=90, $
+        ytit='[f/pi,E/pi]=[solid,dotted], [1,2]=[red,blue], !Uo!N'
+  oplot, tkm(r1), f1/!dpi, co=ctred()
+  oplot, tkm(r1), f2/!dpi, co=ctblue()
+  oplot, tkm(r1), cap_e1/!dpi, co=ctred(), l=1
+  oplot, tkm(r1), cap_e2/!dpi, co=ctblue(), l=1
+  plot, tkm(r1), 2.0d0*!dpi/nn/3600, /xs, xtit='R1 (1000 km)', $
+        ytit='[P,t]=[red,blue], (hours)'
+  oplot, tkm(r1), 2.0d0*!dpi/nn/3600, co=ctred()
+  oplot, tkm(r1), tt/3600, co=ctblue()
+;  plot, [80,140], [0,40], /xs, /ys, /nodata, xtit='R1 (1000 km)'
+  
+  case base of
+    1: aa_old = aa
+    2: ee_old = ee
+  endcase
+  case base of
+    1: aa = aa_new
+    2: ee = sqrt( 1 - 2*r1*r2/(r1+r2) / aa_new )
+  endcase
+  stop
+endwhile
+
+end

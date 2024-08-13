@@ -1,0 +1,66 @@
+pro plot
+
+if keyword_set(noradscan) then begin
+  print, 'Radial scan not plotted because noradscan=1.'
+endif else if keyword_set(noplot) then begin
+  print, 'Radial scan not plotted because noplot=1.'
+endif else if not (keyword_set(radi) and keyword_set(val)) then begin
+
+  print, 'Radial scan variables do not exist, cannot plot.'
+
+endif else begin
+
+  if keyword_set(clear) then begin
+    radscan_xr = 0
+    radscan_yr = 0
+    clear = 0
+  endif
+  if keyword_set(phiout) then begin
+    xtit = 'Longitude (deg)'
+  endif else begin
+    xtit = 'Radius'+tkmtit( radi, thoukm=thoukm )
+  endelse
+  if not keyword_set(thoukm) then thoukm = 0
+  if not keyword_set(radscan_np) then radscan_np = val*0
+  if n_elements(radscan_np) ne n_elements(val) or keyword_set(noradscan_np) then radscan_np = val*0
+  if not keyword_set(errbar) then errbar = val*0
+  if n_elements(errbar) ne n_elements(val) or keyword_set(noerrbar) then errbar = val*0
+  radscan_xr_base = [ min(tkm(radi)), max(tkm(radi)) ]
+  if not keyword_set(radscan_xr) then radscan_xr = radscan_xr_base else begin
+    radscan_xr[0] = radscan_xr[0] > radscan_xr_base[0]
+    radscan_xr[1] = radscan_xr[1] < radscan_xr_base[1]
+  endelse
+  if not keyword_set(radscan_yr) then begin
+    x0 = max(where( tkm(radi) le radscan_xr[0] ))
+    if x0 eq -1 then x0 = 0
+    x1 = min(where( tkm(radi) ge radscan_xr[1] ))
+    if x1 eq -1 then x1 = n_elements(radi)-1
+    _radscan_yr = [ min(val[x0:x1])-mean(errbar), max(val[x0:x1])+mean(errbar) ]
+    if keyword_set(radscan_ylog) and _radscan_yr[0] lt 0 then _radscan_yr[0] = min(val[x0:x1])
+  endif else _radscan_yr = radscan_yr
+  if not keyword_set(radscan_ps) then radscan_ps = 0
+  if not keyword_set(radscan_tit) then radscan_tit = ''
+
+  if !d.name eq 'X' and not keyword_set(radscan_keepwin) then begin
+    if keyword_set(radscan_long) then xs = 1500 else xs = 640
+    if keyword_set(radscan_double) then ys = 768 else ys = 512
+    window, !d.window - (!d.window mod 2) + 2, xs=xs, ys=ys
+  endif
+  plot, tkm(radi), val, /xs, /ys, xr=radscan_xr, yr=_radscan_yr, ytit='I/F', $
+        xtit=xtit, tit=radscan_tit, ps=radscan_ps, ylog=radscan_ylog
+  if total(errbar) ne 0 then begin
+    oplot, tkm(radi), val-errbar, l=1
+    oplot, tkm(radi), val+errbar, l=1
+  endif
+
+  if keyword_set(ring_rads) then for kk=0,n_elements(ring_rads)-1 do begin
+    if keyword_set(radscan_ylog) then z0 = 1e-10 else z0 = -1e10
+    oplot, tkm( ring_rads[[kk,kk]], thoukm=thoukm ), [z0,1e10], l=1
+    xyouts, tkm( ring_rads[kk], thoukm=thoukm ), $
+	_radscan_yr[1] + (_radscan_yr[1]-_radscan_yr[0])/100, $
+	ring_rads_legend[kk], align=.5
+  endfor
+
+endelse
+
+end

@@ -1,0 +1,50 @@
+; Mimas mean longitude from a memo received from Bob Jacobson on 16 July 2010
+
+l0 = 160.380594d0
+n0 = 381.99449816d0
+aa = [ 0.077d0, -43.412d0, 0.035d0, 0.039d0, $
+       -0.711d0, 0.02d0, 0.0144d0, -13.911d0, $
+       0.072d0, -0.062d0, 0.133d0, 0.060d0, $
+       0.012d0, -1.700d0, 0.018d0, -0.276d0, $
+       0.050d0 ]
+s0x_l = [ 141.717382d0, 320.792871d0, 326.674490d0, 280.076885d0, $
+          242.420558d0, 341.637487d0, 50.915828d0, 186.982693d0, $
+          328.004007d0, 148.634431d0, 288.928243d0, 69.672344d0, $
+          210.675085d0, 13.963167d0, 334.609519d0, 20.977600d0, $
+          208.003675d0 ] * !dpi/180
+s0x_n = [ 351.0921145d0, 509.6121181d0, 720.7117546d0, 1029.8504079d0, $
+          1528.6471266d0, 2551.2242219d0, 35987.4031799d0, 36506.8492313d0, $
+          37015.0735943d0, 57914.4382786d0, 58426.6663404d0, 58935.6962168d0, $
+          59442.4002014d0, 73013.7276325d0, 73522.4509312d0, 109520.3812772d0, $
+          146027.3810283d0 ] * !dpi/180
+num = n_elements(aa)
+if n_elements(s0x_l) ne num then stop
+if n_elements(s0x_n) ne num then stop
+
+if not keyword_set(d0) then d0 = julday(1,1,1900)
+if not keyword_set(d1) then d1 = julday(1,1,2100)
+j2000 = julday(1,1,2000)
+if not keyword_set(npd) then npd = 1.0  ; Number per day
+dd = dindgen((d1-d0)*npd+1)/npd + d0 - j2000  ; Time in days from J2000
+tt = dd / 36525  ; Time in Julian centuries from J2000
+yy = dd / 365.25 + 2000
+
+dtheta = tt*0
+for j=0,num-1 do begin
+  dtheta = dtheta + aa[j]*sin( s0x_l[j] + s0x_n[j]*tt )
+endfor
+theta = l0 + n0*dd + dtheta
+
+dn = tt*0
+for j=0,num-1 do begin
+  dn = dn + aa[j]*s0x_n[j]/36525*cos( s0x_l[j] + s0x_n[j]*tt )
+endfor
+nn = n0 + dn
+
+; Conclusion:  I think Bob probably referenced Mimas' angular
+; position to the mean orbital plane, rather than the precessing
+; orbital plane.  Thus, you can't differentiate the longitude
+; and get the mean motion, as I just tried to do.  
+
+end
+

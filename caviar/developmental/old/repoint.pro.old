@@ -1,0 +1,62 @@
+aaa = findpeak( rpi, rrpi, mnrad, mxrad, mnlon, mxlon, yy=yy )
+ll = aaa[0,*]
+rr = aaa[2,*]
+nll = n_elements(ll)
+
+;sm = 100
+;ll = ll[sm:nll-sm-1]
+;rr = smooth(rr,sm)
+;rr = rr[sm:nll-sm-1]
+
+resam = 30
+ind = lindgen(nll/resam)*resam
+ll = ll[ind]
+rr = rr[ind]
+
+window, 9
+if max(rr)-min(rr) gt 1e4 then tkmbase = 100000 else if max(rr)-min(rr) gt 1.3e3 then tkmbase=10000 else tkmbase = 1000
+thoukm = min(rr) - (min(rr) mod tkmbase)
+ytit = 'Radius - '+strtrim(long(thoukm),2)+' km'
+plot, ll, rr-thoukm, /xs, /ys, xtit='Lontigude (deg)', ytit=ytit
+
+reply = ''
+while reply eq '' do begin
+  print, 'Proceed?  (y/n)'
+  read, reply
+  if reply eq 'n' then stop else if reply ne 'y' then reply=''
+endwhile
+
+rres = 133809.
+get_ring,et,rres,startlon,stoplon,polera,poledec,3600,ring1,699L
+get_ring,et,rr,0,0,polera,poledec,nll,ring2,699L,lons=ll*!dpi/180
+;ring[*,1] is RA (J2000 lon), ring[*,2] is Dec (J2000 lat)
+ring1 = ring1 / 3600.0d3 * !dpi / 180
+ring2 = ring2 / 3600.0d3 * !dpi / 180
+plot, ring1[*,2], ring1[*,1]
+oplot, ring2[*,2], ring2[*,1], co=green()
+
+dring1 = deriv( ring1[*,1], ring1[*,2] ) / cos(ring1[*,2])
+;bad1 = where( abs(dring1) gt 2, nb1 )
+;if nb1 gt 0 then bad1 = lindgen(bad1[nb1-1]-bad1[0]+1) + bad1[0]
+dring2 = deriv( ring2[*,1], ring2[*,2] ) / cos(ring2[*,2])
+;bad2 = where( abs(dring2) gt 2, nb2 )
+;if nb2 gt 0 then bad2 = lindgen(bad2[nb2-1]-bad2[0]+1) + bad2[0]
+
+ring1a = dblarr(n_elements(dring2))
+foo1 = where( dring1 gt 0, c1 )
+foo2 = where( dring2 gt 0 and dring2 lt max(dring1), c2 )
+if c1 gt 0 and c2 gt 0 then begin
+  ring1a[foo2] = interpol( ring1[foo1,1], dring1[foo1], dring2[foo2] )
+endif
+foo1 = where( dring1 lt 0, c1 )
+foo2 = where( dring2 lt 0 and dring2 gt min(dring1), c2 )
+if c1 gt 0 and c2 gt 0 then begin
+  ring1a[foo2] = interpol( ring1[foo1,1], dring1[foo1], dring2[foo2] )
+endif
+plot, ring2[*,1], dring2, ps=-4, yr=[-10,10]
+oplot, ring1[*,1], dring1, ps=-4
+oplot, ring1a, dring2, ps=-4, co=blue()
+exist = where(ring1a ne 0)
+dra = mean(ring2[exist,1]-ring1a[exist])  ;stddev also
+
+end

@@ -1,0 +1,49 @@
+pro fsine5, x, a, f, pder
+
+  f = a[0] + a[1] * sin( a[2]*x + a[3] )
+  pder = [ [ replicate( 1, n_elements(x) ) ], $
+           [ sin( a[2]*x + a[3] ) ], $
+           [ a[1] * x * cos( a[2]*x + a[3] ) ], $
+           [ a[1] * cos( a[2]*x + a[3] ) ] ]
+
+end
+
+
+function sinefit, r, v, weights=weights, aa, aa_sigma, nofixaa=nofixaa
+
+if n_params() eq 0 then begin
+  print, 'Syntax:  Result = SINEFIT( r, v, aa, aa_sigma, weights= )'
+  print, 'Result is the fitted sine wave, aa is a 4-elements vector containing'
+  print, 'vertical offset, amplitude, frequency (cycles per 2pi radians), and phase offset (radians)'
+  retall
+endif
+
+if keyword_set(aa) then begin
+  print, 'Using user-input parameters for starting sine wave:'
+  print, aa
+endif else begin
+  print, 'Estimating parameters for starting sine wave.'
+  aa = dblarr(4)
+  aa[0] = mean(v)
+  aa[1] = max(v) - min(v)
+  mkexed, where(v gt mean(v)), exed, z
+  aa[2] = 2*!dpi*z / (max(r)-min(r))
+  aa[3] = 0.
+  print, aa
+endelse
+if not keyword_set(weights) then weights = replicate( 1.0d, n_elements(r) )
+
+yfit = curvefit( r, v, weights, aa, aa_sigma, function_name='fsine5' )
+
+if not keyword_set(nofixaa) then begin
+  if aa[1] lt 0 then begin
+    aa[1] = -aa[1]
+    aa[3] = aa[3] - !dpi
+  endif
+  if abs(aa[3]) gt 2*!dpi then aa[3] = ( aa[3]/2/!dpi mod 1 )*2*!dpi
+  if aa[3] lt 0 then aa[3] = aa[3] + 2*!dpi
+endif
+
+return, yfit
+
+end

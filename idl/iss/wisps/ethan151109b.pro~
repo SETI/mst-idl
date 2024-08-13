@@ -1,0 +1,10 @@
+restore, 'image_coverage.sav'
+foo = where( gridrad eq 136520, count )
+if count ne 1 then stop
+nbin = 360
+xbin = findgen(nbin+1)/nbin*360
+xind = rebin([[ xbin[0:nbin-1] ],[ xbin[1:nbin] ]],nbin,1)
+coveragelon = 
+note = 'This is the longitudinal coverage at r = 136520 km, for purposes of tracking wisps in the Keeler Gap outer edge.'
+
+end

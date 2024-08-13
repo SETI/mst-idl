@@ -1,0 +1,12 @@
+my_im = bksub_img
+;my_im = rawim
+
+ns_tmp_max=max(my_im)
+ns_tmp_min=min(my_im)
+ns_tmp_binsize=(ns_tmp_max-ns_tmp_min)/1000.0
+ns_tmp_histo_img = histogram(my_im,binsize=ns_tmp_binsize)
+ns_tmp_num_bin = n_elements(ns_tmp_histo_img)
+ns_tmp_histo_bin = findgen(ns_tmp_num_bin)*ns_tmp_binsize +ns_tmp_min
+window,/free,xsize=1024,ysize=1024
+plot,/ylog,ns_tmp_histo_bin,ns_tmp_histo_img>1
+print,"min = ",min(my_im), " max = ", max(my_im)

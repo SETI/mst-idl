@@ -1,0 +1,17 @@
+pro giantpropsexponential2, x, pp, y, pder, offsetlon=offsetlon
+
+; This is a function tailored for propeller_orbit3.pro, 
+; configured for use with MPCURVEFIT.  
+; NOTE: SVDFIT automatically multiplies sigma by sqrt(chisq/DOF), while you 
+;       must do this manually w ith MPCURVEFIT.  
+; Also, remember to define beforehand weights = replicate(1.,n_elements(r))
+; or, if you have error bars and used measure_errors in SVDFIT, 
+; weights = 1.0d0/errbars^2
+
+if n_elements(pp) eq 3 then pp=[pp,0]
+y = pp[0] - pp[3]*exp(-pp[1]*(x-pp[2]))
+
+pder = [ [replicate(1.0d0,n_elements(x))], [pp[3]*pp[1]*exp(-pp[1]*(x-pp[2]))], $
+         [-pp[3]*pp[1]*pp[2]*exp(-pp[1]*(x-pp[2]))], [-exp(-pp[1]*(x-pp[2]))] ]
+
+end

@@ -1,0 +1,17 @@
+From matthewt@astro.cornell.edu Fri Jul 30 13:17:30 2004
+Date: Fri, 30 Jul 2004 13:06:58 -0400 (EDT)
+From: Matt Tiscareno <matthewt@astro.cornell.edu>
+To: Horizons Ephemeris System <horizons@ssd.jpl.nasa.gov>
+Subject: JOB
+
+
+!$$SOF
+COMMAND = '601' '602' '603' '604' '605' '606' '607' '608' '609' '610' 
+'611' '615' '616' '617' '618'
+TABLE_TYPE = 'E'
+CENTER = '500@6'
+TLIST = '2453187.5'
+OUT_UNITS = 'KM-S'
+OBJ_DATA = 'YES'
+!$$EOF
+

@@ -1,0 +1,280 @@
+function hz_root, r0
+  common h, hz, j2, j4, j6
+  return, hz - r0^2*sqrt(caviar_omega2(r0,j2=j2,j4=j4,j6=j6))
+end
+
+function cart_to_epicyclic, _pos, _vel, debug=debug, verbose=verbose, convert=convert, mu=gm, prad=prad, musat=musat, noj4=noj4, noj6=noj6, rsat=rsat, day=day, use_hz=use_hz, tol=tol, r0=r0, np=np, q=q
+
+if n_params() eq 0 then begin
+  print, 'Syntax:  Result = CART_TO_EPICYCLIC( pos, vel )'
+  print, 'Calculates epicyclic elements from Cartesian coordiantes, using the method'
+  print, 'of Renner and Sicardy (2006)'
+endif
+
+; Get Saturn mass and radius and J2
+common h, hz, j2, j4, j6
+if keyword_set(musat) then saturn_constants, gm=gm, prad=prad, $
+                                             j2=j2, j4=j4, j6=j6
+if keyword_set(noj4) then j4 = 0
+if keyword_set(noj6) then j6 = 0
+if not keyword_set(gm) then stop, 'Must specify central mass mu'
+if not keyword_set(prad) then stop, 'Must specify central body radius prad'
+if not keyword_set(j2) then stop, 'Must specify gravity harmonic J2'
+
+pos = _pos
+vel = _vel
+if not keyword_exists(use_hz) then use_hz = 1
+if keyword_exists(rsat) then begin
+  if keyword_set(rsat) then begin
+    print, 'Converting from Rsat to km...'
+    pos = pos * prad
+    vel = vel * prad
+  endif
+endif else begin
+  if keyword_set(convert) then convm = 'Converting...' else convm = 'Convert?'
+  ; Check that semimajor axis is in km
+  if mean(v_mag(pos)) lt prad then begin
+    print, 'elems appears to be in Rsat instead of km.  '+convm
+    if not keyword_set(convert) then stop
+    pos = pos * prad
+    vel = vel * prad
+  endif
+endelse
+
+if keyword_set(day) then begin
+  print, 'Converting from days to seconds...'
+  vel = vel / 86400
+endif
+
+; Unpack Cartesian coordinates from the arrays pos and vel
+xx = pos[*,0]
+yy = pos[*,1]
+zz = pos[*,2]
+xdot = vel[*,0]
+ydot = vel[*,1]
+zdot = vel[*,2]
+nx = n_elements(xx)
+
+; Calculate cylindrical coordinates, from RS06 Eqs 22 thru 29
+rr = sqrt( xx^2 + yy^2 )
+ll = atan( yy / xx )
+foo = where( xx eq 0, count )
+if count gt 0 then begin
+  ll[foo] = !dpi/2
+  foo1 = where( yy[foo] lt 0, count1 )
+  if count1 gt 0 then ll[foo[foo1]] = 3*!dpi/2
+endif
+foo = where( xx lt 0, count )
+if count gt 0 then ll[foo] = ll[foo] + !dpi
+ll = fix_angles( ll, /rad, /to360 )
+rdot = xdot*cos(ll) + ydot*sin(ll)
+ldot = ( ydot*cos(ll) - xdot*sin(ll) )/rr
+
+; Calculate vertical component of angular momentum, use it to get r0
+; From RS06 Eqs 48 thru 50
+if not keyword_exists(verbose) and nx gt 10000 then verbose = 1
+r0 = dblarr(nx)
+if keyword_set(verbose) then print, 'Finding r0...'
+for j=0l,nx-1 do begin
+  if j ne 0 and j mod 100000 eq 0 then begin
+    print, 'j = '+strtrim(j,2)+' / '+strtrim(nx,2)
+  endif
+  r00 = (v_mag(pos[j,*]))[0] + [ -5, 0, 5 ]
+  hz = xx[j]*ydot[j] - yy[j]*xdot[j]
+  if finite(hz) then if hz gt 0 then begin
+    r0[j] = fx_root( r00, 'hz_root', /double )
+  endif
+endfor
+
+; Initialize variables
+aa = rr
+aa_last = aa
+ee = replicate( 0.0d0, nx )
+ii = replicate( 0.0d0, nx )
+omega = replicate( 0.0d0, nx )
+pomega = replicate( 0.0d0, nx )
+lambda = replicate( 0.0d0, nx )
+rc = replicate( 0.0d0, nx )
+lc = replicate( 0.0d0, nx )
+zc = replicate( 0.0d0, nx )
+rdotc = replicate( 0.0d0, nx )
+ldotc = replicate( 0.0d0, nx )
+zdotc = replicate( 0.0d0, nx )
+err = replicate( 0.0d0, nx )
+nstep = 0l
+if not keyword_set(tol) then tol = 0.01d0
+if not keyword_set(maxstep) then maxstep = 50l
+; Define q, the index of particles still being iterated
+; If r0 is identically zero, then epicyclic elements cannot be found for 
+; this particle; remove it from the index at the beginning
+q = where( r0 ne 0, count )
+if count eq 0 then return, replicate( 0.0d0, nx, 6 )
+err[q] = 1.0d5
+done = where( err lt tol, ndone )
+
+; Iteratively find epicyclic elements
+while ndone lt nx and nstep lt maxstep do begin
+
+  if keyword_set(verbose) then begin
+    print, 'Step '+strtrim(nstep+1,2)+'; finished '+strtrim(ndone,2)+$
+           ' particles out of '+strtrim(nx,2)+'.'
+  endif
+  if keyword_set(debug) then stop
+
+  ; Calculate frequencies, from RS06 Eqs 14 thru 21
+  nn = sqrt( gm / aa[q]^3 ) * ( 1 $
+                                + 3.0d0/4 * (prad/aa[q])^2 * j2 $
+                                - 15.0d0/16 * (prad/aa[q])^4 * j4 $
+                                + 35.0d0/32 * (prad/aa[q])^6 * j6 $
+                                - 9.0d0/32 * (prad/aa[q])^4 * j2^2 $
+                                + 45.0d0/64 * (prad/aa[q])^6 * j2 * j4 $
+                                + 27.0d0/128 * (prad/aa[q])^6 * j2^3 $
+                                + 3.0d0 * (prad/aa[q])^2 * j2 * ee[q]^2 $
+                                - 12.0d0 * (prad/aa[q])^2 * j2 * ii[q]^2 )
+  kappa = sqrt( gm / aa[q]^3 ) * ( 1 $
+                                   - 3.0d0/4 * (prad/aa[q])^2 * j2 $
+                                   + 45.0d0/16 * (prad/aa[q])^4 * j4 $
+                                   - 175.0d0/32 * (prad/aa[q])^6 * j6 $
+                                   - 9.0d0/32 * (prad/aa[q])^4 * j2^2 $
+                                   + 135.0d0/64 * (prad/aa[q])^6 * j2 * j4 $
+                                   - 27.0d0/128 * (prad/aa[q])^6 * j2^3 $
+                                   - 9.0d0 * (prad/aa[q])^2 * j2 * ii[q]^2 )
+  nu = sqrt( gm / aa[q]^3 ) * ( 1 $
+                                + 9.0d0/4 * (prad/aa[q])^2 * j2 $
+                                - 75.0d0/16 * (prad/aa[q])^4 * j4 $
+                                + 245.0d0/32 * (prad/aa[q])^6 * j6 $
+                                - 81.0d0/32 * (prad/aa[q])^4 * j2^2 $
+                                + 675.0d0/64 * (prad/aa[q])^6 * j2 * j4 $
+                                + 729.0d0/128 * (prad/aa[q])^6 * j2^3 $
+                                + 6.0d0 * (prad/aa[q])^2 * j2 * ee[q]^2 $
+                                - 51.0d0/4 * (prad/aa[q])^2 * j2 * ii[q]^2 )
+  kappa2 = kappa^2
+  nu2 = nu^2
+  eta2 = gm / aa[q]^3 * ( 1 $
+                          - 2.0d0 * (prad/aa[q])^2 * j2 $
+                          + 75.0d0/8 * (prad/aa[q])^4 * j4 $
+                          - 175.0d0/8 * (prad/aa[q])^6 * j6 )
+  chi2 = gm / aa[q]^3 * ( 1 $
+                          + 15.0d0/2 * (prad/aa[q])^2 * j2 $
+                          - 175.0d0/8 * (prad/aa[q])^4 * j4 $
+                          + 735.0d0/16 * (prad/aa[q])^6 * j6 )
+  alpha_1 = 1.0d0/3 * ( 2*nu + kappa )
+  alpha_2 = 2*nu - kappa
+  alpha2 = alpha_1 * alpha_2
+
+  ; Find new values of epicyclic elements, from RS06 Eqs 42 thru 47
+  aa_last[q] = aa[q]
+  aa[q] = (rr[q]-rc[q])/( 1 - (ldot[q]-ldotc[q]-nn)/2/nn )
+  ee[q] = sqrt( ((ldot[q]-ldotc[q]-nn)/2/nn)^2 + $
+                ((rdot[q]-rdotc[q])/aa[q]/kappa)^2 )
+  ii[q] = sqrt( ((zz[q]-zc[q])/aa[q])^2 + ((zdot[q]-zdotc[q])/aa[q]/nu)^2 )
+  if keyword_set(use_hz) then aa[q] = r0[q]*( 1 + ee[q]^2 + ii[q]^2 )
+  lambda[q] = ll[q] - lc[q] - 2*nn/kappa*(rdot[q]-rdotc[q])/aa[q]/kappa
+  mean_anom = atan( (rdot[q]-rdotc[q])/aa[q]/kappa/( 1 - (rr[q]-rc[q])/aa[q] ) )
+  foo = where( rr[q] gt aa[q], count )
+  if count gt 0 then mean_anom[foo] = mean_anom[foo] + !dpi
+  pomega[q] = fix_angles( lambda[q] - mean_anom, /rad, /to360 )
+  mean_arg = atan( nu*(zz[q]-zc[q])/(zdot[q]-zdotc[q]) )
+  foo = where( zdot[q]-zdotc[q] eq 0, count )
+  if count gt 0 then mean_arg[foo] = lambda[q[foo]]
+  foo = where( ( zz[q] gt 0 and mean_arg lt 0 ) or $
+               ( zz[q] lt 0 and mean_arg gt 0 ), count )
+  if count gt 0 then mean_arg[foo] =  mean_arg[foo] + !dpi
+  omega[q] = fix_angles( lambda[q] - mean_arg, /rad, /to360 )
+
+  ; Find new second-order components of epicyclic elements,
+  ; from RS06 Eqs 36 thru 41
+  rc[q] = aa[q]*ee[q]^2*( 1.5d0*eta2/kappa2 - 1 $
+                          - eta2/2/kappa2*cos(2*(lambda[q]-pomega[q])) ) + $
+          aa[q]*ii[q]^2*( 0.75d0*chi2/kappa2 - 1 $
+                          + chi2/4/alpha2*cos(2*(lambda[q]-omega[q])) )
+  lc[q] = ee[q]^2*(0.75d0+eta2/2/kappa2)*nn/kappa*sin(2*(lambda[q]-pomega[q])) $
+          - ii[q]^2*chi2/4/alpha2*nn/nu*sin(2*(lambda[q]-omega[q]))
+  zc[q] = aa[q]*ii[q]*ee[q]*( chi2/2/kappa/alpha_1*$
+                                       sin(2*lambda[q]-pomega[q]-omega[q]) $
+                              - 1.5d0*chi2/kappa/alpha_2*$
+                                       sin(pomega[q]-omega[q]) )
+  rdotc[q] = aa[q]*ee[q]^2*eta2/kappa*sin(2*(lambda[q]-pomega[q])) - $
+             aa[q]*ii[q]^2*chi2/2/alpha2*nu*sin(2*(lambda[q]-omega[q])) 
+  ldotc[q] = ee[q]^2*nn*( 3.5d0 - 3.0d0*eta2/kappa2 - kappa2/2/nn^2 $
+                          + (1.5d0+eta2/kappa2)*cos(2*(lambda[q]-pomega[q])) ) $
+             + ii[q]^2*nn*( 2.0d0 - 1.5d0*chi2/kappa2 - kappa2/2/nn^2 $
+                            - chi2/2/alpha2*cos(2*(lambda[q]-omega[q])) )
+  zdotc[q] = aa[q]*ii[q]*ee[q]*( chi2*(kappa+nu)/2/kappa/alpha_1*$
+                                          cos(2*lambda[q]-pomega[q]-omega[q]) $
+                                 + 1.5d0*chi2*(kappa-nu)/kappa/alpha_2*$
+                                          cos(pomega[q]-omega[q]) )
+
+  ; Sometimes a particle fails to converge because omega (long_node) is
+  ; oscillating between two values.  Find which value is more consistent
+  ; with nearby values of omega, and use that one. 
+  if nstep ge maxstep*.8 then begin
+    if not keyword_set(oldomega) then begin
+      qq = q
+      oldomega = omega[q]
+    endif else begin
+      if n_elements(q) ne n_elements(qq) then begin
+        filter = bytarr(nx)
+        filter[q] = 1
+        keep = where( filter[qq] eq 1 )
+        oldomega = oldomega[ keep, * ]
+        qq = q
+      endif
+      oldomega = [ [oldomega], [omega[q]] ]
+    endelse
+    if n_elements(oldomega[0,*]) ge 5 then begin
+      ; Look for particles that have the same omega value after 4 iterations
+      foo1 = abs( oldomega[*,4] - oldomega[*,0] ) lt !dpi/180
+      ; Look for particles with little change in the absolute value of the 
+      ; derivative (i.e., they oscillate)
+      doo = oldomega[*,1:4] - oldomega[*,0:4]
+      meanabsdoo = rebin( total(abs(doo),2) / 4, n_elements(q), 4 )
+      sdabsdoo = sqrt( total(( abs(doo) - meanabsdoo )^2,2) / $
+                       (n_elements(q)-1) )
+      foo2 = sdabsdoo lt !dpi/180
+      foo = where( foo1 and foo2, count )
+      goodcount = 0l
+      if count gt 0 then for j=0l,count-1 do begin
+        ; Define an interval around the problem location
+        int = lindgen(7) + q[j] - 3
+        ; Make sure that other problem locations are not within the interval
+        filter = bytarr(nx)
+        filter[q] = 1
+        if n_elements(where(filter[int] eq 1)) eq 1 then begin
+;          ; Make sure that interval contains only one particle
+;          filter = bytarr(nx+1)
+;          filter[np] = 1
+;          foo = where( filter[int] eq 1, count )
+;          if count eq 0 then begin
+            expect = fix_angles( (poly( indgen(7), poly_fit( indgen(7), $
+                     unwrap_phase(omega[int],/rad), 1 ) ))[3], /rad, /to360 )
+            if abs(fix_angles( omega[q[j]] - expect, /rad )) lt !dpi/180 then begin
+              aa_last[q[j]] = aa[q[j]]
+              goodcount = goodcount + 1
+            endif
+;          endif
+        endif
+      endfor
+      if goodcount gt 0 then print, 'Counted '+strtrim(goodcount,2)+' oscillating particles as converging, based on nearby values.'
+      ; Preserve the property that oldomega is n-by-5 while being worked on
+      oldomega = oldomega[*,1:4]
+    endif
+  endif
+
+  ; Check convergence
+  err = abs( aa - aa_last )
+  done = where( err lt tol, ndone )
+  if nstep eq 0 then oldnd = ndone else oldnd = [ oldnd, ndone ]
+  if ndone gt 0 and ndone lt nx then q = vec_remove( lindgen(nx), done )
+
+  nstep = nstep + 1
+
+endwhile
+print, strtrim(ndone,2)+' of '+strtrim(nx,2)+$
+       ' particles converged with a tolerance of '+strtrim(tol,2)+' km'
+print, 'after '+strtrim(nstep,2)+' steps (max='+strtrim(maxstep,2)+').'
+
+out = [ [aa], [ee], [ii], [omega], [pomega-omega], [lambda-pomega] ]
+return, out
+
+end

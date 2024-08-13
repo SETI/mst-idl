@@ -1,0 +1,90 @@
+;--------------------------------------------------------------------------------------------------------------------
+; Routine which packages together the remaining part of Matt H's star-trail repointing method.
+;
+; This routine assumes that the following routines have already been called, as below;
+;
+;@caviar
+;@image
+get_streaks, label, cmat, pmat, nacmat, stars, cam_params, x_streaks, y_streaks
+;@move
+;
+; Then run the current routine by typing:
+;
+;@ncall
+;
+;No parameters are required on the call. The routine is entirely automatic, with no user-interaction required.
+;
+; NickC, QMUL 02-nov08
+;--------------------------------------------------------------------------------------------------------------------
+
+;--------------------------------------------------------------------------------------------------------------------
+; x and y don't seem to be updated by move, so coords(*,1) and coords(*,0) are used in the call to col_compute_nc
+; instead. The col_compute_nc routine has a very minor change compared to MH's original relating to the 
+; read_vicar routine. Also 'im', rather than 'rawim' is supplied directly on the call line (in the QMUL version 
+; of caviar, 'rawim' is not in byte format, also calibrated image unavailable).
+;--------------------------------------------------------------------------------------------------------------------
+col_compute_nc,image_name,im,stars,coords(*,1),coords(*,0),x_streaks,y_streaks,star_col_tab,x_col,y_col,max_streak_dn
+
+;--------------------------------------------------------------------------------------------------------------------
+; Now update the found_stars with the computed centres-of-light of the streaks. This replaces the call to the
+; caviar 'f' routine.
+;--------------------------------------------------------------------------------------------------------------------
+q=where(x_col ne 0 and finite(x_col) eq 1)
+found_star_coords=dblarr(n_elements(q),2)
+found_star_coords(*,0)=y_col(q)
+found_star_coords(*,1)=x_col(q)
+stars=stars(q,*)
+
+;--------------------------------------------------------------------------------------------------------------------
+; ... and similarly update the coords of the predicted stars with the predicted streaks. 
+; NB the centre value (corresponding to the image mid-time has been used - equivalent to the mean). 
+;--------------------------------------------------------------------------------------------------------------------
+coords=dblarr(n_elements(q),2)
+coords(*,1)=rebin(x_streaks(*,q),1,n_elements(q))
+coords(*,0)=rebin(y_streaks(*,q),1,n_elements(q))
+
+
+
+
+;--------------------------------------------------------------------------------------------------------------------
+; May as well do the rest of the pointing while we're at it. Note that match_nc just has one very small change 
+; compared to the standard caviar version, match.
+;--------------------------------------------------------------------------------------------------------------------
+@match_nc
+
+;located_stars=dblarr(n_elements(q),8)
+;located_stars(*,0:3)=transpose(stars)
+;located_stars(*,4:5)=found_star_coords
+;located_stars(*,6:7)=coords
+
+;fittedx=round(located_stars[*,5])
+;fittedy=round(located_stars[*,4])
+;nx=n_elements(located_stars[*,5])
+;tv,im,/order
+;plots,fittedx,(nl-1)-fittedy,psym=symbol,symsize=symbol_size,color=make_array(nx,value=cyan()),/device
+
+;--------------------------------------------------------------------------------------------------------------------
+; Standard caviar routine:
+;--------------------------------------------------------------------------------------------------------------------
+
+
+cspice_m2eul,cmat,3,1,3,ang3,ang2,ang1
+twiststart=ang3
+decstart=((0.5d0*!dpi)-ang2)
+rastart=(ang1-(0.5d0*!dpi))
+if rastart lt 0.0d0 then rastart=rastart+(2.0d0*!dpi)
+if twiststart lt 0.0d0 then twiststart=twiststart+(2.0d0*!dpi)
+if not keyword_exists(point_notwist) then point_notwist = 1
+
+caviar_itfitpoint,rastart,decstart,twiststart,located_stars,vobs,cam_params,1.5d0,rao,deco,twisto,cmat,nl,notwist=point_notwist,debug=debug
+
+nx=n_elements(located_stars[*,5])
+
+star_names,located_stars,ls_names
+
+tv,im,/order
+
+plots,round(located_stars[*,5]),round((nl-1)-located_stars[*,4]),psym=symbol,symsize=symbol_size,color=make_array(nx,value=cyan()),/device
+xyouts,round(located_stars[*,5])+6,(nl-4)-round(located_stars[*,4]),ls_names,color=make_array(n_elements(located_stars[*,0]),value=cyan()),/device
+xyouts,round(located_stars[*,5])+6,(nl-14)-round(located_stars[*,4]),strcompress(string(located_stars[*,3]/100.0),/remove_all),color=make_array(n_elements(located_stars[*,0]),value=cyan()),/device
+

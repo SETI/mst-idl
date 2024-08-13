@@ -1,0 +1,1483 @@
+Begin forwarded message:
+
+From: Horizons Ephemeris System <horizons@ssd.jpl.nasa.gov>
+Date: February 21, 2006 12:23:59 PM EST
+Subject: MAJOR BODY #C(500@6)_T(601) (1/1)
+
+ Automated mail xmit by MAIL_REQUEST, PID=   16764 Tue Feb 21 09:23:59 2006
+++++++++++++++++++++++++++++++++ (part 1 of 1)  +++++++++++++++++++++++++++++++
+
+*******************************************************************************
+ Revised: Oct 18, 2005             Mimas / (Saturn)                         601
+
+ SATELLITE PHYSICAL PROPERTIES:
+  Mean Radius (km)        = 198.6  +- 0.6   Density (g/cm^3)   = 1.169 +- 0.021
+  Mass (10^22 g)          =   3.84 +- 0.06  Geometric Albedo   = 0.77
+  GM (km^3/s^2)           =   2.56 +- 0.04  V(1,0)             = +3.3
+
+ SATELLITE ORBITAL DATA:
+  Semi-major axis, a (km) = 185.52(10^3)    Orbital period     = 0.9424218 d
+  Eccentricity, e         = 0.0202          Rotational period  = Synchronous
+  Inclination, i  (deg)   = 1.53
+*******************************************************************************
+
+
+*******************************************************************************
+Ephemeris / MAIL_REQUEST Tue Feb 21 09:23:59 2006  Pasadena, USA / Horizons    
+*******************************************************************************
+Target body name: Mimas (601)                     {source: SAT225}
+Center body name: Saturn Barycenter (6)           {source: DE405}
+Center-site name: BODYCENTRIC
+*******************************************************************************
+Start time      : A.D. 2004-Jul-01 00:00:00.0000 CT 
+Stop  time      : A.D. 2004-Jul-01 00:00:00.0000 CT 
+Step-size       : DISCRETE TIME-LIST
+*******************************************************************************
+Center geodetic : 0.000000,  0.000000,  0.00000   {E-lon(deg),Lat(deg),Alt(km)}
+Center cylindric: 0.00000,     0.000,     0.000   {E-lon(deg),Dxy(km),Dz(km)}
+Center radii    : (undefined)                                                  
+System GM       : 3.7931198899970844E+07 km^3/s^2
+Output units    : KM-S, deg, Julian day number (Tp)                            
+Output format   : 10
+Reference frame : ICRF/J2000.0                                                 
+Output type     : GEOMETRIC osculating elements
+Coordinate systm: Ecliptic and Mean Equinox of Reference Epoch                 
+*******************************************************************************
+JDCT 
+   EC    QR   IN
+   OM    W    Tp
+   N     MA   TA
+   A     AD   PR
+*******************************************************************************
+$$SOE
+2453187.500000000 = A.D. 2004-Jul-01 00:00:00.0000 (CT)
+ EC= 1.901200550852424E-02 QR= 1.826964652127446E+05 IN= 2.865332758658185E+01
+ OM= 1.664794218474603E+02 W = 3.221281196188698E+02 Tp=  2453187.184437133837
+ N = 4.390573368456378E-03 MA= 1.197073656291927E+02 TA= 1.215772728620360E+02
+ A = 1.862372080378525E+05 AD= 1.897779508629604E+05 PR= 8.199384676871200E+04
+$$EOE
+*******************************************************************************
+Coordinate system description:
+
+  Ecliptic and Mean Equinox of Reference Epoch
+
+    Reference epoch: J2000.0
+    xy-plane: plane of the Earth's orbit at the reference epoch
+    x-axis  : out along ascending node of instantaneous plane of the Earth's
+              orbit and the Earth's mean equator at the reference epoch
+    z-axis  : perpendicular to the xy-plane in the directional (+ or -) sense
+              of Earth's north pole at the reference epoch.
+
+Symbol meaning  
+
+    JDCT     Epoch Julian Date, Coordinate Time
+      EC     Eccentricity, e                                                   
+      QR     Periapsis distance, q (km)                                        
+      IN     Inclination w.r.t xy-plane, i (degrees)                           
+      OM     Longitude of Ascending Node, OMEGA, (degrees)                     
+      W      Argument of Perifocus, w (degrees)                                
+      Tp     Time of periapsis (Julian day number)                             
+      N      Mean motion, n (degrees/sec)                                      
+      MA     Mean anomaly, M (degrees)                                         
+      TA     True anomaly, nu (degrees)                                        
+      A      Semi-major axis, a (km)                                           
+      AD     Apoapsis distance (km)                                            
+      PR     Orbital period (sec)                                              
+
+Geometric states/elements have no aberration corrections applied.
+
+ Computations by ...
+     Solar System Dynamics Group, Horizons On-Line Ephemeris System
+     4800 Oak Grove Drive, Jet Propulsion Laboratory
+     Pasadena, CA  91109   USA
+     Information: http://ssd.jpl.nasa.gov/
+     Connect    : telnet://ssd.jpl.nasa.gov:6775  (via browser)
+                  telnet ssd.jpl.nasa.gov 6775    (via command-line)
+     Author     : Jon.Giorgini@jpl.nasa.gov
+*******************************************************************************
+
+
+Begin forwarded message:
+
+From: Horizons Ephemeris System <horizons@ssd.jpl.nasa.gov>
+Date: February 21, 2006 12:23:59 PM EST
+Subject: MAJOR BODY #C(500@6)_T(602) (1/1)
+
+ Automated mail xmit by MAIL_REQUEST, PID=   16764 Tue Feb 21 09:23:59 2006
+++++++++++++++++++++++++++++++++ (part 1 of 1)  +++++++++++++++++++++++++++++++
+
+*******************************************************************************
+ Revised: Oct 18, 2005            Enceladus / (Saturn)                      602
+
+ SATELLITE PHYSICAL PROPERTIES:
+  Mean Radius (km)        = 249.4  +- 0.2   Density (g/cm^3)  =  1.331 +- 0.274
+  Mass (10^22 g)          =   8.65 +- 1.78  Geometric Albedo  =  1.04
+  GM (km^3/s^2)           =   5.77 +- 1.19  V(1,0)            =  +2.2
+
+ SATELLITE ORBITAL DATA:
+  Semi-major axis, a (km) = 238.02(10^3)    Orbital period    = 1.370218 d
+  Eccentricity, e         = 0.0045          Rotational period = Synchronous
+  Inclination, i  (deg)   = 0.02
+*******************************************************************************
+
+
+*******************************************************************************
+Ephemeris / MAIL_REQUEST Tue Feb 21 09:23:59 2006  Pasadena, USA / Horizons    
+*******************************************************************************
+Target body name: Enceladus (602)                 {source: SAT225}
+Center body name: Saturn Barycenter (6)           {source: DE405}
+Center-site name: BODYCENTRIC
+*******************************************************************************
+Start time      : A.D. 2004-Jul-01 00:00:00.0000 CT 
+Stop  time      : A.D. 2004-Jul-01 00:00:00.0000 CT 
+Step-size       : DISCRETE TIME-LIST
+*******************************************************************************
+Center geodetic : 0.000000,  0.000000,  0.00000   {E-lon(deg),Lat(deg),Alt(km)}
+Center cylindric: 0.00000,     0.000,     0.000   {E-lon(deg),Dxy(km),Dz(km)}
+Center radii    : (undefined)                                                  
+System GM       : 3.7931188369802929E+07 km^3/s^2
+Output units    : KM-S, deg, Julian day number (Tp)                            
+Output format   : 10
+Reference frame : ICRF/J2000.0                                                 
+Output type     : GEOMETRIC osculating elements
+Coordinate systm: Ecliptic and Mean Equinox of Reference Epoch                 
+*******************************************************************************
+JDCT 
+   EC    QR   IN
+   OM    W    Tp
+   N     MA   TA
+   A     AD   PR
+*******************************************************************************
+$$SOE
+2453187.500000000 = A.D. 2004-Jul-01 00:00:00.0000 (CT)
+ EC= 6.029733861143131E-03 QR= 2.367496077179447E+05 IN= 2.805655442748597E+01
+ OM= 1.695114223391730E+02 W = 3.324873295679600E+02 Tp=  2453187.245342083275
+ N = 3.035617476127830E-03 MA= 6.679100350171717E+01 TA= 6.742792191165162E+01
+ A = 2.381858047299686E+05 AD= 2.396220017419925E+05 PR= 1.185920172192474E+05
+$$EOE
+*******************************************************************************
+Coordinate system description:
+
+  Ecliptic and Mean Equinox of Reference Epoch
+
+    Reference epoch: J2000.0
+    xy-plane: plane of the Earth's orbit at the reference epoch
+    x-axis  : out along ascending node of instantaneous plane of the Earth's
+              orbit and the Earth's mean equator at the reference epoch
+    z-axis  : perpendicular to the xy-plane in the directional (+ or -) sense
+              of Earth's north pole at the reference epoch.
+
+Symbol meaning  
+
+    JDCT     Epoch Julian Date, Coordinate Time
+      EC     Eccentricity, e                                                   
+      QR     Periapsis distance, q (km)                                        
+      IN     Inclination w.r.t xy-plane, i (degrees)                           
+      OM     Longitude of Ascending Node, OMEGA, (degrees)                     
+      W      Argument of Perifocus, w (degrees)                                
+      Tp     Time of periapsis (Julian day number)                             
+      N      Mean motion, n (degrees/sec)                                      
+      MA     Mean anomaly, M (degrees)                                         
+      TA     True anomaly, nu (degrees)                                        
+      A      Semi-major axis, a (km)                                           
+      AD     Apoapsis distance (km)                                            
+      PR     Orbital period (sec)                                              
+
+Geometric states/elements have no aberration corrections applied.
+
+ Computations by ...
+     Solar System Dynamics Group, Horizons On-Line Ephemeris System
+     4800 Oak Grove Drive, Jet Propulsion Laboratory
+     Pasadena, CA  91109   USA
+     Information: http://ssd.jpl.nasa.gov/
+     Connect    : telnet://ssd.jpl.nasa.gov:6775  (via browser)
+                  telnet ssd.jpl.nasa.gov 6775    (via command-line)
+     Author     : Jon.Giorgini@jpl.nasa.gov
+*******************************************************************************
+
+
+Begin forwarded message:
+
+From: Horizons Ephemeris System <horizons@ssd.jpl.nasa.gov>
+Date: February 21, 2006 12:23:59 PM EST
+Subject: MAJOR BODY #C(500@6)_T(603) (1/1)
+
+ Automated mail xmit by MAIL_REQUEST, PID=   16764 Tue Feb 21 09:23:59 2006
+++++++++++++++++++++++++++++++++ (part 1 of 1)  +++++++++++++++++++++++++++++++
+
+*******************************************************************************
+ Revised: Oct 18, 2005            Tethys  / (Saturn)                        603
+
+ SATELLITE PHYSICAL PROPERTIES:
+  Mean Radius (km)        = 529.9  +- 1.5   Density (g/cm^3)  =  0.991+- 0.009
+  Mass (10^22 g)          =  61.76 +- 0.11  Geometric Albedo  =  0.80
+  GM (km^3/s^2)           =  41.21 +- 0.04  V(1,0)            =  +0.7
+
+ SATELLITE ORBITAL DATA:
+  Semi-major axis, a (km) = 294.66(10^3)    Orbital period    = 1.887802 d
+  Eccentricity, e         = 0.0000          Rotational period = Synchronous
+  Inclination, i  (deg)   = 1.09
+*******************************************************************************
+
+
+*******************************************************************************
+Ephemeris / MAIL_REQUEST Tue Feb 21 09:23:59 2006  Pasadena, USA / Horizons    
+*******************************************************************************
+Target body name: Tethys (603)                    {source: SAT225}
+Center body name: Saturn Barycenter (6)           {source: DE405}
+Center-site name: BODYCENTRIC
+*******************************************************************************
+Start time      : A.D. 2004-Jul-01 00:00:00.0000 CT 
+Stop  time      : A.D. 2004-Jul-01 00:00:00.0000 CT 
+Step-size       : DISCRETE TIME-LIST
+*******************************************************************************
+Center geodetic : 0.000000,  0.000000,  0.00000   {E-lon(deg),Lat(deg),Alt(km)}
+Center cylindric: 0.00000,     0.000,     0.000   {E-lon(deg),Dxy(km),Dz(km)}
+Center radii    : (undefined)                                                  
+System GM       : 3.7931121566363059E+07 km^3/s^2
+Output units    : KM-S, deg, Julian day number (Tp)                            
+Output format   : 10
+Reference frame : ICRF/J2000.0                                                 
+Output type     : GEOMETRIC osculating elements
+Coordinate systm: Ecliptic and Mean Equinox of Reference Epoch                 
+*******************************************************************************
+JDCT 
+   EC    QR   IN
+   OM    W    Tp
+   N     MA   TA
+   A     AD   PR
+*******************************************************************************
+$$SOE
+2453187.500000000 = A.D. 2004-Jul-01 00:00:00.0000 (CT)
+ EC= 2.292751761372345E-03 QR= 2.949427112763912E+05 IN= 2.778377019420254E+01
+ OM= 1.672665785503912E+02 W = 1.814119854398721E+02 Tp=  2453187.554106352385
+ N = 2.195425292781895E-03 MA= 3.497368503030668E+02 TA= 3.496899074987135E+02
+ A = 2.956204956885790E+05 AD= 2.962982801007667E+05 PR= 1.639773401461693E+05
+$$EOE
+*******************************************************************************
+Coordinate system description:
+
+  Ecliptic and Mean Equinox of Reference Epoch
+
+    Reference epoch: J2000.0
+    xy-plane: plane of the Earth's orbit at the reference epoch
+    x-axis  : out along ascending node of instantaneous plane of the Earth's
+              orbit and the Earth's mean equator at the reference epoch
+    z-axis  : perpendicular to the xy-plane in the directional (+ or -) sense
+              of Earth's north pole at the reference epoch.
+
+Symbol meaning  
+
+    JDCT     Epoch Julian Date, Coordinate Time
+      EC     Eccentricity, e                                                   
+      QR     Periapsis distance, q (km)                                        
+      IN     Inclination w.r.t xy-plane, i (degrees)                           
+      OM     Longitude of Ascending Node, OMEGA, (degrees)                     
+      W      Argument of Perifocus, w (degrees)                                
+      Tp     Time of periapsis (Julian day number)                             
+      N      Mean motion, n (degrees/sec)                                      
+      MA     Mean anomaly, M (degrees)                                         
+      TA     True anomaly, nu (degrees)                                        
+      A      Semi-major axis, a (km)                                           
+      AD     Apoapsis distance (km)                                            
+      PR     Orbital period (sec)                                              
+
+Geometric states/elements have no aberration corrections applied.
+
+ Computations by ...
+     Solar System Dynamics Group, Horizons On-Line Ephemeris System
+     4800 Oak Grove Drive, Jet Propulsion Laboratory
+     Pasadena, CA  91109   USA
+     Information: http://ssd.jpl.nasa.gov/
+     Connect    : telnet://ssd.jpl.nasa.gov:6775  (via browser)
+                  telnet ssd.jpl.nasa.gov 6775    (via command-line)
+     Author     : Jon.Giorgini@jpl.nasa.gov
+*******************************************************************************
+
+
+Begin forwarded message:
+
+From: Horizons Ephemeris System <horizons@ssd.jpl.nasa.gov>
+Date: February 21, 2006 12:24:00 PM EST
+Subject: MAJOR BODY #C(500@6)_T(604) (1/1)
+
+ Automated mail xmit by MAIL_REQUEST, PID=   16764 Tue Feb 21 09:24:00 2006
+++++++++++++++++++++++++++++++++ (part 1 of 1)  +++++++++++++++++++++++++++++++
+
+*******************************************************************************
+ Revised: Oct 18, 2005            Dione  / (Saturn)                         604
+
+ SATELLITE PHYSICAL PROPERTIES:
+  Mean Radius (km)        = 559    +- 5     Density (g/cm^3)  =  1.498 +- 0.040
+  Mass (10^22 g)          = 109.59 +- 0.17  Geometric Albedo  =  0.55
+  GM (km^3/s^2)           =  73.13 +- 0.02  V(1,0)            = +0.8
+
+ SATELLITE ORBITAL DATA:
+  Semi-major axis, a (km) = 377.40(10^3)    Orbital period    = 2.736915 d
+  Eccentricity, e         = 0.0022          Rotational period = Synchronous
+  Inclination, i  (deg)   = 0.02
+*******************************************************************************
+
+
+*******************************************************************************
+Ephemeris / MAIL_REQUEST Tue Feb 21 09:23:59 2006  Pasadena, USA / Horizons    
+*******************************************************************************
+Target body name: Dione (604)                     {source: SAT225}
+Center body name: Saturn Barycenter (6)           {source: DE405}
+Center-site name: BODYCENTRIC
+*******************************************************************************
+Start time      : A.D. 2004-Jul-01 00:00:00.0000 CT 
+Stop  time      : A.D. 2004-Jul-01 00:00:00.0000 CT 
+Step-size       : DISCRETE TIME-LIST
+*******************************************************************************
+Center geodetic : 0.000000,  0.000000,  0.00000   {E-lon(deg),Lat(deg),Alt(km)}
+Center cylindric: 0.00000,     0.000,     0.000   {E-lon(deg),Dxy(km),Dz(km)}
+Center radii    : (undefined)                                                  
+System GM       : 3.7931057769698195E+07 km^3/s^2
+Output units    : KM-S, deg, Julian day number (Tp)                            
+Output format   : 10
+Reference frame : ICRF/J2000.0                                                 
+Output type     : GEOMETRIC osculating elements
+Coordinate systm: Ecliptic and Mean Equinox of Reference Epoch                 
+*******************************************************************************
+JDCT 
+   EC    QR   IN
+   OM    W    Tp
+   N     MA   TA
+   A     AD   PR
+*******************************************************************************
+$$SOE
+2453187.500000000 = A.D. 2004-Jul-01 00:00:00.0000 (CT)
+ EC= 2.016047744777963E-03 QR= 3.774790931340567E+05 IN= 2.803495973914591E+01
+ OM= 1.695741954604497E+02 W = 2.672020198395057E+02 Tp=  2453188.141986656468
+ N = 1.516931925210643E-03 MA= 2.758593552528332E+02 TA= 2.756294816553061E+02
+ A = 3.782416463521660E+05 AD= 3.790041995702753E+05 PR= 2.373211309070511E+05
+$$EOE
+*******************************************************************************
+Coordinate system description:
+
+  Ecliptic and Mean Equinox of Reference Epoch
+
+    Reference epoch: J2000.0
+    xy-plane: plane of the Earth's orbit at the reference epoch
+    x-axis  : out along ascending node of instantaneous plane of the Earth's
+              orbit and the Earth's mean equator at the reference epoch
+    z-axis  : perpendicular to the xy-plane in the directional (+ or -) sense
+              of Earth's north pole at the reference epoch.
+
+Symbol meaning  
+
+    JDCT     Epoch Julian Date, Coordinate Time
+      EC     Eccentricity, e                                                   
+      QR     Periapsis distance, q (km)                                        
+      IN     Inclination w.r.t xy-plane, i (degrees)                           
+      OM     Longitude of Ascending Node, OMEGA, (degrees)                     
+      W      Argument of Perifocus, w (degrees)                                
+      Tp     Time of periapsis (Julian day number)                             
+      N      Mean motion, n (degrees/sec)                                      
+      MA     Mean anomaly, M (degrees)                                         
+      TA     True anomaly, nu (degrees)                                        
+      A      Semi-major axis, a (km)                                           
+      AD     Apoapsis distance (km)                                            
+      PR     Orbital period (sec)                                              
+
+Geometric states/elements have no aberration corrections applied.
+
+ Computations by ...
+     Solar System Dynamics Group, Horizons On-Line Ephemeris System
+     4800 Oak Grove Drive, Jet Propulsion Laboratory
+     Pasadena, CA  91109   USA
+     Information: http://ssd.jpl.nasa.gov/
+     Connect    : telnet://ssd.jpl.nasa.gov:6775  (via browser)
+                  telnet ssd.jpl.nasa.gov 6775    (via command-line)
+     Author     : Jon.Giorgini@jpl.nasa.gov
+*******************************************************************************
+
+
+Begin forwarded message:
+
+From: Horizons Ephemeris System <horizons@ssd.jpl.nasa.gov>
+Date: February 21, 2006 12:24:00 PM EST
+Subject: MAJOR BODY #C(500@6)_T(605) (1/1)
+
+ Automated mail xmit by MAIL_REQUEST, PID=   16764 Tue Feb 21 09:24:00 2006
+++++++++++++++++++++++++++++++++ (part 1 of 1)  +++++++++++++++++++++++++++++++
+
+*******************************************************************************
+ Revised: Oct 18, 2005            Rhea  / (Saturn)                          605
+
+ SATELLITE PHYSICAL PROPERTIES:
+  Mean Radius (km)        = 764    +- 4     Density (g/cm^3)  =  1.240 +- 0.037
+  Mass (10^22 g)          = 231.66 +- 5.81  Geometric Albedo  =  0.65
+  GM (km^3/s^2)           = 154.59 +- 3.87  V(1,0)            = +0.1
+
+ SATELLITE ORBITAL DATA:
+  Semi-major axis, a (km) = 527.04(10^3)    Orbital period    = 4.517500 d
+  Eccentricity, e         = 0.001           Rotational period = Synchronous
+  Inclination, i  (deg)   = 0.35
+*******************************************************************************
+
+
+*******************************************************************************
+Ephemeris / MAIL_REQUEST Tue Feb 21 09:24:00 2006  Pasadena, USA / Horizons    
+*******************************************************************************
+Target body name: Rhea (605)                      {source: SAT225}
+Center body name: Saturn Barycenter (6)           {source: DE405}
+Center-site name: BODYCENTRIC
+*******************************************************************************
+Start time      : A.D. 2004-Jul-01 00:00:00.0000 CT 
+Stop  time      : A.D. 2004-Jul-01 00:00:00.0000 CT 
+Step-size       : DISCRETE TIME-LIST
+*******************************************************************************
+Center geodetic : 0.000000,  0.000000,  0.00000   {E-lon(deg),Lat(deg),Alt(km)}
+Center cylindric: 0.00000,     0.000,     0.000   {E-lon(deg),Dxy(km),Dz(km)}
+Center radii    : (undefined)                                                  
+System GM       : 3.7930894959103189E+07 km^3/s^2
+Output units    : KM-S, deg, Julian day number (Tp)                            
+Output format   : 10
+Reference frame : ICRF/J2000.0                                                 
+Output type     : GEOMETRIC osculating elements
+Coordinate systm: Ecliptic and Mean Equinox of Reference Epoch                 
+*******************************************************************************
+JDCT 
+   EC    QR   IN
+   OM    W    Tp
+   N     MA   TA
+   A     AD   PR
+*******************************************************************************
+$$SOE
+2453187.500000000 = A.D. 2004-Jul-01 00:00:00.0000 (CT)
+ EC= 1.295753097886731E-03 QR= 5.267655907432896E+05 IN= 2.799923187708475E+01
+ OM= 1.687923769991140E+02 W = 2.032880808412376E+02 Tp=  2453187.242538189050
+ N = 9.211883242883211E-04 MA= 2.049155835836444E+01 TA= 2.054361645851995E+01
+ A = 5.274490344636732E+05 AD= 5.281324781840569E+05 PR= 3.907995688917614E+05
+$$EOE
+*******************************************************************************
+Coordinate system description:
+
+  Ecliptic and Mean Equinox of Reference Epoch
+
+    Reference epoch: J2000.0
+    xy-plane: plane of the Earth's orbit at the reference epoch
+    x-axis  : out along ascending node of instantaneous plane of the Earth's
+              orbit and the Earth's mean equator at the reference epoch
+    z-axis  : perpendicular to the xy-plane in the directional (+ or -) sense
+              of Earth's north pole at the reference epoch.
+
+Symbol meaning  
+
+    JDCT     Epoch Julian Date, Coordinate Time
+      EC     Eccentricity, e                                                   
+      QR     Periapsis distance, q (km)                                        
+      IN     Inclination w.r.t xy-plane, i (degrees)                           
+      OM     Longitude of Ascending Node, OMEGA, (degrees)                     
+      W      Argument of Perifocus, w (degrees)                                
+      Tp     Time of periapsis (Julian day number)                             
+      N      Mean motion, n (degrees/sec)                                      
+      MA     Mean anomaly, M (degrees)                                         
+      TA     True anomaly, nu (degrees)                                        
+      A      Semi-major axis, a (km)                                           
+      AD     Apoapsis distance (km)                                            
+      PR     Orbital period (sec)                                              
+
+Geometric states/elements have no aberration corrections applied.
+
+ Computations by ...
+     Solar System Dynamics Group, Horizons On-Line Ephemeris System
+     4800 Oak Grove Drive, Jet Propulsion Laboratory
+     Pasadena, CA  91109   USA
+     Information: http://ssd.jpl.nasa.gov/
+     Connect    : telnet://ssd.jpl.nasa.gov:6775  (via browser)
+                  telnet ssd.jpl.nasa.gov 6775    (via command-line)
+     Author     : Jon.Giorgini@jpl.nasa.gov
+*******************************************************************************
+
+
+Begin forwarded message:
+
+From: Horizons Ephemeris System <horizons@ssd.jpl.nasa.gov>
+Date: February 21, 2006 12:24:00 PM EST
+Subject: MAJOR BODY #C(500@6)_T(606) (1/1)
+
+ Automated mail xmit by MAIL_REQUEST, PID=   16764 Tue Feb 21 09:24:00 2006
+++++++++++++++++++++++++++++++++ (part 1 of 1)  +++++++++++++++++++++++++++++++
+
+*******************************************************************************
+ Revised: Oct 18, 2005            Titan / (Saturn)                          606
+
+ SATELLITE PHYSICAL PROPERTIES:
+  Mean Radius (km)       = 2575.5   +-  2.0  Density (g/cm^3) =  1.880 +- 0.005
+  Mass (10^22 g)         = 13454.26 +- 20.21 Geometric Albedo =  0.2 
+  GM (km^3/s^2)          = 8978.03  +-  0.92  V(1,0)          = -1.2 
+
+ SATELLITE ORBITAL DATA:
+  Semi-major axis, a (km)= 1221.85 (10^3)  Orbital period     = 15.945421 d
+  Eccentricity, e        = 0.0292          Rotational period  = 
+  Inclination, i  (deg)  = 0.33
+*******************************************************************************
+
+
+*******************************************************************************
+Ephemeris / MAIL_REQUEST Tue Feb 21 09:24:00 2006  Pasadena, USA / Horizons    
+*******************************************************************************
+Target body name: Titan (606)                     {source: SAT225}
+Center body name: Saturn Barycenter (6)           {source: DE405}
+Center-site name: BODYCENTRIC
+*******************************************************************************
+Start time      : A.D. 2004-Jul-01 00:00:00.0000 CT 
+Stop  time      : A.D. 2004-Jul-01 00:00:00.0000 CT 
+Step-size       : DISCRETE TIME-LIST
+*******************************************************************************
+Center geodetic : 0.000000,  0.000000,  0.00000   {E-lon(deg),Lat(deg),Alt(km)}
+Center cylindric: 0.00000,     0.000,     0.000   {E-lon(deg),Dxy(km),Dz(km)}
+Center radii    : (undefined)                                                  
+System GM       : 3.7913253980862014E+07 km^3/s^2
+Output units    : KM-S, deg, Julian day number (Tp)                            
+Output format   : 10
+Reference frame : ICRF/J2000.0                                                 
+Output type     : GEOMETRIC osculating elements
+Coordinate systm: Ecliptic and Mean Equinox of Reference Epoch                 
+*******************************************************************************
+JDCT 
+   EC    QR   IN
+   OM    W    Tp
+   N     MA   TA
+   A     AD   PR
+*******************************************************************************
+$$SOE
+2453187.500000000 = A.D. 2004-Jul-01 00:00:00.0000 (CT)
+ EC= 2.864716657259556E-02 QR= 1.186636719283550E+06 IN= 2.771076006674190E+01
+ OM= 1.691559405459202E+02 W = 1.665852866719709E+02 Tp=  2453180.233878928237
+ N = 2.612805039295257E-04 MA= 1.640300349851096E+02 TA= 1.649030910607049E+02
+ A = 1.221633044602876E+06 AD= 1.256629369922201E+06 PR= 1.377829553241759E+06
+$$EOE
+*******************************************************************************
+Coordinate system description:
+
+  Ecliptic and Mean Equinox of Reference Epoch
+
+    Reference epoch: J2000.0
+    xy-plane: plane of the Earth's orbit at the reference epoch
+    x-axis  : out along ascending node of instantaneous plane of the Earth's
+              orbit and the Earth's mean equator at the reference epoch
+    z-axis  : perpendicular to the xy-plane in the directional (+ or -) sense
+              of Earth's north pole at the reference epoch.
+
+Symbol meaning  
+
+    JDCT     Epoch Julian Date, Coordinate Time
+      EC     Eccentricity, e                                                   
+      QR     Periapsis distance, q (km)                                        
+      IN     Inclination w.r.t xy-plane, i (degrees)                           
+      OM     Longitude of Ascending Node, OMEGA, (degrees)                     
+      W      Argument of Perifocus, w (degrees)                                
+      Tp     Time of periapsis (Julian day number)                             
+      N      Mean motion, n (degrees/sec)                                      
+      MA     Mean anomaly, M (degrees)                                         
+      TA     True anomaly, nu (degrees)                                        
+      A      Semi-major axis, a (km)                                           
+      AD     Apoapsis distance (km)                                            
+      PR     Orbital period (sec)                                              
+
+Geometric states/elements have no aberration corrections applied.
+
+ Computations by ...
+     Solar System Dynamics Group, Horizons On-Line Ephemeris System
+     4800 Oak Grove Drive, Jet Propulsion Laboratory
+     Pasadena, CA  91109   USA
+     Information: http://ssd.jpl.nasa.gov/
+     Connect    : telnet://ssd.jpl.nasa.gov:6775  (via browser)
+                  telnet ssd.jpl.nasa.gov 6775    (via command-line)
+     Author     : Jon.Giorgini@jpl.nasa.gov
+*******************************************************************************
+
+
+Begin forwarded message:
+
+From: Horizons Ephemeris System <horizons@ssd.jpl.nasa.gov>
+Date: February 21, 2006 12:24:00 PM EST
+Subject: MAJOR BODY #C(500@6)_T(607) (1/1)
+
+ Automated mail xmit by MAIL_REQUEST, PID=   16764 Tue Feb 21 09:24:00 2006
+++++++++++++++++++++++++++++++++ (part 1 of 1)  +++++++++++++++++++++++++++++++
+
+*******************************************************************************
+ Revised: Oct 18, 2005            Hyperion / (Saturn)                       607
+
+ SATELLITE PHYSICAL PROPERTIES:
+  Mean Radius (km)        = 133    +- 8    Density (g/cm^3)  =  1.095 +- 0.057
+  Mass (10^22 g)          =   1.08 +- 0.52 Geometric Albedo  =  0.25
+  GM (km^3/s^2)           = 0.72   +- 0.35 V(1,0)            = +4.8 
+
+ SATELLITE ORBITAL DATA:
+  Semi-major axis, a (km) = 1481.1 (10^3)  Orbital period    = 21.276609 d
+  Eccentricity, e         = 0.1042         Rotational period = Chaotic
+  Inclination, i  (deg)   = 0.43
+*******************************************************************************
+
+
+*******************************************************************************
+Ephemeris / MAIL_REQUEST Tue Feb 21 09:24:00 2006  Pasadena, USA / Horizons    
+*******************************************************************************
+Target body name: Hyperion (607)                  {source: SAT225}
+Center body name: Saturn Barycenter (6)           {source: DE405}
+Center-site name: BODYCENTRIC
+*******************************************************************************
+Start time      : A.D. 2004-Jul-01 00:00:00.0000 CT 
+Stop  time      : A.D. 2004-Jul-01 00:00:00.0000 CT 
+Step-size       : DISCRETE TIME-LIST
+*******************************************************************************
+Center geodetic : 0.000000,  0.000000,  0.00000   {E-lon(deg),Lat(deg),Alt(km)}
+Center cylindric: 0.00000,     0.000,     0.000   {E-lon(deg),Dxy(km),Dz(km)}
+Center radii    : (undefined)                                                  
+System GM       : 3.7931203250037208E+07 km^3/s^2
+Output units    : KM-S, deg, Julian day number (Tp)                            
+Output format   : 10
+Reference frame : ICRF/J2000.0                                                 
+Output type     : GEOMETRIC osculating elements
+Coordinate systm: Ecliptic and Mean Equinox of Reference Epoch                 
+*******************************************************************************
+JDCT 
+   EC    QR   IN
+   OM    W    Tp
+   N     MA   TA
+   A     AD   PR
+*******************************************************************************
+$$SOE
+2453187.500000000 = A.D. 2004-Jul-01 00:00:00.0000 (CT)
+ EC= 1.156192241722430E-01 QR= 1.306206270701285E+06 IN= 2.709222757071213E+01
+ OM= 1.684056867935374E+02 W = 1.205913833839819E+02 Tp=  2453197.319703895599
+ N = 1.965903681705218E-04 MA= 1.932083247586167E+02 TA= 1.905568418024394E+02
+ A = 1.476972709496891E+06 AD= 1.647739148292497E+06 PR= 1.831218911435871E+06
+$$EOE
+*******************************************************************************
+Coordinate system description:
+
+  Ecliptic and Mean Equinox of Reference Epoch
+
+    Reference epoch: J2000.0
+    xy-plane: plane of the Earth's orbit at the reference epoch
+    x-axis  : out along ascending node of instantaneous plane of the Earth's
+              orbit and the Earth's mean equator at the reference epoch
+    z-axis  : perpendicular to the xy-plane in the directional (+ or -) sense
+              of Earth's north pole at the reference epoch.
+
+Symbol meaning  
+
+    JDCT     Epoch Julian Date, Coordinate Time
+      EC     Eccentricity, e                                                   
+      QR     Periapsis distance, q (km)                                        
+      IN     Inclination w.r.t xy-plane, i (degrees)                           
+      OM     Longitude of Ascending Node, OMEGA, (degrees)                     
+      W      Argument of Perifocus, w (degrees)                                
+      Tp     Time of periapsis (Julian day number)                             
+      N      Mean motion, n (degrees/sec)                                      
+      MA     Mean anomaly, M (degrees)                                         
+      TA     True anomaly, nu (degrees)                                        
+      A      Semi-major axis, a (km)                                           
+      AD     Apoapsis distance (km)                                            
+      PR     Orbital period (sec)                                              
+
+Geometric states/elements have no aberration corrections applied.
+
+ Computations by ...
+     Solar System Dynamics Group, Horizons On-Line Ephemeris System
+     4800 Oak Grove Drive, Jet Propulsion Laboratory
+     Pasadena, CA  91109   USA
+     Information: http://ssd.jpl.nasa.gov/
+     Connect    : telnet://ssd.jpl.nasa.gov:6775  (via browser)
+                  telnet ssd.jpl.nasa.gov 6775    (via command-line)
+     Author     : Jon.Giorgini@jpl.nasa.gov
+*******************************************************************************
+
+
+Begin forwarded message:
+
+From: Horizons Ephemeris System <horizons@ssd.jpl.nasa.gov>
+Date: February 21, 2006 12:24:01 PM EST
+Subject: MAJOR BODY #C(500@6)_T(608) (1/1)
+
+ Automated mail xmit by MAIL_REQUEST, PID=   16764 Tue Feb 21 09:24:01 2006
+++++++++++++++++++++++++++++++++ (part 1 of 1)  +++++++++++++++++++++++++++++++
+
+*******************************************************************************
+ Revised: Oct 18, 2005            Iapetus / (Saturn)                        608
+
+ SATELLITE PHYSICAL PROPERTIES:
+  Radius (km)             = 718    +-  8    Density (g/cm^3)  =  1.273 +- 0.151
+  Mass (10^22 g)          = 197.39 +- 22.48 Geometric Albedo  =  0.5/0.04
+  GM (km^3/s^2)           = 131.72 +- 15.0  V(1,0)            = +1.5 (.7-2.5) 
+
+ SATELLITE ORBITAL DATA:
+  Semi-major axis, a (km) = 3561.3 (10^3)   Orbital period    = 79.330183 d
+  Eccentricity, e         = 0.0283          Rotational period = Synchronous
+  Inclination, i  (deg)   = 7.52
+*******************************************************************************
+
+
+*******************************************************************************
+Ephemeris / MAIL_REQUEST Tue Feb 21 09:24:00 2006  Pasadena, USA / Horizons    
+*******************************************************************************
+Target body name: Iapetus (608)                   {source: SAT225}
+Center body name: Saturn Barycenter (6)           {source: DE405}
+Center-site name: BODYCENTRIC
+*******************************************************************************
+Start time      : A.D. 2004-Jul-01 00:00:00.0000 CT 
+Stop  time      : A.D. 2004-Jul-01 00:00:00.0000 CT 
+Step-size       : DISCRETE TIME-LIST
+*******************************************************************************
+Center geodetic : 0.000000,  0.000000,  0.00000   {E-lon(deg),Lat(deg),Alt(km)}
+Center cylindric: 0.00000,     0.000,     0.000   {E-lon(deg),Dxy(km),Dz(km)}
+Center radii    : (undefined)                                                  
+System GM       : 3.7930962910121031E+07 km^3/s^2
+Output units    : KM-S, deg, Julian day number (Tp)                            
+Output format   : 10
+Reference frame : ICRF/J2000.0                                                 
+Output type     : GEOMETRIC osculating elements
+Coordinate systm: Ecliptic and Mean Equinox of Reference Epoch                 
+*******************************************************************************
+JDCT 
+   EC    QR   IN
+   OM    W    Tp
+   N     MA   TA
+   A     AD   PR
+*******************************************************************************
+$$SOE
+2453187.500000000 = A.D. 2004-Jul-01 00:00:00.0000 (CT)
+ EC= 2.790670280831183E-02 QR= 3.462589207779008E+06 IN= 1.724747395454457E+01
+ OM= 1.393196281149599E+02 W = 2.302528606781145E+02 Tp=  2453165.146332191769
+ N = 5.249041815970038E-05 MA= 1.013777312237314E+02 TA= 1.044897968577185E+02
+ A = 3.561992678873720E+06 AD= 3.661396149968431E+06 PR= 6.858394591270196E+06
+$$EOE
+*******************************************************************************
+Coordinate system description:
+
+  Ecliptic and Mean Equinox of Reference Epoch
+
+    Reference epoch: J2000.0
+    xy-plane: plane of the Earth's orbit at the reference epoch
+    x-axis  : out along ascending node of instantaneous plane of the Earth's
+              orbit and the Earth's mean equator at the reference epoch
+    z-axis  : perpendicular to the xy-plane in the directional (+ or -) sense
+              of Earth's north pole at the reference epoch.
+
+Symbol meaning  
+
+    JDCT     Epoch Julian Date, Coordinate Time
+      EC     Eccentricity, e                                                   
+      QR     Periapsis distance, q (km)                                        
+      IN     Inclination w.r.t xy-plane, i (degrees)                           
+      OM     Longitude of Ascending Node, OMEGA, (degrees)                     
+      W      Argument of Perifocus, w (degrees)                                
+      Tp     Time of periapsis (Julian day number)                             
+      N      Mean motion, n (degrees/sec)                                      
+      MA     Mean anomaly, M (degrees)                                         
+      TA     True anomaly, nu (degrees)                                        
+      A      Semi-major axis, a (km)                                           
+      AD     Apoapsis distance (km)                                            
+      PR     Orbital period (sec)                                              
+
+Geometric states/elements have no aberration corrections applied.
+
+ Computations by ...
+     Solar System Dynamics Group, Horizons On-Line Ephemeris System
+     4800 Oak Grove Drive, Jet Propulsion Laboratory
+     Pasadena, CA  91109   USA
+     Information: http://ssd.jpl.nasa.gov/
+     Connect    : telnet://ssd.jpl.nasa.gov:6775  (via browser)
+                  telnet ssd.jpl.nasa.gov 6775    (via command-line)
+     Author     : Jon.Giorgini@jpl.nasa.gov
+*******************************************************************************
+
+
+Begin forwarded message:
+
+From: Horizons Ephemeris System <horizons@ssd.jpl.nasa.gov>
+Date: February 21, 2006 12:24:01 PM EST
+Subject: MAJOR BODY #C(500@6)_T(609) (1/1)
+
+ Automated mail xmit by MAIL_REQUEST, PID=   16764 Tue Feb 21 09:24:01 2006
+++++++++++++++++++++++++++++++++ (part 1 of 1)  +++++++++++++++++++++++++++++++
+
+*******************************************************************************
+ Revised: Oct 18, 2005             Phoebe / (Saturn)                        609
+
+ SATELLITE PHYSICAL PROPERTIES:
+  Radius (km)             = 115 x 110 x 105 Density (g cm^-3)   =  
+  Mass (10^20 kg )        =                 Geometric Albedo    =  0.06 
+                                            V(1,0)              = +6.8 
+
+ SATELLITE ORBITAL DATA:
+  Semi-major axis, a (km) = 12952 (10^3)    Orbital period      = 550.48 d (R) 
+  Eccentricity, e         = 0.163           Rotational period   = 0.4 d 
+  Inclination, i  (deg)   = 175.3           Local invar. ref pln= Sun
+*******************************************************************************
+
+
+*******************************************************************************
+Ephemeris / MAIL_REQUEST Tue Feb 21 09:24:01 2006  Pasadena, USA / Horizons    
+*******************************************************************************
+Target body name: Phoebe (609)                    {source: SAT225}
+Center body name: Saturn Barycenter (6)           {source: DE405}
+Center-site name: BODYCENTRIC
+*******************************************************************************
+Start time      : A.D. 2004-Jul-01 00:00:00.0000 CT 
+Stop  time      : A.D. 2004-Jul-01 00:00:00.0000 CT 
+Step-size       : DISCRETE TIME-LIST
+*******************************************************************************
+Center geodetic : 0.000000,  0.000000,  0.00000   {E-lon(deg),Lat(deg),Alt(km)}
+Center cylindric: 0.00000,     0.000,     0.000   {E-lon(deg),Dxy(km),Dz(km)}
+Center radii    : (undefined)                                                  
+System GM       : 3.7931202884035029E+07 km^3/s^2
+Output units    : KM-S, deg, Julian day number (Tp)                            
+Output format   : 10
+Reference frame : ICRF/J2000.0                                                 
+Output type     : GEOMETRIC osculating elements
+Coordinate systm: Ecliptic and Mean Equinox of Reference Epoch                 
+*******************************************************************************
+JDCT 
+   EC    QR   IN
+   OM    W    Tp
+   N     MA   TA
+   A     AD   PR
+*******************************************************************************
+$$SOE
+2453187.500000000 = A.D. 2004-Jul-01 00:00:00.0000 (CT)
+ EC= 1.507295671216629E-01 QR= 1.094077725523006E+07 IN= 1.732024733459980E+02
+ OM= 2.634797870812005E+02 W = 2.057917334003140E+00 Tp=  2453119.550637844950
+ N = 7.631636605583776E-06 MA= 4.480400213692320E+01 TA= 5.870051735183560E+01
+ A = 1.288255993812207E+07 AD= 1.482434262101409E+07 PR= 4.717205739809490E+07
+$$EOE
+*******************************************************************************
+Coordinate system description:
+
+  Ecliptic and Mean Equinox of Reference Epoch
+
+    Reference epoch: J2000.0
+    xy-plane: plane of the Earth's orbit at the reference epoch
+    x-axis  : out along ascending node of instantaneous plane of the Earth's
+              orbit and the Earth's mean equator at the reference epoch
+    z-axis  : perpendicular to the xy-plane in the directional (+ or -) sense
+              of Earth's north pole at the reference epoch.
+
+Symbol meaning  
+
+    JDCT     Epoch Julian Date, Coordinate Time
+      EC     Eccentricity, e                                                   
+      QR     Periapsis distance, q (km)                                        
+      IN     Inclination w.r.t xy-plane, i (degrees)                           
+      OM     Longitude of Ascending Node, OMEGA, (degrees)                     
+      W      Argument of Perifocus, w (degrees)                                
+      Tp     Time of periapsis (Julian day number)                             
+      N      Mean motion, n (degrees/sec)                                      
+      MA     Mean anomaly, M (degrees)                                         
+      TA     True anomaly, nu (degrees)                                        
+      A      Semi-major axis, a (km)                                           
+      AD     Apoapsis distance (km)                                            
+      PR     Orbital period (sec)                                              
+
+Geometric states/elements have no aberration corrections applied.
+
+ Computations by ...
+     Solar System Dynamics Group, Horizons On-Line Ephemeris System
+     4800 Oak Grove Drive, Jet Propulsion Laboratory
+     Pasadena, CA  91109   USA
+     Information: http://ssd.jpl.nasa.gov/
+     Connect    : telnet://ssd.jpl.nasa.gov:6775  (via browser)
+                  telnet ssd.jpl.nasa.gov 6775    (via command-line)
+     Author     : Jon.Giorgini@jpl.nasa.gov
+*******************************************************************************
+
+
+Begin forwarded message:
+
+From: Horizons Ephemeris System <horizons@ssd.jpl.nasa.gov>
+Date: February 21, 2006 12:24:01 PM EST
+Subject: MAJOR BODY #C(500@6)_T(610) (1/1)
+
+ Automated mail xmit by MAIL_REQUEST, PID=   16764 Tue Feb 21 09:24:01 2006
+++++++++++++++++++++++++++++++++ (part 1 of 1)  +++++++++++++++++++++++++++++++
+
+*******************************************************************************
+ Revised: Jan 31, 2006             Janus  / (Saturn)                        610
+
+ SATELLITE PHYSICAL PROPERTIES:
+  Radius (km)             = 99.3x95.6x75.6  Density (g cm^-3)   = 0.65 +- 0.08 
+  Mass (10^20 kg )        = 0.0198 +-0.0012 Geometric Albedo    = 0.5 
+                                            V(1,0)              = +4.9 
+
+ SATELLITE ORBITAL DATA:
+  Semi-major axis, a (km) = 151.472 (10^3)  Orbital period      = 0.694590 d
+  Eccentricity, e         = 0.007           Rotational period   = Synchronous
+  Inclination, i  (deg)   = 0.14 
+*******************************************************************************
+
+
+*******************************************************************************
+Ephemeris / MAIL_REQUEST Tue Feb 21 09:24:01 2006  Pasadena, USA / Horizons    
+*******************************************************************************
+Target body name: Janus (610)                     {source: SAT238}
+Center body name: Saturn Barycenter (6)           {source: DE405}
+Center-site name: BODYCENTRIC
+*******************************************************************************
+Start time      : A.D. 2004-Jul-01 00:00:00.0000 CT 
+Stop  time      : A.D. 2004-Jul-01 00:00:00.0000 CT 
+Step-size       : DISCRETE TIME-LIST
+*******************************************************************************
+Center geodetic : 0.000000,  0.000000,  0.00000   {E-lon(deg),Lat(deg),Alt(km)}
+Center cylindric: 0.00000,     0.000,     0.000   {E-lon(deg),Dxy(km),Dz(km)}
+Center radii    : (undefined)                                                  
+System GM       : 3.7931203736948162E+07 km^3/s^2
+Output units    : KM-S, deg, Julian day number (Tp)                            
+Output format   : 10
+Reference frame : ICRF/J2000.0                                                 
+Output type     : GEOMETRIC osculating elements
+Coordinate systm: Ecliptic and Mean Equinox of Reference Epoch                 
+*******************************************************************************
+JDCT 
+   EC    QR   IN
+   OM    W    Tp
+   N     MA   TA
+   A     AD   PR
+*******************************************************************************
+$$SOE
+2453187.500000000 = A.D. 2004-Jul-01 00:00:00.0000 (CT)
+ EC= 4.637679773191599E-03 QR= 1.519448857579336E+05 IN= 2.821222764526014E+01
+ OM= 1.694912307491591E+02 W = 2.023227087013436E+02 Tp=  2453187.639558849391
+ N = 5.916482838070047E-03 MA= 2.886597327242974E+02 TA= 2.881552996314282E+02
+ A = 1.526528407497992E+05 AD= 1.533607957416647E+05 PR= 6.084696091460848E+04
+$$EOE
+*******************************************************************************
+Coordinate system description:
+
+  Ecliptic and Mean Equinox of Reference Epoch
+
+    Reference epoch: J2000.0
+    xy-plane: plane of the Earth's orbit at the reference epoch
+    x-axis  : out along ascending node of instantaneous plane of the Earth's
+              orbit and the Earth's mean equator at the reference epoch
+    z-axis  : perpendicular to the xy-plane in the directional (+ or -) sense
+              of Earth's north pole at the reference epoch.
+
+Symbol meaning  
+
+    JDCT     Epoch Julian Date, Coordinate Time
+      EC     Eccentricity, e                                                   
+      QR     Periapsis distance, q (km)                                        
+      IN     Inclination w.r.t xy-plane, i (degrees)                           
+      OM     Longitude of Ascending Node, OMEGA, (degrees)                     
+      W      Argument of Perifocus, w (degrees)                                
+      Tp     Time of periapsis (Julian day number)                             
+      N      Mean motion, n (degrees/sec)                                      
+      MA     Mean anomaly, M (degrees)                                         
+      TA     True anomaly, nu (degrees)                                        
+      A      Semi-major axis, a (km)                                           
+      AD     Apoapsis distance (km)                                            
+      PR     Orbital period (sec)                                              
+
+Geometric states/elements have no aberration corrections applied.
+
+ Computations by ...
+     Solar System Dynamics Group, Horizons On-Line Ephemeris System
+     4800 Oak Grove Drive, Jet Propulsion Laboratory
+     Pasadena, CA  91109   USA
+     Information: http://ssd.jpl.nasa.gov/
+     Connect    : telnet://ssd.jpl.nasa.gov:6775  (via browser)
+                  telnet ssd.jpl.nasa.gov 6775    (via command-line)
+     Author     : Jon.Giorgini@jpl.nasa.gov
+*******************************************************************************
+
+
+Begin forwarded message:
+
+From: Horizons Ephemeris System <horizons@ssd.jpl.nasa.gov>
+Date: February 21, 2006 12:24:02 PM EST
+Subject: MAJOR BODY #C(500@6)_T(611) (1/1)
+
+ Automated mail xmit by MAIL_REQUEST, PID=   16764 Tue Feb 21 09:24:01 2006
+++++++++++++++++++++++++++++++++ (part 1 of 1)  +++++++++++++++++++++++++++++++
+
+*******************************************************************************
+ Revised: Jan 31, 2006            Epimetheus / (Saturn)                     611
+
+ SATELLITE PHYSICAL PROPERTIES:
+  Radius (km)             = 69 x 55 x 55    Density (g cm^-3)   = 0.63 +- 0.11 
+  Mass (10^20 kg )        = 0.0055 +-0.0003 Geometric Albedo    = 0.5 
+                                            V(1,0)              = +6.1 
+
+ SATELLITE ORBITAL DATA:
+  Semi-major axis, a (km) = 151.422 (10^3)  Orbital period      = 0.694590 d
+  Eccentricity, e         = 0.009           Rotational period   = Synchronous
+  Inclination, i  (deg)   = 0.34 
+*******************************************************************************
+
+
+*******************************************************************************
+Ephemeris / MAIL_REQUEST Tue Feb 21 09:24:01 2006  Pasadena, USA / Horizons    
+*******************************************************************************
+Target body name: Epimetheus (611)                {source: SAT238}
+Center body name: Saturn Barycenter (6)           {source: DE405}
+Center-site name: BODYCENTRIC
+*******************************************************************************
+Start time      : A.D. 2004-Jul-01 00:00:00.0000 CT 
+Stop  time      : A.D. 2004-Jul-01 00:00:00.0000 CT 
+Step-size       : DISCRETE TIME-LIST
+*******************************************************************************
+Center geodetic : 0.000000,  0.000000,  0.00000   {E-lon(deg),Lat(deg),Alt(km)}
+Center cylindric: 0.00000,     0.000,     0.000   {E-lon(deg),Dxy(km),Dz(km)}
+Center radii    : (undefined)                                                  
+System GM       : 3.7931203919919930E+07 km^3/s^2
+Output units    : KM-S, deg, Julian day number (Tp)                            
+Output format   : 10
+Reference frame : ICRF/J2000.0                                                 
+Output type     : GEOMETRIC osculating elements
+Coordinate systm: Ecliptic and Mean Equinox of Reference Epoch                 
+*******************************************************************************
+JDCT 
+   EC    QR   IN
+   OM    W    Tp
+   N     MA   TA
+   A     AD   PR
+*******************************************************************************
+$$SOE
+2453187.500000000 = A.D. 2004-Jul-01 00:00:00.0000 (CT)
+ EC= 1.128968951392545E-02 QR= 1.497002172333501E+05 IN= 2.834858449529751E+01
+ OM= 1.699293720947234E+02 W = 4.758661636123425E+00 Tp=  2453187.529486048967
+ N = 5.989504490287448E-03 MA= 3.447411704131827E+02 TA= 3.443959990635394E+02
+ A = 1.514095844310087E+05 AD= 1.531189516286673E+05 PR= 6.010513901171195E+04
+$$EOE
+*******************************************************************************
+Coordinate system description:
+
+  Ecliptic and Mean Equinox of Reference Epoch
+
+    Reference epoch: J2000.0
+    xy-plane: plane of the Earth's orbit at the reference epoch
+    x-axis  : out along ascending node of instantaneous plane of the Earth's
+              orbit and the Earth's mean equator at the reference epoch
+    z-axis  : perpendicular to the xy-plane in the directional (+ or -) sense
+              of Earth's north pole at the reference epoch.
+
+Symbol meaning  
+
+    JDCT     Epoch Julian Date, Coordinate Time
+      EC     Eccentricity, e                                                   
+      QR     Periapsis distance, q (km)                                        
+      IN     Inclination w.r.t xy-plane, i (degrees)                           
+      OM     Longitude of Ascending Node, OMEGA, (degrees)                     
+      W      Argument of Perifocus, w (degrees)                                
+      Tp     Time of periapsis (Julian day number)                             
+      N      Mean motion, n (degrees/sec)                                      
+      MA     Mean anomaly, M (degrees)                                         
+      TA     True anomaly, nu (degrees)                                        
+      A      Semi-major axis, a (km)                                           
+      AD     Apoapsis distance (km)                                            
+      PR     Orbital period (sec)                                              
+
+Geometric states/elements have no aberration corrections applied.
+
+ Computations by ...
+     Solar System Dynamics Group, Horizons On-Line Ephemeris System
+     4800 Oak Grove Drive, Jet Propulsion Laboratory
+     Pasadena, CA  91109   USA
+     Information: http://ssd.jpl.nasa.gov/
+     Connect    : telnet://ssd.jpl.nasa.gov:6775  (via browser)
+                  telnet ssd.jpl.nasa.gov 6775    (via command-line)
+     Author     : Jon.Giorgini@jpl.nasa.gov
+*******************************************************************************
+
+
+Begin forwarded message:
+
+From: Horizons Ephemeris System <horizons@ssd.jpl.nasa.gov>
+Date: February 21, 2006 12:24:02 PM EST
+Subject: MAJOR BODY #C(500@6)_T(615) (1/1)
+
+ Automated mail xmit by MAIL_REQUEST, PID=   16764 Tue Feb 21 09:24:02 2006
+++++++++++++++++++++++++++++++++ (part 1 of 1)  +++++++++++++++++++++++++++++++
+
+*******************************************************************************
+ Revised: Jan 31, 2006            Atlas  / (Saturn)                         615
+
+ SATELLITE PHYSICAL PROPERTIES:
+  Radius (km)            = 18.5x17.2x13.5   Density (g cm^-3)   = 
+  Mass (10^20 kg )       =                  Geometric Albedo    =  0.5
+                                            V(1,0)              = +9.5 
+
+ SATELLITE ORBITAL DATA:
+  Semi-major axis, a (km) = 137.64 (10^3)   Orbital period      = 0.6019 d
+  Eccentricity, e         = ~0              Rotational period   = 
+  Inclination, i  (deg)   = ~0      
+*******************************************************************************
+
+
+*******************************************************************************
+Ephemeris / MAIL_REQUEST Tue Feb 21 09:24:02 2006  Pasadena, USA / Horizons    
+*******************************************************************************
+Target body name: Atlas (615)                     {source: SAT238}
+Center body name: Saturn Barycenter (6)           {source: DE405}
+Center-site name: BODYCENTRIC
+*******************************************************************************
+Start time      : A.D. 2004-Jul-01 00:00:00.0000 CT 
+Stop  time      : A.D. 2004-Jul-01 00:00:00.0000 CT 
+Step-size       : DISCRETE TIME-LIST
+*******************************************************************************
+Center geodetic : 0.000000,  0.000000,  0.00000   {E-lon(deg),Lat(deg),Alt(km)}
+Center cylindric: 0.00000,     0.000,     0.000   {E-lon(deg),Dxy(km),Dz(km)}
+Center radii    : (undefined)                                                  
+System GM       : 3.7931203990142003E+07 km^3/s^2
+Output units    : KM-S, deg, Julian day number (Tp)                            
+Output format   : 10
+Reference frame : ICRF/J2000.0                                                 
+Output type     : GEOMETRIC osculating elements
+Coordinate systm: Ecliptic and Mean Equinox of Reference Epoch                 
+*******************************************************************************
+JDCT 
+   EC    QR   IN
+   OM    W    Tp
+   N     MA   TA
+   A     AD   PR
+*******************************************************************************
+$$SOE
+2453187.500000000 = A.D. 2004-Jul-01 00:00:00.0000 (CT)
+ EC= 3.219850831045457E-03 QR= 1.376367061178836E+05 IN= 2.805026737013319E+01
+ OM= 1.695280938033673E+02 W = 2.942116015602878E+02 Tp=  2453187.553891521879
+ N = 6.877310161021795E-03 MA= 3.279776792539117E+02 TA= 3.277813648357024E+02
+ A = 1.380813073300421E+05 AD= 1.385259085422005E+05 PR= 5.234604686587424E+04
+$$EOE
+*******************************************************************************
+Coordinate system description:
+
+  Ecliptic and Mean Equinox of Reference Epoch
+
+    Reference epoch: J2000.0
+    xy-plane: plane of the Earth's orbit at the reference epoch
+    x-axis  : out along ascending node of instantaneous plane of the Earth's
+              orbit and the Earth's mean equator at the reference epoch
+    z-axis  : perpendicular to the xy-plane in the directional (+ or -) sense
+              of Earth's north pole at the reference epoch.
+
+Symbol meaning  
+
+    JDCT     Epoch Julian Date, Coordinate Time
+      EC     Eccentricity, e                                                   
+      QR     Periapsis distance, q (km)                                        
+      IN     Inclination w.r.t xy-plane, i (degrees)                           
+      OM     Longitude of Ascending Node, OMEGA, (degrees)                     
+      W      Argument of Perifocus, w (degrees)                                
+      Tp     Time of periapsis (Julian day number)                             
+      N      Mean motion, n (degrees/sec)                                      
+      MA     Mean anomaly, M (degrees)                                         
+      TA     True anomaly, nu (degrees)                                        
+      A      Semi-major axis, a (km)                                           
+      AD     Apoapsis distance (km)                                            
+      PR     Orbital period (sec)                                              
+
+Geometric states/elements have no aberration corrections applied.
+
+ Computations by ...
+     Solar System Dynamics Group, Horizons On-Line Ephemeris System
+     4800 Oak Grove Drive, Jet Propulsion Laboratory
+     Pasadena, CA  91109   USA
+     Information: http://ssd.jpl.nasa.gov/
+     Connect    : telnet://ssd.jpl.nasa.gov:6775  (via browser)
+                  telnet ssd.jpl.nasa.gov 6775    (via command-line)
+     Author     : Jon.Giorgini@jpl.nasa.gov
+*******************************************************************************
+
+
+Begin forwarded message:
+
+From: Horizons Ephemeris System <horizons@ssd.jpl.nasa.gov>
+Date: February 21, 2006 12:24:02 PM EST
+Subject: MAJOR BODY #C(500@6)_T(616) (1/1)
+
+ Automated mail xmit by MAIL_REQUEST, PID=   16764 Tue Feb 21 09:24:02 2006
+++++++++++++++++++++++++++++++++ (part 1 of 1)  +++++++++++++++++++++++++++++++
+
+*******************************************************************************
+ Revised: Jan 31, 2006            Prometheus/ (Saturn)                      616
+
+ SATELLITE PHYSICAL PROPERTIES:
+  Radius (km)           = 74 x 50 x 34(+-3) Density (g cm^-3)   =  0.27 +- 0.16 
+  Mass (10^20 kg )      = 0.0014            Geometric Albedo    =  0.5 
+                                            V(1,0)              = +6.2 
+
+ SATELLITE ORBITAL DATA:
+  Semi-major axis, a (km) = 139.35 (10^3)   Orbital period      = 0.612986 d
+  Eccentricity, e         = 0.0024          Rotational period   = 
+  Inclination, i  (deg)   = 0.0     
+*******************************************************************************
+
+
+*******************************************************************************
+Ephemeris / MAIL_REQUEST Tue Feb 21 09:24:02 2006  Pasadena, USA / Horizons    
+*******************************************************************************
+Target body name: Prometheus (616)                {source: SAT238}
+Center body name: Saturn Barycenter (6)           {source: DE405}
+Center-site name: BODYCENTRIC
+*******************************************************************************
+Start time      : A.D. 2004-Jul-01 00:00:00.0000 CT 
+Stop  time      : A.D. 2004-Jul-01 00:00:00.0000 CT 
+Step-size       : DISCRETE TIME-LIST
+*******************************************************************************
+Center geodetic : 0.000000,  0.000000,  0.00000   {E-lon(deg),Lat(deg),Alt(km)}
+Center cylindric: 0.00000,     0.000,     0.000   {E-lon(deg),Dxy(km),Dz(km)}
+Center radii    : (undefined)                                                  
+System GM       : 3.7931203990142003E+07 km^3/s^2
+Output units    : KM-S, deg, Julian day number (Tp)                            
+Output format   : 10
+Reference frame : ICRF/J2000.0                                                 
+Output type     : GEOMETRIC osculating elements
+Coordinate systm: Ecliptic and Mean Equinox of Reference Epoch                 
+*******************************************************************************
+JDCT 
+   EC    QR   IN
+   OM    W    Tp
+   N     MA   TA
+   A     AD   PR
+*******************************************************************************
+$$SOE
+2453187.500000000 = A.D. 2004-Jul-01 00:00:00.0000 (CT)
+ EC= 5.853493255178878E-03 QR= 1.392931612782831E+05 IN= 2.805409816161773E+01
+ OM= 1.695400853389885E+02 W = 2.326514707266358E+02 Tp=  2453187.500852918718
+ N = 6.728245666488789E-03 MA= 3.595041809255982E+02 TA= 3.594983336815858E+02
+ A = 1.401133136144862E+05 AD= 1.409334659506894E+05 PR= 5.350577518193833E+04
+$$EOE
+*******************************************************************************
+Coordinate system description:
+
+  Ecliptic and Mean Equinox of Reference Epoch
+
+    Reference epoch: J2000.0
+    xy-plane: plane of the Earth's orbit at the reference epoch
+    x-axis  : out along ascending node of instantaneous plane of the Earth's
+              orbit and the Earth's mean equator at the reference epoch
+    z-axis  : perpendicular to the xy-plane in the directional (+ or -) sense
+              of Earth's north pole at the reference epoch.
+
+Symbol meaning  
+
+    JDCT     Epoch Julian Date, Coordinate Time
+      EC     Eccentricity, e                                                   
+      QR     Periapsis distance, q (km)                                        
+      IN     Inclination w.r.t xy-plane, i (degrees)                           
+      OM     Longitude of Ascending Node, OMEGA, (degrees)                     
+      W      Argument of Perifocus, w (degrees)                                
+      Tp     Time of periapsis (Julian day number)                             
+      N      Mean motion, n (degrees/sec)                                      
+      MA     Mean anomaly, M (degrees)                                         
+      TA     True anomaly, nu (degrees)                                        
+      A      Semi-major axis, a (km)                                           
+      AD     Apoapsis distance (km)                                            
+      PR     Orbital period (sec)                                              
+
+Geometric states/elements have no aberration corrections applied.
+
+ Computations by ...
+     Solar System Dynamics Group, Horizons On-Line Ephemeris System
+     4800 Oak Grove Drive, Jet Propulsion Laboratory
+     Pasadena, CA  91109   USA
+     Information: http://ssd.jpl.nasa.gov/
+     Connect    : telnet://ssd.jpl.nasa.gov:6775  (via browser)
+                  telnet ssd.jpl.nasa.gov 6775    (via command-line)
+     Author     : Jon.Giorgini@jpl.nasa.gov
+*******************************************************************************
+
+
+Begin forwarded message:
+
+From: Horizons Ephemeris System <horizons@ssd.jpl.nasa.gov>
+Date: February 21, 2006 12:24:02 PM EST
+Subject: MAJOR BODY #C(500@6)_T(617) (1/1)
+
+ Automated mail xmit by MAIL_REQUEST, PID=   16764 Tue Feb 21 09:24:02 2006
+++++++++++++++++++++++++++++++++ (part 1 of 1)  +++++++++++++++++++++++++++++++
+
+*******************************************************************************
+ Revised: Jan 31, 2006            Pandora / (Saturn)                        617
+
+ SATELLITE PHYSICAL PROPERTIES:
+  Radius (km)           = 55 x 44 x 31(+-2) Density (g cm^-3)   =  0.42 +- 0.28 
+  Mass (10^20 kg )      = 0.0013            Geometric Albedo    =  0.5 
+                                            V(1,0)              = +6.9 
+
+ SATELLITE ORBITAL DATA:
+  Semi-major axis, a (km) = 141.70 (10^3)   Orbital period      = 0.628804 d
+  Eccentricity, e         = 0.0042          Rotational period   = 
+  Inclination, i  (deg)   = 0.0     
+*******************************************************************************
+
+
+*******************************************************************************
+Ephemeris / MAIL_REQUEST Tue Feb 21 09:24:02 2006  Pasadena, USA / Horizons    
+*******************************************************************************
+Target body name: Pandora (617)                   {source: SAT238}
+Center body name: Saturn Barycenter (6)           {source: DE405}
+Center-site name: BODYCENTRIC
+*******************************************************************************
+Start time      : A.D. 2004-Jul-01 00:00:00.0000 CT 
+Stop  time      : A.D. 2004-Jul-01 00:00:00.0000 CT 
+Step-size       : DISCRETE TIME-LIST
+*******************************************************************************
+Center geodetic : 0.000000,  0.000000,  0.00000   {E-lon(deg),Lat(deg),Alt(km)}
+Center cylindric: 0.00000,     0.000,     0.000   {E-lon(deg),Dxy(km),Dz(km)}
+Center radii    : (undefined)                                                  
+System GM       : 3.7931203990142003E+07 km^3/s^2
+Output units    : KM-S, deg, Julian day number (Tp)                            
+Output format   : 10
+Reference frame : ICRF/J2000.0                                                 
+Output type     : GEOMETRIC osculating elements
+Coordinate systm: Ecliptic and Mean Equinox of Reference Epoch                 
+*******************************************************************************
+JDCT 
+   EC    QR   IN
+   OM    W    Tp
+   N     MA   TA
+   A     AD   PR
+*******************************************************************************
+$$SOE
+2453187.500000000 = A.D. 2004-Jul-01 00:00:00.0000 (CT)
+ EC= 6.667329151387772E-03 QR= 1.414124881918911E+05 IN= 2.800016181505410E+01
+ OM= 1.695350172865633E+02 W = 7.535453031319508E+01 Tp=  2453187.525532868691
+ N = 6.569485829555222E-03 MA= 3.455074523322534E+02 TA= 3.453146988483968E+02
+ A = 1.423616602392442E+05 AD= 1.433108322865973E+05 PR= 5.479880912147021E+04
+$$EOE
+*******************************************************************************
+Coordinate system description:
+
+  Ecliptic and Mean Equinox of Reference Epoch
+
+    Reference epoch: J2000.0
+    xy-plane: plane of the Earth's orbit at the reference epoch
+    x-axis  : out along ascending node of instantaneous plane of the Earth's
+              orbit and the Earth's mean equator at the reference epoch
+    z-axis  : perpendicular to the xy-plane in the directional (+ or -) sense
+              of Earth's north pole at the reference epoch.
+
+Symbol meaning  
+
+    JDCT     Epoch Julian Date, Coordinate Time
+      EC     Eccentricity, e                                                   
+      QR     Periapsis distance, q (km)                                        
+      IN     Inclination w.r.t xy-plane, i (degrees)                           
+      OM     Longitude of Ascending Node, OMEGA, (degrees)                     
+      W      Argument of Perifocus, w (degrees)                                
+      Tp     Time of periapsis (Julian day number)                             
+      N      Mean motion, n (degrees/sec)                                      
+      MA     Mean anomaly, M (degrees)                                         
+      TA     True anomaly, nu (degrees)                                        
+      A      Semi-major axis, a (km)                                           
+      AD     Apoapsis distance (km)                                            
+      PR     Orbital period (sec)                                              
+
+Geometric states/elements have no aberration corrections applied.
+
+ Computations by ...
+     Solar System Dynamics Group, Horizons On-Line Ephemeris System
+     4800 Oak Grove Drive, Jet Propulsion Laboratory
+     Pasadena, CA  91109   USA
+     Information: http://ssd.jpl.nasa.gov/
+     Connect    : telnet://ssd.jpl.nasa.gov:6775  (via browser)
+                  telnet ssd.jpl.nasa.gov 6775    (via command-line)
+     Author     : Jon.Giorgini@jpl.nasa.gov
+*******************************************************************************
+
+
+Begin forwarded message:
+
+From: Horizons Ephemeris System <horizons@ssd.jpl.nasa.gov>
+Date: February 21, 2006 12:24:03 PM EST
+Subject: MAJOR BODY #C(500@6)_T(618) (1/1)
+
+ Automated mail xmit by MAIL_REQUEST, PID=   16764 Tue Feb 21 09:24:03 2006
+++++++++++++++++++++++++++++++++ (part 1 of 1)  +++++++++++++++++++++++++++++++
+
+*******************************************************************************
+ Revised: Apr 17, 1997            Pan / (Saturn)                            618
+
+ SATELLITE PHYSICAL PROPERTIES:
+  Radius (km)           = 10                Density (g cm^-3)   =  
+  Mass (10^20 kg )      =                   Geometric Albedo    =  0.5 
+                                            V(1,0)              = 
+
+ SATELLITE ORBITAL DATA:
+  Semi-major axis, a (km) = 133.583(10^3)   Orbital period      = 0.5750 d
+  Eccentricity, e         =                 Rotational period   = 
+  Inclination, i  (deg)   =         
+*******************************************************************************
+
+
+*******************************************************************************
+Ephemeris / MAIL_REQUEST Tue Feb 21 09:24:03 2006  Pasadena, USA / Horizons    
+*******************************************************************************
+Target body name: Pan (618)                       {source: SAT060.DE405}
+Center body name: Saturn Barycenter (6)           {source: DE405}
+Center-site name: BODYCENTRIC
+*******************************************************************************
+Start time      : A.D. 2004-Jul-01 00:00:00.0000 CT 
+Stop  time      : A.D. 2004-Jul-01 00:00:00.0000 CT 
+Step-size       : DISCRETE TIME-LIST
+*******************************************************************************
+Center geodetic : 0.000000,  0.000000,  0.00000   {E-lon(deg),Lat(deg),Alt(km)}
+Center cylindric: 0.00000,     0.000,     0.000   {E-lon(deg),Dxy(km),Dz(km)}
+Center radii    : (undefined)                                                  
+System GM       : 3.7931203990142003E+07 km^3/s^2
+Output units    : KM-S, deg, Julian day number (Tp)                            
+Output format   : 10
+Reference frame : ICRF/J2000.0                                                 
+Output type     : GEOMETRIC osculating elements
+Coordinate systm: Ecliptic and Mean Equinox of Reference Epoch                 
+*******************************************************************************
+JDCT 
+   EC    QR   IN
+   OM    W    Tp
+   N     MA   TA
+   A     AD   PR
+*******************************************************************************
+$$SOE
+2453187.500000000 = A.D. 2004-Jul-01 00:00:00.0000 (CT)
+ EC= 2.963541385140470E-03 QR= 1.332858814152385E+05 IN= 2.806259054692360E+01
+ OM= 1.695138056673264E+02 W = 3.237018850388362E+02 Tp=  2453187.527980723418
+ N = 7.219569194141169E-03 MA= 3.425464423489813E+02 TA= 3.424442250564758E+02
+ A = 1.336820537138702E+05 AD= 1.340782260125018E+05 PR= 4.986447117816220E+04
+$$EOE
+*******************************************************************************
+Coordinate system description:
+
+  Ecliptic and Mean Equinox of Reference Epoch
+
+    Reference epoch: J2000.0
+    xy-plane: plane of the Earth's orbit at the reference epoch
+    x-axis  : out along ascending node of instantaneous plane of the Earth's
+              orbit and the Earth's mean equator at the reference epoch
+    z-axis  : perpendicular to the xy-plane in the directional (+ or -) sense
+              of Earth's north pole at the reference epoch.
+
+Symbol meaning  
+
+    JDCT     Epoch Julian Date, Coordinate Time
+      EC     Eccentricity, e                                                   
+      QR     Periapsis distance, q (km)                                        
+      IN     Inclination w.r.t xy-plane, i (degrees)                           
+      OM     Longitude of Ascending Node, OMEGA, (degrees)                     
+      W      Argument of Perifocus, w (degrees)                                
+      Tp     Time of periapsis (Julian day number)                             
+      N      Mean motion, n (degrees/sec)                                      
+      MA     Mean anomaly, M (degrees)                                         
+      TA     True anomaly, nu (degrees)                                        
+      A      Semi-major axis, a (km)                                           
+      AD     Apoapsis distance (km)                                            
+      PR     Orbital period (sec)                                              
+
+Geometric states/elements have no aberration corrections applied.
+
+ Computations by ...
+     Solar System Dynamics Group, Horizons On-Line Ephemeris System
+     4800 Oak Grove Drive, Jet Propulsion Laboratory
+     Pasadena, CA  91109   USA
+     Information: http://ssd.jpl.nasa.gov/
+     Connect    : telnet://ssd.jpl.nasa.gov:6775  (via browser)
+                  telnet ssd.jpl.nasa.gov 6775    (via command-line)
+     Author     : Jon.Giorgini@jpl.nasa.gov
+*******************************************************************************

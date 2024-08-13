@@ -1,0 +1,6 @@
+cspice_furnsh,getenv("CAVIAR_KERNELS")
+polera=40.58756d0
+poledec=83.53684d0
+
+
+end

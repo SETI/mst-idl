@@ -1,0 +1,29 @@
+restore, 'rhea_reproject_grp.sav'
+restore, 'rhearpx_fakedata.sav'
+
+sz = size(__imrz_fake)
+xs = sz[1]
+ys = sz[2]
+nx = 1
+ny = nfac
+marg = 30
+window, xs=(xs+marg)*nx, ys=(ys+marg)*ny+marg*0.5
+for j=0l,nfac-1 do begin
+  thresh = rms[jjj]/2
+  tvscl, __imrz_fake[*,*,j]>(-thresh)<thresh, $
+         marg*0.5+(xs+marg)*(j mod nx), $
+         marg*0.5+(ys+marg)*((nx*ny-1-(j mod (nx*ny)))/nx)
+  if fac[j] mod 1 eq 0 then fo='(I1)' else fo='(F3.1)'
+  xyouts, /device, align=0.5, chars=1.5, $
+          marg*0.5+(xs+marg)*(j mod nx) + xs*0.5, $
+          marg*0.5+(ys+marg)*((nx*ny-1-(j mod (nx*ny)))/nx) + ys + marg/4, $
+          string(fac[j],fo=fo)+' * RMS I/F'
+endfor
+if keyword_set(dolzr) then begin
+  tifffile = 'rhearpx_fakedata_plot.tiff'
+  outim = tvrd()
+  write_tiff, tifffile, reverse( outim, 2 )
+endif
+
+end
+

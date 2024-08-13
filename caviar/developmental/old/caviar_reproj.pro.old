@@ -1,0 +1,101 @@
+
+	pro caviar_reproj,polera,poledec,planet_id,im,rawim,et,$
+                   cmat,ri,ro,lon_start,lon_stop,cam_params,nl,rpi_l,rpi_s,zf
+
+	reprojected_image=bytarr(round(rpi_s),round(rpi_l))
+	raw_reprojected_image=lonarr(round(rpi_s),round(rpi_l))
+
+	reprojected_image=byte(0)*reprojected_image
+	raw_reprojected_image=0L*raw_reprojected_image
+
+	;window,3,xsize=800,ysize=800
+	window,3,xsize=(round(zf)*round(rpi_s)),ysize=(round(zf)*round(rpi_l))
+
+	r_range=ro-ri
+	r_step=r_range/(1.0d0*round(rpi_l-1))
+
+	if lon_stop lt lon_start then d_lon_start=lon_start-360.0d0
+
+	r_radius=dblarr(round(rpi_l))
+
+	for i=0,round(rpi_l)-1 do begin
+
+		r_radius[i]=(i*r_step)+ri
+		get_ring,et,r_radius[i],lon_start,lon_stop,polera,poledec,round(rpi_s),ring,699L		
+
+		image_coords,ring,cmat,[0.0d0,0.0d0,0.0d0],cam_params,nl,coords
+
+		for j=0,round(rpi_s)-1 do begin
+
+		if (round(coords[j,0])) ge 0 and (round(coords[j,0]) le 1023) then begin
+		if (round(coords[j,1])) ge 0 and (round(coords[j,1]) le 1023) then begin		
+			reprojected_image[j,i]=im[round(coords[j,1]),round(coords[j,0])]
+			raw_reprojected_image[j,i]=rawim[round(coords[j,1]),round(coords[j,0])]
+		endif
+		endif
+
+		endfor
+	
+	endfor
+
+	zoom_reprojected_image=bytarr((round(zf)*round(rpi_s)),(round(zf)*round(rpi_l)))
+
+	for i=0,(round(zf)*round(rpi_s))-1 do begin
+	for j=0,(round(zf)*round(rpi_l))-1 do begin
+		zoom_reprojected_image[i,j]=reprojected_image[fix(i/round(zf)),fix(j/round(zf))]
+	endfor
+	endfor
+		
+
+	wset,3
+
+	tv,zoom_reprojected_image
+
+again:
+
+	cursor,x,y,2,/dev
+
+	case !MOUSE.button of
+
+4:	goto, done
+
+
+1:	begin
+
+	tv,zoom_reprojected_image
+
+	r_radius_pix=(fix(y/round(zf))*r_step)+ri
+	longitude=(fix(x/round(zf))*(lon_stop-d_lon_start)/round(rpi_s-1))+lon_start
+	if longitude ge 360.0d0 then longitude=longitude-360.0d0
+	xyouts,10,10,'radius = '+strcompress(string(r_radius_pix),/remove_all),/device
+	xyouts,10,30,'longitude = '+strcompress(string(longitude),/remove_all),/device
+	endcase
+2:	begin
+
+	tv,zoom_reprojected_image
+
+	r_radius_pix=(fix(y/round(zf))*r_step)+ri
+	longitude=(fix(x/round(zf))*(lon_stop-d_lon_start)/round(rpi_s-1))+lon_start
+	if longitude ge 360.0d0 then longitude=longitude-360.0d0
+	xyouts,10,10,'radius = '+strcompress(string(r_radius_pix),/remove_all),/device
+	xyouts,10,30,'longitude = '+strcompress(string(longitude),/remove_all),/device
+	window,xsize=800,ysize=400
+	plot,r_radius[*],raw_reprojected_image[fix(x/round(zf)),*],/device
+	wset,3
+	endcase	
+else:	begin
+	tv,zoom_reprojected_image	
+	goto,again
+	endcase
+
+endcase
+
+	goto, again
+
+done:
+
+	tv,zoom_reprojected_image
+
+	wset,1
+	return
+	end

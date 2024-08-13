@@ -1,0 +1,461 @@
+pro edgefit_event, event
+  display_reproj1_event, event
+  print, 'hello'
+end
+
+function edgefit, rpi, rrpi, mnrad, mxrad, mnlon, mxlon, $
+                  nterms=_nterms, yy=yy, y1=y1, bke=bke, cush=cush, $
+                  noplot=noplot, nosmooth=nosmooth, nopad=nopad, $
+                  redge_sigma=redge_sigma, guider=guider, guide1=guide1, $
+                  fittype=_fittype, auto=auto, q=q, draw=draw, $
+                  keywords=keywords, smoothdata=smoothdata, win=win, $
+                  efpr=efpr, rrd=ring_rads, rrlegend=ring_rads_legend, $
+                  ring=ring, perfect=perfect, maxgradient=maxgradient, $
+                  reproj_xygrid=reproj_xygrid, redge_linsam=redge_linsam, $
+                  _redge_sigma_linsam=redge_sigma_linsam
+
+if n_params() eq 0 then begin
+  print, ''
+  print, 'Syntax:  redge = edgefit( rpi, rrpi, mnrad, mxrad, mnlon, mxlon, '
+  print, '             reproj_xygrid=, redge_linsam=, _redge_sigma_linsam='
+  print, '             redge_sigma=, yy=, bke=, nterms=, /noplot, /nosmooth, /nopad )'
+  print, ''
+  print, 'yy defines the guide line, bke the bookends.  Nterms is passed on to gaussfit (default=4).'
+  print, 'Nosmooth turns off smoothing used ONLY for finding fit interval.'
+  print, 'Nopad turns off padding with edge values when feeding data into gaussfit.'
+  print, 'redge[0,*] is longitude, redge[1,*] is radius, redge[2:nterms+1,*] are'
+  print, 'the gaussfit parameters:  height, center, width, constant, linear, quadratic.'
+  print, 'Output redge_sigma is the error bar for each fit parameter.'
+  print, ''
+  retall
+endif
+
+if not keyword_exists(nosmooth) then nosmooth = 1
+if keyword_set(draw) then begin
+  xmanager, 'edgefit', draw
+  widget_control, draw, get_value=drawID
+  wset, drawID
+print, 'hi'
+endif
+q = 0      ; gets set to 1 if fit fails
+csz = 1.5  ; charsize for plots
+drawnyet = 0
+if keyword_set(_nterms) then nterms = _nterms else nterms = 4
+sr=size(rrpi)
+ls=sr(1)
+rs=sr(2)
+mnrad=mnrad[0] & mxrad=mxrad[0] & mnlon=mnlon[0] & mxlon=mxlon[0]
+while mnlon gt mxlon do begin
+  print, 'mnlon is greater than mxlon, subtracting 360 from mnlon.'
+  mnlon = mnlon - 360
+endwhile
+radi=dindgen(rs)/(rs-1.)*(mxrad-mnrad)+mnrad
+loni=dindgen(ls)/(ls-1.)*(mxlon-mnlon)+mnlon
+out=dblarr(2+nterms,ls)
+out[0,*]=loni
+redge_sigma=dblarr(2+nterms,ls)
+redge_sigma[0,*]=loni
+bad=intarr(ls)
+rpj_sz = size(rrpi)
+forcewin = 1
+perfect = 1
+
+if not keyword_set(bke) then begin
+  if not keyword_set(cush) then cush = 3  ; Cushion around bookends
+  zz = wher( rrpi eq 0, count )
+  if count gt 0 then begin
+    zzx = zz[0,*]
+    zzx = zzx[sort(zzx)]
+    mkexed, zzx, zexed
+    nzexed = n_elements(zexed[0,*])
+    if nzexed eq 1 then begin
+      bke = [ -1, ls ]
+      if zexed[0,0] eq 0 then bke = [ zexed[1,0]+cush, ls ]
+      if zexed[1,0] eq ls-1 then bke = [ -1, zexed[0,0]-cush ]
+      if zexed[0,0] eq 0 and zexed[1,0] eq ls-1 then bke = [ -1, ls ]
+    endif else begin
+      bke = [ zexed[1,0]+cush, zexed[0,nzexed-1]-cush ]
+    endelse
+    print, 'Bookends auto-detected:  '+strtrim(bke[0],2)+'  '+strtrim(bke[1],2)
+  endif else bke = [ -1, ls ]
+endif
+
+if keyword_set(noplot) then begin
+endif else if !d.window eq -1 then begin
+  print, 'No window currently open.  Cannot proceed.'
+  return, -1
+endif else begin
+  win = !d.window
+  print, 'Current window:  '+string(!d.window)
+  print, 'Roll mouse-wheel to move the scroll-bar.'
+endelse
+if keyword_set(guider) then begin
+  if keyword_set(guide1) then begin
+    print, 'User-specified guide radius value (inner):  '+strtrim(guide1,2)
+    y1 = [ [0,ls-1], [replicate(interpol( dindgen(rs), radi, guide1 ),2)] ]
+    print, 'User-specified guide radius value (outer):  '+strtrim(guider,2)
+  endif else begin
+    print, 'User-specified guide radius value:  '+strtrim(guider,2)
+  endelse
+  yy = [ [0,ls-1], [replicate(interpol( dindgen(rs), radi, guider ),2)] ]
+  nyy = n_elements(yy[*,0])
+  !mouse.button = 4
+  goto, ifguider
+endif
+if 4 eq 5 then begin
+  changewindow:
+  print, 'Enter currently-open window to use:'
+  win = ''
+  while win eq '' do begin
+    read, win
+    win = long(win)
+    winset, win, nowin
+    if keyword_set(nowin) then win=''    ; change was unsuccessful
+  endwhile
+endif
+redraw:
+print, 'Select as many points as needed to define a curve along the feature you want to fit.'
+print, 'Roll mouse-wheel to move the scroll-bar.'
+print, 'Right-click to proceed.'
+!mouse.button = 0
+while !mouse.button ne 4 do begin
+  continuedraw:
+  cursor, x, y, 3, /device
+  if !mouse.button eq 16 or !mouse.button eq 2 then begin
+    print, 'Move scroll bar.  Hit "Enter" when done.'
+    dummy = ''
+    read, dummy
+    goto, redraw
+  endif
+  if !mouse.button ne 4 then begin
+    if not keyword_set(drawnyet) then begin
+      yy = [[x],[y]]
+      drawnyet = 1
+    endif else yy = [ yy, [[x],[y]] ]
+  endif
+  if keyword_set(yy) then begin
+    nyy = n_elements(yy[*,0])
+    yy = yy[ sort(yy[*,0]), * ]
+  endif
+  ifguider:
+  if not keyword_set(noplot) then begin
+    tv, rpi
+    if keyword_set(efpr) then begin
+      if keyword_set(ring_rads) and keyword_set(ring_rads_legend) then begin
+        @plot_reproj_rings
+      endif
+    endif
+    plots, bke[[0,0,1,1]], [1,-1,-1,1]*rs, color=yellow(), /device
+    if keyword_set(yy) then begin
+      plots, yy[0:nyy-1,0], yy[0:nyy-1,1], ps=-4, color=green(), /device
+    endif
+  endif
+endwhile
+
+if keyword_set(_fittype) then fittype=_fittype else begin
+  menu:
+  print, 'Select type of feature to fit (or "q" to quit):'
+  print, '1) Brightness maximum'
+  print, '2) Brightness minimum'
+  print, '3) Inner edge (bright-to-dark)'
+  print, '4) Outer edge (dark-to-bright)'
+  print, '5) No fit, use the curve I just drew'
+  print, '6) Continue drawing this curve'
+  print, '7) Start over -- draw a new curve'
+  print, '8) Accept this curve as the lower limit of fit interval...'
+  print, '9) Define/change bookends'
+  if keyword_set(efpr) then efpr_s='Do not p' else efpr_s='P'
+  print, '10) '+efpr_s+'lot ring radii.'
+  print, '11) Change windows'
+  fittype = ''
+  while fittype eq '' do begin
+    read, fittype
+    if fittype eq 'q' then retall
+    fittype = fix(fittype)
+    if fittype lt 1 or fittype gt 11 then fittype=''
+  endwhile
+endelse
+if fittype eq 7 then begin
+  newyy:
+  drawnyet = 0
+  if not keyword_set(noplot) then begin
+    tv, rpi
+    if keyword_set(efpr) then begin
+      if keyword_set(ring_rads) and keyword_set(ring_rads_legend) then begin
+        @plot_reproj_rings
+      endif
+    endif
+    plots, bke[[0,0,1,1]], [1,-1,-1,1]*rs, color=yellow(), /device
+  endif
+  goto, redraw
+endif else if fittype eq 6 then begin
+  goto, continuedraw
+endif else if fittype eq 8 then begin
+  y1 = yy
+  print, 'This curve has been accepted as the lower limit of the fit interval.'
+  print, 'Now draw the upper limit.'
+  yy = 0  
+  goto, newyy
+endif else if fittype eq 10 then begin
+  if not keyword_set(noplot) then begin
+    tv, rpi
+    if not keyword_set(efpr) then begin  ; Change efpr and then plot
+    efpr = 1
+      if keyword_set(ring_rads) and keyword_set(ring_rads_legend) then begin
+        @plot_reproj_rings
+      endif
+    endif else efpr = 0
+    plots, bke[[0,0,1,1]], [1,-1,-1,1]*rs, color=yellow(), /device
+  endif
+  if keyword_set(yy) then begin
+    plots, yy[0:nyy-1,0], yy[0:nyy-1,1], ps=-4, color=green(), /device
+  endif
+  goto, menu
+endif else if fittype eq 11 then begin
+  goto, changewindow
+endif else if fittype eq 9 then begin
+  if not keyword_set(noplot) then begin
+    tv, rpi
+    if keyword_set(efpr) then begin
+      if keyword_set(ring_rads) and keyword_set(ring_rads_legend) then begin
+        @plot_reproj_rings
+      endif
+    endif
+    plots, bke[[0,0,1,1]], [1,-1,-1,1]*rs, color=yellow(), /device
+    plots, yy[0:nyy-1,0], yy[0:nyy-1,1], ps=-4, color=green(), /device
+  endif
+  print, 'Click on new left-hand bookend (right-click for none).'
+  cursor, x, y, 3, /device
+  if !mouse.button ne 4 then bke[0] = x
+  if not keyword_set(noplot) then begin
+    tv, rpi
+    if keyword_set(efpr) then begin
+      if keyword_set(ring_rads) and keyword_set(ring_rads_legend) then begin
+        @plot_reproj_rings
+      endif
+    endif
+    plots, bke[[0,0,1,1]], [1,-1,-1,1]*rs, color=yellow(), /device
+    plots, yy[0:nyy-1,0], yy[0:nyy-1,1], ps=-4, color=green(), /device
+    print, 'Click on new right-hand bookend (right-click to keep current value).'
+    cursor, x, y, 3, /device
+    if !mouse.button ne 4 then bke[1] = x
+    tv, rpi
+    if keyword_set(efpr) then begin
+      if keyword_set(ring_rads) and keyword_set(ring_rads_legend) then begin
+        @plot_reproj_rings
+      endif
+    endif
+    plots, bke[[0,0,1,1]], [1,-1,-1,1]*rs, color=yellow(), /device
+    plots, yy[0:nyy-1,0], yy[0:nyy-1,1], ps=-4, color=green(), /device
+  endif
+  goto, redraw
+endif
+if fittype eq 5 then begin
+  out = dblarr(3,n_elements(yy[*,0]))
+  out[0,*] = interpol( loni, dindgen(ls), yy[*,0] )
+  out[1,*] = interpol( radi, dindgen(rs), yy[*,1] )
+  redge_sigma[*] = 0
+  if not keyword_set(pmold) then pmold = !p.multi
+  goto, done
+endif
+
+if keyword_set(_nexamp) then nexamp = _nexamp else nexamp = 5
+pmold = !p.multi
+!p.multi = [0,2,3]
+;examp = long( dindgen(nexamp) / (nexamp-1) * (ls-1) )
+examp = long( dindgen(nexamp) / (nexamp-1) * (bke[1]-bke[0]-2) ) + bke[0]+1
+
+;for i=0l,ls-1 do begin
+if (size(rrpi))[2] le 15 then nosmooth = 1
+error_status = 0
+;catch, error_status
+if error_status ne 0 then begin
+  print, strtrim(i,2)+'/'+strtrim(ls,2)+':  Unidentified error.'
+  error_status = 0
+  goto, nextcolumn
+endif
+for i=bke[0]+1,bke[1]-1 do begin
+  if keyword_set(smoothdata) then begin
+    data = (smooth(rrpi,10))[i,*]
+  endif else begin
+    data = rrpi[i,*]
+  endelse
+  if fittype ge 3 then data = deriv(data)
+  if fittype ge 2 and fittype le 3 then data = -data
+  if keyword_set(y1) then begin
+    plots, y1[*,0], y1[*,1], ps=-4, color=green(), /device
+    yi = round(interpol( y1[*,1], y1[*,0], double(i) ))
+    yo = round(interpol( yy[*,1], yy[*,0], double(i) ))
+  endif else begin
+    peak = interpol( yy[*,1], yy[*,0], double(i) )
+    if keyword_set(nosmooth) then dd = data else dd = smooth(data,10)
+    mkexed, where( deriv(dd) gt 0 ), exed, z
+    pp = where( abs(exed[1,*]-peak) eq min(abs(exed[1,*]-peak)) )
+    yi = (exed[0,pp])[0] & yo = (exed[0,pp+1])[0] & peak = (exed[1,pp])[0]
+    if n_elements(pp) gt 1 then begin
+      perfect = 0
+      print, strtrim(i,2)+'/'+strtrim(ls,2)+$
+             ':  Two peaks equidistant from predicted peak.'
+      goto, nextcolumn
+    endif
+    if pp eq z then yo = n_elements(dd)-1
+    if fittype le 2 then dd = dd - max(dd[[yi,yo]])
+    mkexed, where( dd gt 0 ), exed1
+    pp1 = max(where( exed1[0,*] lt peak ))
+    yi = yi>exed1[0,pp1] & yo = yo<exed1[1,pp1]
+    if peak lt yi or peak gt yo or yo-yi lt 2 then begin
+      perfect = 0
+      print, strtrim(i,2)+'/'+strtrim(ls,2)+$
+             ':  No clear peak found at guideline.'
+      goto, nextcolumn
+    endif
+  endelse
+  ai = [ (max(data[yi:yo])-min(data[yi:yo]))/3., $
+         (where(data[yi:yo] eq max(data[yi:yo])))[0]+yi, $ ;mean([yi,yo]), $
+         (yo-yi)/3. ]
+  if nterms gt 3 then ai = [ ai, replicate(0,nterms-3) ]
+  if keyword_set(maxgradient) then begin
+    ;; Take interval +-2 around peak, interpolate deriv(data) eq zero.  
+    ;ai[1] = interpol( lindgen(5)+peak-2, (deriv(data))[peak-2:peak+2], 0 )
+    newpeak:
+    yyo = peak + 1
+;    while data[yyo+1] gt data[peak]/2 do yyo = yyo + 1
+    if data[yyo] gt data[peak] then begin
+      peak = yyo
+      goto, newpeak
+    endif 
+    yyi = peak - 1
+;    while data[yyi-1] gt data[peak]/2 do yyi = yyi - 1
+    gx = indgen(yyo-yyi+1)+yyi
+    gy = data[yyi:yyo]
+    weights = replicate( 1.0, n_elements(gx) )
+    ai = [ data[peak], peak, -0.01 ]
+    gi = mpcurvefit( gx, gy, weights, ai, function_name='quadratic_hk', $
+                     sigma=_redge_sigma, /quiet )
+    out[2:4,i] = ai
+  endif else begin
+    if keyword_set(nopad) then begin
+      gx = dindgen(yo-yi+1)+yi
+      gy = data[yi:yo]
+    endif else begin
+      gx = dindgen((yo-yi)*3+1)+yi*2-yo
+      pad = data[yi]<data[yo]
+      gy = [replicate(pad,yo-yi),data[yi:yo],replicate(pad,yo-yi)]
+      ;gy = [replicate(data[yi],yo-yi),data[yi:yo],replicate(data[yo],yo-yi)]
+    endelse
+    gi = gaussfit( gx, gy, ai, nterms=nterms, sigma=_redge_sigma )
+    if not keyword_set(nopad) then gi = gi[yo-yi:2*(yo-yi)]
+    if ai[1] lt yi or ai[1] gt yo then begin
+      perfect = 0
+      print, strtrim(i,2)+'/'+strtrim(ls,2)+':  Fitted peak is outside fit interval.'
+      goto, nextcolumn
+    endif else begin
+      out[2:nterms+1,i] = ai
+      redge_sigma[2:nterms+1,i] = _redge_sigma
+      if not keyword_set(noplot) then plots, i, ai[1], ps=3, color=blue(), /device
+    endelse
+  endelse
+  if not keyword_set(noplot) and (where(i eq examp))[0] ne -1 then begin
+    if i eq examp[0] then window, 8 else wset, 8
+    plot, tkm( radi[yi:yo] ), data[yi:yo], ps=4, $
+          title='lon = '+strtrim(loni[i],2), charsize=csz, /xs, /ys
+    if keyword_set(maxgradient) then begin
+      oplot, tkm( radi[yyi:yyo] ), data[yyi:yyo], ps=4, co=red()
+      gxx = findgen(rs*10+1)/10
+      quadratic_hk, gxx, ai, gi
+      oplot, interpol( tkm(radi), indgen(rs), gxx ), gi, l=1
+      oplot, interpol( radi, dindgen(rs), ai[[1,1]] )/1000, !y.crange, l=1
+    endif else begin
+      oplot, tkm( radi[yi:yo] ), gi, l=1
+      oplot, interpol( radi, dindgen(rs), ai[[1,1]] )/1000, !y.crange, l=1
+    endelse
+    wset, win
+    plots, i, ai[1], ps=4, color=yellow(), /device
+  endif
+  if 4 eq 5 then begin
+    nextcolumn:
+    bad[i] = 1
+    foo = where( i eq examp, count )
+    if count gt 0 then examp[foo] = examp[foo] + 1
+  endif
+;stop
+end
+catch, /cancel
+
+;if keyword_set(auto) then if (where(bad ne 0))[0] ne -1 then read, reply
+if bke[0] gt -1 then bad[0:bke[0]] = 1
+if bke[1] lt ls then bad[bke[1]:ls-1] = 1
+foo = where( bad eq 0, count )
+if count gt 0 then begin
+  foo1 = where( redge_sigma[3,*] gt median(redge_sigma[3,foo])*20, count )
+  if count gt 0 then bad[foo1] = 1
+endif
+foo = where( bad eq 0, count )
+if count lt ls then begin
+  if count eq 0 then begin
+    print, 'No good fits.' 
+    out = -1
+    redge_sigma = -1
+    q = 1
+    goto, done
+  endif else begin
+    out = out[*,foo]
+    redge_sigma = redge_sigma[*,foo]
+  endelse
+endif
+out[1,*] = interpol( radi, dindgen(rs), out[3,*] )
+redge_sigma[1,*] = redge_sigma[3,*] * (mxrad-mnrad) / (rs-1)
+redge_linsam = dblarr( 2, count )
+redge_sigma_linsam = dblarr( 2, count )
+if keyword_set(reproj_xygrid) then for j=0,count-1 do begin
+  xxx = reform( reproj_xygrid[foo[j],*,0] )
+  yyy = reform( reproj_xygrid[foo[j],*,1] )
+  redge_linsam[0,j] = interpol( yyy, dindgen(rs), out[3,j] )
+  redge_linsam[1,j] = interpol( xxx, dindgen(rs), out[3,j] )
+  redge_sigma_linsam[0,j] = redge_sigma[3,j] * (max(yyy)-min(yyy)) / (rs-1)
+  redge_sigma_linsam[1,j] = redge_sigma[3,j] * (max(xxx)-min(xxx)) / (rs-1)
+endfor
+
+if not keyword_set(noplot) then begin
+  wset, 8
+  plot_redge, out, redge_sigma, csz=csz, keywords=keywords
+endif
+
+;thoukm = get_thoukm(out[1,*])
+;ytit = 'Radius - '+strtrim(long(thoukm),2)+' km'
+;plot, out[0,*], out[1,*]-thoukm, /xs, ys=9, xtit='Lontigude (deg)', $
+;      ytit=ytit, xma=[10,10], charsize=csz, $
+;      yr=[min(out[1,*]-redge_sigma[1,*]),max(out[1,*]+redge_sigma[1,*])]-thoukm
+;oplot, out[0,*], out[1,*]+redge_sigma[1,*]-thoukm, l=1
+;oplot, out[0,*], out[1,*]-redge_sigma[1,*]-thoukm, l=1
+;axis, yaxis=1, /data, /ys, ytit='Reprojected Pixels', charsize=csz, $
+;      yr=[min(out[3,*]-redge_sigma[3,*]),max(out[3,*]+redge_sigma[3,*])]
+
+done:
+!p.multi = pmold
+
+return, out
+
+end
+
+;  common edgefit_widget, _rpi, _rrpi, _mnrad, _mxrad, _mnlon, _mxlon, __nterms,$
+;    _yy, _bke, _noplot, _nosmooth, _nopad, _redge_sigma, _guider, _fittype, _auto, $
+;    _q, _draw
+;  _rpi=rpi
+;  _rrpi=rrpi
+;  _mnrad=mnrad
+;  _mxrad=mxrad
+;  _mnlon=mnlon
+;  _mxlon=mxlon
+;  __nterms=_nterms
+;  _yy=yy
+;  _bke=bke
+;  _noplot=noplot
+;  _nosmooth=nosmooth
+;  _nopad=nopad
+;  _redge_sigma=redge_sigma
+;  _guider=guider
+;  _fittype=fittype
+;  _auto=auto
+;  _q=q
+;  _draw=draw

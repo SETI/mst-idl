@@ -1,0 +1,4 @@
+located_satellites[*,3:4]=planet_coords[*,0:1]
+caviar_zoom_find_sats,im,rawim,cam_params,cmat,nl,et,-82L,polera,poledec,coords,planet_coords,ring_coords,stars, $
+            planet,s_names,located_satellites,plan_names,/continuous,fact=20
+

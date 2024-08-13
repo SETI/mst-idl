@@ -1,0 +1,131 @@
+;pro caviar_occ_analyzer, kernel, radec, tstart=_tstart, tend=_tend, dt=dt
+
+@get_sat_prepare
+
+; Load kernels
+if not keyword_set(kernel) then kernel='UVIS_136ST_URBETORI001_PRIME.bsp'
+if not keyword_set(tit) then tit=strmid(kernel,5,14)
+cspice_furnsh, kernel
+cspice_furnsh, max(findfile( '$DATA/NAIF/sclk/cas*tsc' ))
+cspice_furnsh, max(findfile( '$DATA/NAIF/lsk/naif*tls' ))
+
+; Define time parameters
+if not keyword_set(tstart) then tstart = '2010-226T01:04:29.000'
+cspice_str2et, tstart, etstart
+if not keyword_set(tend) then tend = '2010-226T01:39:24.000'
+cspice_str2et, tend, etend
+if not keyword_set(dt) then dt = 60.0d0 ;seconds
+nt = ceil( (etend-etstart) / dt ) + 1
+et = dindgen(nt) * dt + etstart
+
+if not keyword_set(radec) then begin
+  radec = [ 78.63446353d0, -8.20163919 ] ; BetOri (in degrees)
+endif
+; The following code is adapted from calculate_keywords.pro
+radius = dblarr(nt)
+lon = dblarr(nt)
+camera_coord = dblarr(nt,3)
+aimpoint_coord = dblarr(nt,3)
+; Define a column vector with Saturn's position in J2000 coordinates,
+; centered on Saturn (all zeroes, as the planet is at the origin).
+planet_coord = dblarr(nt,3)
+; For the rings, local vertical is the direction of Saturn's pole in J2000
+vertical = polar_to_cart([ [poledec*!dpi/180], [polera*!dpi/180], [1] ])
+vertical = rebin( vertical, nt, 3 )
+for j=0l,nt-1 do begin
+  ; Define a column vector with the aimpoint's position in J2000 coordinates,
+  ; centered on Saturn.
+  p2ralon,cmat,et[j],polera,poledec,-82L,radec[0],radec[1],_radius,_lon
+  get_ring,et[j],_radius,0,0,polera,poledec,1,0,699L,lons=_lon,$
+           j2000_xyz=_aimpoint_coord
+  radius[j] = _radius
+  lon[j] = _lon
+  aimpoint_coord[j,*] = _aimpoint_coord
+  ; Define a column vector with the spacecraft's position in J2000 coordinates,
+  ; centered on Saturn.
+  cspice_spkez,-82L,et[j],'J2000','NONE',699L,state,ltime
+  camera_coord[j,*] = rotate(state[0:2],1)
+endfor
+
+@get_cam_params
+summ = 1.0d0
+radscale = v_mag(camera_coord-aimpoint_coord)^2 * cam_params[11]*summ*2 / v_mag(v_cross(camera_coord-aimpoint_coord,planet_coord-aimpoint_coord)) * v_mag(planet_coord-aimpoint_coord)
+lonscale = v_mag(camera_coord-aimpoint_coord)^2 * cam_params[11]*summ*2 / v_mag(v_cross(camera_coord-aimpoint_coord,v_cross(vertical,planet_coord-aimpoint_coord))) * v_mag(planet_coord-aimpoint_coord)
+
+nazvec = nt
+; Paste in code from calculate_keywords2.pro
+
+; Azimuthal and radial unit vectors
+azvec = v_cross(vertical,planet_coord-aimpoint_coord) / rebin(v_mag(planet_coord-aimpoint_coord),nazvec,3)
+nazvec = n_elements(azvec[*,0])
+radvec = (planet_coord-aimpoint_coord)/rebin(v_mag(planet_coord-aimpoint_coord),nazvec,3)
+; Projection of azimuthal and radial vectors onto image plane
+azproj = azvec - rebin(v_inner(azvec,camera_coord-aimpoint_coord),nazvec,3)*(camera_coord-aimpoint_coord)/rebin(v_mag(camera_coord-aimpoint_coord),nazvec,3)^2
+radproj = radvec - rebin(v_inner(radvec,camera_coord-aimpoint_coord),nazvec,3)*(camera_coord-aimpoint_coord)/rebin(v_mag(camera_coord-aimpoint_coord),nazvec,3)^2
+; Restore to unit vectors
+azproj = azproj / rebin(v_mag(azproj),nazvec,3)
+radproj = radproj / rebin(v_mag(radproj),nazvec,3)
+; Vector in the image plane perpendicular to projection of azimuthal vector
+azperpproj = v_cross( (camera_coord-aimpoint_coord)/rebin(v_mag(camera_coord-aimpoint_coord),nazvec,3), azproj )
+azperpproj = azperpproj / rebin(v_mag(azperpproj),nazvec,3)
+; Standard radial scale is measured along radproj, but the really useful 
+; radial scale is measured along azperpproj.  Thus, divide by cos of the
+; angle between azperpproj and radproj to get the modified radial resolution
+radial_scale = v_mag(camera_coord-aimpoint_coord)^2 * cam_params[11]*summ*2 / v_mag(v_cross(camera_coord-aimpoint_coord,planet_coord-aimpoint_coord)) * v_mag(planet_coord-aimpoint_coord)
+radial_scale_adj = radial_scale / v_inner(azperpproj,radproj)
+
+if keyword_set(dolzr) then begin
+  lzr, 'occ_analyzer_'+tit
+  @plot_prepare
+endif else window
+!y.margin = 0
+!y.omargin = [4,2]
+!p.multi = [0,1,4]
+!p.charsize = 2
+notn = replicate(' ',20)
+plot_nosci, et-etstart, radius, /xs, /ys, xtickn=notn, ytit='Radius (km)', $
+            tit=tit
+plot, et-etstart, lon, /xs, /ys, xtickn=notn, ytit='Longitude (!Uo!N)'
+plot, et-etstart, abs(radial_scale_adj), /xs, xtickn=notn, $
+      ytit='Radial Scale (km)'
+oplot, et-etstart, radial_scale, l=1
+plot, et-etstart, lonscale, /xs, xtit='Time (seconds)', $
+      ytit='Longitudinal Scale (km)'
+if keyword_set(dolzr) then clzr
+
+rmin = radius - abs(radial_scale_adj)*500
+rmax = radius + abs(radial_scale_adj)*500
+exp = 0
+while max(exp) lt nt do begin
+  rmin_next = radius[max(exp)] + abs(radial_scale_adj[max(exp)])*500*0.8
+  exp = [ exp, interpol( indgen(nt), rmin, rmin_next ) ]
+endwhile
+exp1 = nt-1
+while min(exp1) gt 0 do begin
+  rmax_next = radius[min(exp1)] - abs(radial_scale_adj[min(exp1)])*500*0.8
+  exp1 = [ exp1, interpol( indgen(nt), rmax, rmax_next ) ]
+endwhile
+!p.multi = 0
+if !d.name eq 'X' then window, 1
+plot_nosci, et-etstart, radius, /xs, /ys, xtit='Time (seconds)', $
+            ytit='Radius (km)', tit=tit
+oplot, et-etstart, rmin
+oplot, et-etstart, rmax
+ttexp = interpol( et-etstart, indgen(nt), exp )
+rrexp = interpol( radius, indgen(nt), exp )
+solid_circles
+oplot, ttexp, rrexp, ps=8
+rminexp = interpol( rmin, indgen(nt), exp )
+rmaxexp = interpol( rmax, indgen(nt), exp )
+for j=0,n_elements(exp)-1,2 do begin
+  oplot, !x.crange, rminexp[[j,j]], co=ctred()
+  oplot, !x.crange, rmaxexp[[j,j]], co=ctred()
+  oplot, [ttexp[j]], [rrexp[j]], ps=8, co=ctred()
+endfor
+for j=1,n_elements(exp)-1,2 do begin
+  oplot, !x.crange, rminexp[[j,j]], co=ctgreen()
+  oplot, !x.crange, rmaxexp[[j,j]], co=ctgreen()
+  oplot, [ttexp[j]], [rrexp[j]], ps=8, co=ctgreen()
+endfor
+
+end

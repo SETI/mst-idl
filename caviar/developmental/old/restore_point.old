@@ -1,0 +1,14 @@
+period = rstrpos( image_name, '.' )
+suffix = strmid( image_name, period, strlen(image_name) )
+if suffix ne '.IMG' then print, 'Image_name suffix is '+suffix+' not .IMG'
+savefile = strmid( image_name, 0, period )+'.offset'
+if not keyword_set(findfile(savefile)) then begin &$
+  print, savefile+' not found.' &$
+  restore, '/home/adeona/caviar/developmental/nochange.offset' &$
+endif else begin &$
+  print, 'Restoring pointing information from '+savefile &$
+  print, '     (To restore from a different file, change the variable savefile.)' &$
+  restore, savefile
+;endelse
+
+@object_offset_to_cmat

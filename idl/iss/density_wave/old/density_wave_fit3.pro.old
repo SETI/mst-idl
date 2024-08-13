@@ -1,0 +1,59 @@
+pro density_wave_fit3
+
+common fdensity_wave33, m, lambda, lambdasat, rsat, thoukm, rres, rr, yy, $
+	rres1, sigma1
+
+;wave1 = 1
+if keyword_set(wave1) then begin
+  restore, '~/idl/iss/density_wave/test_wave1.sav'
+endif else begin
+  restore, '~/idl/iss/density_wave/test_wave.sav'
+endelse
+rr = radi - thoukm
+if keyword_set(wave1) then begin
+  bg = poly( rr, poly_fit( [125.71469,174.02202], [.029563295,.030026359], 1 ) )
+  rres = 129126
+endif else begin
+  bg = replicate( .02916, n_elements(val) )
+endelse
+if keyword_set(rres1) then rres = rres1
+yy = sqrt(val)
+yy = yy - sqrt(bg)
+
+if keyword_set(sigma1) then sigma = sigma1 else sigma = 43.8 * 1e10  ; g/km^2
+a = .001
+;p0 = [a]
+;p0 = [ a, sigma, rres ]
+;p0 = [ a, 0 ]
+p0 = [ a, sigma, rres, 0 ]
+scale = [ 1, 4e11, 10, !pi ]
+
+savefile = 'density_wave_fit3.sav'
+if keyword_set(findfile(savefile)) then restore, savefile
+xtit = 'Radius - '+strtrim(long(thoukm),2)+' km'
+ytit = 'I/F'
+if not keyword_set(tit) then tit=''
+plot, rr, yy, /xs, /ys, xtit=xtit, ytit=ytit, tit=tit
+print, 'Use the cursor procedure to find two radius values that define the interval to be fit.'
+print, 'Enter these values into a 2-element vector called pts.'
+if keyword_set(pts) then print, 'Previously saved value:  pts = [ '+$
+	strtrim(pts[0],2)+' , '+strtrim(pts[1],2)+' ].'
+stop
+
+save, pts, filename=savefile
+x1 = max(where( rr lt pts[0], count ))
+if count eq 0 then x1 = 0
+x2 = max(where( rr lt pts[1], count )) + 1
+rr = rr[x1:x2]
+yy = yy[x1:x2]
+
+pp = amoeba( 1e-5, scale=scale, p0=p0, function_value=fval, $
+	function_name='fdensity_wave3' )
+
+foo = fdensity_wave3( pp, f=f )
+oplot, rr, f, co=ctgreen()
+print, pp
+stop
+
+end
+

@@ -1,0 +1,141 @@
+if keyword_set(only2005) then begin
+  restore, 'impact_table.sav.2005'
+  _dirs = [ _dirs, '007/HIPHASE' ]
+  _image_name = [ _image_name, 'N1493792962_1_cal.IMG' ]
+endif else if keyword_set(only2009) then begin
+  restore, 'impact_table.sav.2009'
+endif else begin
+  restore, 'impact_table.sav'
+  _dirs = [ _dirs, '007/HIPHASE' ]
+  _image_name = [ _image_name, 'N1493792962_1_cal.IMG' ]
+endelse
+dirs = _dirs[ uniq(_dirs) ]
+orbit = strmid( dirs, 0, 3 )
+ndirs = n_elements(dirs)
+images = _image_name[ uniq(_image_name) ]
+nimages = n_elements(images)
+ddirs = _dirs[ uniq(_image_name) ]
+dirs_lit = bytarr(ndirs)
+for k=0,ndirs-1 do begin
+  restore, '/home/borogove/iss/images/'+dirs[k]+'/stretch.sav'
+  restore, '/home/borogove/iss/images/'+dirs[k]+'/spreadsheet.sav'
+  foo = where( ddirs eq dirs[k], count )
+  if keyword_set(condense) then begin
+    jjj = (where( filenames eq images[foo[0]], count1 ))[0]
+    if count1 ne 1 then stop
+    for j=1,count-1 do begin
+      jjj = [ jjj, (where( filenames eq images[foo[j]], count1 ))[0] ]
+      if count1 ne 1 then stop
+    endfor
+    text = strmid(dirs[k],0,3) + ' & ' + strmid(filenames[jjj[0]],0,11)
+    if count gt 1 then begin
+      text = text + ' -- ' + strmid(filenames[jjj[count-1]],6,5)
+    endif 
+    text = text + ' & ' + strtrim(count,2) + ' & ' + strmid(data[2,0],0,4) + $
+           '-' + strmid(data[2,0],4,3)
+    if strmid(data[2,count-1],4,3) ne strmid(data[2,0],4,3) then begin
+      text = text + '/' + strmid(data[2,count-1],4,3)
+    endif 
+    text = text + ' & ' + $
+           string( mean(_keywords[jjj].ringplane_aimpoint_incidence_angle), $
+                       fo='(F5.1)' ) + '$^\circ$'
+    var = max(_keywords[jjj].ringplane_aimpoint_emission_angle) - $
+          min(_keywords[jjj].ringplane_aimpoint_emission_angle)
+    if var gt 9 then begin
+      text = text + ' & ' + $
+             string( min(_keywords[jjj].ringplane_aimpoint_emission_angle), $
+                     fo='(I3)' ) + '$^\circ$ -- ' + $
+             string( max(_keywords[jjj].ringplane_aimpoint_emission_angle), $
+                     fo='(I3)' ) + '$^\circ$'
+    endif else begin
+      text = text + ' & ' + $
+             string( mean(_keywords[jjj].ringplane_aimpoint_emission_angle), $
+                     fo='(F5.1)' ) + '$^\circ$ '
+    endelse 
+    var = max(_keywords[jjj].ringplane_aimpoint_phase_angle) - $
+          min(_keywords[jjj].ringplane_aimpoint_phase_angle)
+    if var gt 9 then begin
+      text = text + ' & ' + $
+             string( min(_keywords[jjj].ringplane_aimpoint_phase_angle), $
+                     fo='(I3)' ) + '$^\circ$ -- ' + $
+             string( max(_keywords[jjj].ringplane_aimpoint_phase_angle), $
+                     fo='(I3)' ) + '$^\circ$'
+    endif else begin
+      text = text + ' & ' + $
+             string( mean(_keywords[jjj].ringplane_aimpoint_phase_angle), $
+                     fo='(F5.1)' ) + '$^\circ$ '
+    endelse 
+    var = max(_keywords[jjj].ringplane_aimpoint_radial_scale) - $
+          min(_keywords[jjj].ringplane_aimpoint_radial_scale)
+    if var gt 1 then begin
+      if var gt 2 then fo='(I3)' else fo='(F5.1)'
+      text = text + ' & ' + $
+             string( min(_keywords[jjj].ringplane_aimpoint_radial_scale), $
+                     fo=fo ) + ' -- ' + $
+             string( max(_keywords[jjj].ringplane_aimpoint_radial_scale), $
+                     fo=fo )
+    endif else begin
+      text = text + ' & ' + $
+             string( mean(_keywords[jjj].ringplane_aimpoint_radial_scale), $
+                     fo='(F5.1)' )
+    endelse 
+    var = max(_keywords[jjj].ringplane_aimpoint_longitudinal_scale_km) - $
+          min(_keywords[jjj].ringplane_aimpoint_longitudinal_scale_km)
+    if var gt 1 then begin
+      if var gt 2 then fo='(I3)' else fo='(F5.1)'
+      text = text + ' & ' + $
+             string( min($
+                  _keywords[jjj].ringplane_aimpoint_longitudinal_scale_km), $
+                     fo=fo ) + ' -- ' + $
+             string( max($
+                  _keywords[jjj].ringplane_aimpoint_longitudinal_scale_km), $
+                     fo=fo )
+    endif else begin
+    text = text + ' & ' + $
+           string( mean($
+               _keywords[jjj].ringplane_aimpoint_longitudinal_scale_km), $
+                   fo='(F5.1)' )
+    endelse 
+    if ( mean(_keywords[jjj].ringplane_aimpoint_incidence_angle) gt 90 ) xor $
+       ( mean(_keywords[jjj].ringplane_aimpoint_emission_angle) gt 90 ) then $
+          begin
+      text = text + ' & Unlit'
+    endif else begin
+      text = text + ' & Lit'
+      dirs_lit[k] = 1
+    endelse 
+    text = text + ' \\'
+    print, text
+  endif else begin
+    for j=0,count-1 do begin
+      jjj = (where( data[0,*] eq strmid(images[foo[j]],0,13), count1 ))[0]
+      if count1 ne 1 then stop
+      text = strmid(images[foo[j]],0,11) + ' & ' + orbit[k] + ' & '
+      if keyword_set(indnum) then text = text + string(jjj,fo='(I03)') + ' & '
+      text = text + strmid(data[2,jjj],0,4) + '-' + strmid(data[2,jjj],4,3) + $
+             ' ' + strmid(data[2,jjj],7,2) + ':' + strmid(data[2,jjj],9,2) + $
+             ':' + strmid(data[2,jjj],11,2) + ' & '
+      jjj = (where( filenames eq images[foo[j]], count1 ))[0]
+      if count1 ne 1 then stop
+      text = text + $
+             string( _keywords[jjj].ringplane_aimpoint_incidence_angle, $
+                     fo='(F6.2)' ) + '$^\circ$ & ' + $
+             string( _keywords[jjj].ringplane_aimpoint_emission_angle, $
+                     fo='(F5.1)' ) + '$^\circ$ & ' + $
+             string( _keywords[jjj].ringplane_aimpoint_phase_angle, $
+                     fo='(F5.1)' ) + '$^\circ$ & ' + $
+             string( _keywords[jjj].ringplane_aimpoint_radial_scale, $
+                     fo='(F5.1)' ) + ' & ' + $
+             string( abs(_radial_scale_adj[jjj]), $
+                     fo='(F5.1)' ) + ' & ' + $
+             string( _keywords[jjj].ringplane_aimpoint_longitudinal_scale_km, $
+                     fo='(F6.1)' ) + ' & ' + $
+             string( exposure_duration[jjj]/1000., $
+                     fo='(F5.1)' ) + ' \\'
+      print, text
+    endfor
+    print, '\hline'
+  endelse
+endfor
+
+end

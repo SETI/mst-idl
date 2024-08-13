@@ -1,0 +1,17 @@
+notn = replicate(' ',20)
+for tt=0,15 do begin
+  if keyword_set(dolzr) then begin
+    lzr, 'shearing_impact_cartoon_'+string(tt,fo='(I02)')
+    @plot_prepare
+    plot_color
+    gray = ltgray()
+  endif else gray = ctltgray()
+  plot, [-16,16], [-2,2], /nodata, /iso, /xs, /ys, $
+        xtickn=notn, ytickn=notn, xtickle=1e-10, ytickle=1e-10
+  polyfill, cos(theta) - tt*sin(theta), sin(theta), co=gray
+  oplot, cos(theta) - tt*sin(theta), sin(theta)
+  if keyword_set(dolzr) then clzr else wait, 0.1
+endfor
+
+end
+

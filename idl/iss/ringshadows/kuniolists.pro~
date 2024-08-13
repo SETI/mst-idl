@@ -1,0 +1,8 @@
+openr, 1, 'LIST_1509.txt'
+aa = ''
+while not eof(1) do begin
+  readf, 1, aa
+  stop
+endwhile
+
+end

@@ -1,0 +1,87 @@
+pro plot_redge, redge, redge_sigma, csz=csz, title=title, oplot=oplot, keywords=keywords, xr=_xr, yr1=_yr1, yr2=_yr2, ps=ps, color=color, xtit=_xtit, ytit=_ytit, height=height
+
+if n_params() eq 0 then begin
+  print, 'Syntax:  PLOT_REDGE, redge, redge_sigma, /height'
+  retall
+endif
+
+thoukm = get_thoukm(redge[1,*])
+if not keyword_set(redge_sigma) then redge_sigma=redge*0
+if keyword_set(_xtit) then xtit=_xtit else xtit='Longitude (deg)'
+if keyword_set(_ytit) then yt=_ytit else yt=tkmtit(thoukm=thoukm)
+redo:
+if keyword_set(oplot) then begin
+  index = 1
+  oplot, redge[0,*], tkm( redge[index,*], thoukm=thoukm ), ps=ps, color=color
+endif else begin
+  index = 1
+  xt = xtit
+  xtn = ''
+  yma = [4,2]
+  if keyword_set(_yr1) then yr=_yr1 else begin
+    ;yr=[min(redge[index,*]-redge_sigma[index,*]),$
+    ;    max(redge[index,*]+redge_sigma[index,*])]-thoukm
+    yr=tkm([min(smooth( redge[index,*] - redge_sigma[index,*], 50, /edge )),$
+            max(smooth( redge[index,*] + redge_sigma[index,*], 50, /edge ))],$
+            thoukm=thoukm)
+  endelse
+  if keyword_set(_xr) then xr=_xr else begin
+    xr=[ min(redge[0,*]), max(redge[1,*]) ]
+  endelse
+  ys = 9
+  if keyword_set(height) then begin
+    if height eq 1 then begin
+      pmold = !p.multi
+      !p.multi = [0,1,2]
+      yma = [1,2]
+      xt = ''
+      xtn = replicate(' ',20)
+    endif else begin
+      index = 2
+      yma = [4,-1]
+      if keyword_set(_yr2) then yr=_yr2 else begin
+        ;yr=[min(redge[index,*]-redge_sigma[index,*]),$
+        ;    max(redge[index,*]+redge_sigma[index,*])]
+        yr=[min(smooth(redge[index,*]-redge_sigma[index,*],50,/edge)),$
+            max(smooth(redge[index,*]+redge_sigma[index,*],50,/edge))]
+      endelse
+      ys = 1
+      yt = 'Gaussian Height'
+      thoukm = 0
+    endelse
+  endif
+  plot, redge[0,*], tkm(redge[index,*],thoukm=thoukm), /xs, ys=ys, xtit=xt, $
+      xtickn=xtn, ytit=yt, xma=[10,10], yma=yma, charsize=csz, title=title, $
+      xr=xr, yr=yr, ps=ps
+endelse
+oplot, redge[0,*], tkm( redge[index,*] + redge_sigma[index,*], thoukm=thoukm ), ps=3, color=color; l=1
+oplot, redge[0,*], tkm( redge[index,*] - redge_sigma[index,*], thoukm=thoukm ), ps=3, color=color; l=1
+if keyword_set(height) then if height gt 1 then begin
+  !p.multi = pmold
+  return
+endif
+
+if keyword_set(keywords) then begin
+  savefile = '~/Data/caviar/developmental/tkmdefaultflag.sav'
+  if keyword_set(findfile(savefile)) then restore, savefile else flag = 1
+  if flag eq 1 then fac=1e3 else fac=1
+  ytit = 'Radial Pixels'
+  yr=(!y.crange-!y.crange[0])/keywords.ringplane_aimpoint_radial_scale[0]*fac
+endif else begin
+  ytit = 'Reprojected Pixels'
+  ;yr=[min(redge[3,*]-redge_sigma[3,*]),max(redge[3,*]+redge_sigma[3,*])]
+  ;yr=[0,max(redge[3,*]+redge_sigma[3,*])-min(redge[3,*]-redge_sigma[3,*])]
+  yr=(!y.crange-!y.crange[0])/(redge[1,1]-redge[1,0])*(redge[3,1]-redge[3,0])
+endelse
+if not keyword_set(oplot) then begin
+  axis, yaxis=1, /data, /ys, ytit=ytit, charsize=csz, yr=yr
+endif
+
+if keyword_set(height) then begin
+  if height eq 1 then begin
+    height = height + 1
+    goto, redo
+  endif
+endif
+
+end

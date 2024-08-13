@@ -1,0 +1,871 @@
+; fit_wavelet3.pro
+; Before running this routine, first do the following:
+; usefp = 2  ; To use completely what is in saved file
+; restore, 'fitparams.sav'
+; print, _fitparams.rrname  ; Then pick your resonance and make the index jfw
+; j1 = _fitparams[jfw].j1
+; j2 = j1
+; .run preparewaveletplots
+; .run makewaveletplots
+
+if not keyword_exists(jj) then jj = [0,0]
+if n_elements(jj) gt 1 then jj = (where(filenames eq image_name))[0]
+
+if keyword_set(reverse) then reverse = 1 else reverse = 0
+if keyword_set(forceleft) then forceleft = 1 else forceleft = 0
+if not keyword_exists(separate_xi_d) then separate_xi_d = 1
+if not keyword_exists(newerrbars) then newerrbars = 1
+pm = ' !S+!R!M^ ';' +- '
+solid_diamonds
+if not keyword_exists(nosqrt) then nosqrt = 1;0
+
+; This will generally be set.  Use predicted phase rather than fitting for it.
+if not keyword_exists(constrainphase) then constrainphase = 1
+
+; usefp=1 causes the selection within the wavelet (yy) to be reused
+; usefp=2 further causes the parameters of the fit to be reused
+; usefp=-1 makes it clear that neither of these is to be done
+; If usefp=0, automatically set usefp=1 iff necessary parameters are present
+;yy = 0
+if not keyword_set(usefp) then begin
+  if not keyword_set(_fitparams) then begin
+    usefp = -1
+  endif else if not keyword_exists(jfw) then begin
+    usefp = -1
+  endif else if not keyword_set(*(_fitparams[jfw].yy)) then begin
+    usefp = -1
+  endif else usefp = 1
+endif
+if usefp ge 1 then begin
+  ; Enter in yy from the saved parameters
+  yy = *(_fitparams[jfw].yy)
+  nyy = _fitparams[jfw].nyy
+endif
+if keyword_set(yy) then oplot, yy[*,0], yy[*,1], ps=-4, co=green()
+if usefp le 0 then begin
+  ; Define a new yy, which selects out the part of the wavelet plot to use
+  print, 'Draw lower boundary of wavelet signal to be used.'
+  cursor, x, y, 3, /data
+  if !mouse.button eq 1 then begin
+    print, 'Left-click again to confirm that you are measuring a new wave.'
+    cursor, x, y, 3, /data
+    if !mouse.button eq 1 then begin
+      yy = 0
+      rres = 0
+    endif
+  endif
+  while !mouse.button eq 1 do begin
+    if keyword_set(yy) then yy = [ yy, [[x],[y]] ] else yy = [[x],[y]]
+    nyy = n_elements(yy[*,0])
+    yy = yy[ sort(yy[*,0]), * ]
+    oplot, yy[*,0], yy[*,1], ps=-4, co=green()
+    cursor, x, y, 3, /data
+  endwhile
+endif
+
+if usefp ge 1 then rrname = _fitparams[jfw].rrname else begin
+  ; If there is only one identified resonance within the radial interval, then use it.
+  ; Otherwise, ask for user input.
+  foo = where( tkm(ring_rads) gt yy[0,0] and tkm(ring_rads) lt yy[nyy-1,0], count )
+  if count eq 1 then rrname = ring_rads_legend[foo[0]] else begin
+    print, 'Set rrname equal to the resonance label to use'
+    if count gt 0 then print, ring_rads_legend[foo[0]]
+    stop
+  endelse
+endelse
+; Don't currently have necessary info for second-order Mimas phase
+if rrname eq 'Mi 5:3' then constrainphase = 0
+; Extract azimuthal parameter mm from resonance label
+colon = strpos( rrname, ':' )
+if colon ne -1 then begin
+  space = [ rstrpos( rrname, ' ', colon ), $
+            strpos( rrname, ' ', colon ) ]
+  if space[1] eq -1 then space[1] = strlen(rrname)
+  j = float(strmid( rrname, space[0]+1, colon-space[0]-1 ))
+  mm = float(strmid( rrname, colon+1, space[1]-colon-1 )) + 1
+  kk = j - mm
+  satname = strmid( rrname, 0, space[0] )
+  if keyword_set(_psname) then psname=_psname else begin
+    psname = 'fit_' + satname + strtrim(fix(j),2) + strtrim(fix(mm-1),2)
+  endelse
+endif else stop, 'rrname not recognizable as a resonance.'
+; Load kernels and find the expected value of the phase
+; makewaveletplots should have already initialized the necessary variables.
+kind = 'SPK'
+cspice_ktotal, kind, spkcount
+if spkcount eq 0 or keyword_set(reloadkernels) then begin
+  cspice_furnsh,getenv("CAVIAR_KERNELS")
+endif
+sat = naifsat( satname )
+if not keyword_set(_et) then begin
+  if keyword_set(findfile('et.sav')) then restore, 'et.sav'
+endif
+if not keyword_set(et) then begin
+  if keyword_set(_et) then et=_et[jj] else stop, 'No ephemeris time set.'
+endif
+foo = where( _et eq et, count )
+if count gt 0 then begin
+  foo1 = where( foo eq jj, count )
+  if count eq 0 then stop, 'et is found in _et, but not at the current jj.'
+endif
+if not keyword_set(polera) then begin
+  @get_sat_prepare
+endif
+@get_sat_coords
+sat_lon = sat_polar[1]
+if keyword_set(im_lon_scan) then begin
+  im_lon = mean(im_lon_scan)
+endif else begin
+  im_lon = (_keywords[jj].ringplane_aimpoint_longitude)[0]
+endelse
+if kk eq 0 then begin
+  ; First-order ILR
+  phase_expected = fix_angles( (im_lon-sat_lon)*mm + reverse*180, /to360 )
+endif else begin
+  ; Assume higher-order ILR, p=0
+  if satname eq 'Pr' then begin
+    restore, '/home/borogove/matthewt/idl/iss/jeorbits/jeorbits33c_pp.sav'
+    t0q = t0q_pr     ; Time of periapses (days after J2000)
+    l0q = l0q_pr     ; Longitude of periapses (degrees)
+    rper = rper_pr   ; Radial period (days)
+    oper = oper_pr   ; Orbital period (days)
+  endif else if satname eq 'Pd' then begin
+    restore, '/home/borogove/matthewt/idl/iss/jeorbits/jeorbits33c_pp.sav'
+    t0q = t0q_pd
+    l0q = l0q_pd
+    rper = rper_pd
+    oper = oper_pd
+  endif else if satname eq 'Ja' then begin
+    restore, '/home/borogove/matthewt/idl/iss/jeorbits/jeorbits33c.sav'
+    t0q = t0q_j
+    l0q = l0q_j
+    rper = rper_j
+    oper = oper_j
+  endif else if satname eq 'Ep' then begin
+    restore, '/home/borogove/matthewt/idl/iss/jeorbits/jeorbits33c.sav'
+    t0q = t0q_e
+    l0q = l0q_e
+    rper = rper_e
+    oper = oper_e
+  endif else begin
+    print, 'Unknown satname: '+satname
+    if keyword_set(constrainphase) then stop else begin
+      print, 'Unable to find expected phase.  Proceeding anyway.'
+      phase_expected = 0
+      goto, noexpected
+    endelse
+  endelse
+  ; Convert t0q to ephemeris time format (seconds after J2000)
+  t0q = t0q * 86400
+  ; Find most recent periapse
+  foo = max(where( t0q lt et ))
+  if foo eq -1 or foo eq n_elements(t0q)-1 then begin
+    stop, 'Did not find a single most recent periapse.'
+  endif
+  phase_expected = fix_angles( $
+                       mm*im_lon - (mm+kk)*sat_lon + kk*l0q[foo] + $
+                       reverse*180, /to360 )
+  noexpected:
+endelse
+
+; If we're printing, then set necessary parameters.
+; Assume fitting has been done, and avoid redoing calculations.
+if keyword_set(dolzr) then begin
+  lzr, psname, /port
+  if keyword_set(cmyk) then device, /cmyk
+  plot_color
+  @plot_prepare
+  cc1 = 35
+  cc2 = 247
+  rres = _fitparams[jfw].rres
+  rres0 = rres
+  _phase0 = _fitparams[jfw]._phase0
+  phase0 = ( _phase0 + 45 ) mod 360
+  sigma = _fitparams[jfw].sigma
+  sigma_rres = abs( _fitparams[jfw].sigma_rres )
+  sigma_phase = abs( _fitparams[jfw].sigma_phase )
+  sigma_sigma = _fitparams[jfw].sigma_sigma
+  fit1 = dblarr(3)
+  fit1[2] = k_to_sigma(mm,rres) / (sigma*2*!pi/180)
+  fit1[0] = fit1[2]*(rres-rres0)^2 + _phase0
+  fit1[1] = -2*(rres-rres0)*fit1[2]
+  zpt1 = -fit1[1] / fit1[2] / 2
+endif else begin
+  cc1 = 220
+  cc2 = 0
+endelse
+; Use wavelet_levels (from makewaveletplots.pro) to set colors.
+mnp = min(wavelet_levels) & mxp = max(wavelet_levels)
+lv = 1./(wavelet_levels[2]-wavelet_levels[1])
+wavelet_colors = cc2-findgen((mxp-mnp)*lv+1)/((mxp-mnp)*lv)*(cc2-cc1)
+
+; Translate radii and wavenumbers into array indices.
+nx = n_elements(radi)
+ny = n_elements(wavenum)
+yy1 = [ [interpol( indgen(nx), tkm(radi), yy[*,0] )], $
+        [interpol( indgen(ny), wavenum, yy[*,1] )] ]
+
+; Zero out the wavelet for all locations outside the drawn boundary.
+wave1 = wave
+wave1[0:yy1[0,0],*] = 0
+wave1[yy1[nyy-1,0]+1:nx-1,*] = 0
+for j=long(yy1[0,0]+1),long(yy1[nyy-1,0]) do begin
+  ymin = interpol(yy1[*,1],indgen(nyy),interpol(indgen(nyy),yy1[*,0],j))
+  if (ymin+1) le (ny-1) then wave1[j,ymin+1:ny-1] = 0
+endfor
+
+; Create wavelet modulus/power arrays for plotting
+power = abs(wave)
+if keyword_set(soirings_plot) then power1 = abs(wave) else power1 = abs(wave1)
+if keyword_set(nosqrt) then power = power^2
+if keyword_set(nosqrt) then power1 = power1^2
+foo = where( power1 eq 0, count )
+if count gt 0 then power1[foo] = min(power)
+
+; Reconstruct filtered signal from wave1
+if not keyword_set(param) then cdelta = 0.776 $
+	else if param eq 6 then cdelta = 0.776 $
+	else cdelta = 0.776 * (double(param)/6)^(-1.024)
+psi0 = !dpi^(-0.25)
+vfilt = wavelet_dj * sqrt(wavelet_dt) / (cdelta*psi0) * $
+                               ( float(wave1)  # (1./sqrt(wavelet_scale)) )
+vrejec = val - vfilt
+
+; Get average wavelet phase from wave1
+totphase = unwrap_phase(get_phase( total(wave1,2), wrap=totwrap ))
+; z1[*,0] is each the radial location at which totphase passes through 180
+; z1[*,1] is the phase value at the location
+; z1[*,2] is the value of vfilt at the location
+for j=0,( totphase[yy1[nyy-1]-1] - (totphase[yy1[nyy-1]-1] mod 360) )/180 do begin
+  z2 = interpol( radi[yy1[0]+1:yy1[nyy-1]-1], $
+                 totphase[yy1[0]+1:yy1[nyy-1]-1], j*180 )
+  z3 = interpol( vfilt[yy1[0]+1:yy1[nyy-1]-1], $
+                 totphase[yy1[0]+1:yy1[nyy-1]-1], j*180 )
+  if j eq 0 then z1 = [ [z2], [j*180], [z3] ] $
+      else z1 = [ z1, [ [z2], [j*180], [z3] ] ]
+endfor
+if !d.name eq 'X' then window, 20, ys=1000, xpos=640
+
+; q=0 for the first run-through, in which preliminary calculations are done and
+; parameters for fitting are identified
+; q=1 is the final run-through
+for q=0,1 do begin
+
+  if q eq 1 then wset, 20
+  if keyword_set(dolzr) then begin
+    q=1
+  endif
+  oldpm=!p.multi
+  oldyom=!y.omargin
+  !p.multi=0
+  chsz = 1.5
+  !p.charsize = chsz
+  xr = [ yy[0,0], yy[nyy-1,0] ]
+
+  xtn = replicate(' ',20)
+  !y.omargin=[4,2]
+  !y.margin=0
+  ; Height of the plotting window, in characters (subtract 6 to exclude the omargins)
+  yma = ( float(!d.y_size)/!d.y_ch_size )/!p.charsize - 6
+  ; Radial scans have 1 unit of height, wavelets and quadratic fit have 3.
+  ; Old system: RS, W, RS, W, Q
+  ; New system (separate_xi_d=0): RS, W, RS, W, Q, RS
+  ; New system (separate_xi_d=1): RS, W, RS, W, Q, RS, RS
+  ; soirings_plot: RS, RS, W, Q, RS, RS
+  if keyword_set(soirings_plot) then begin
+    nheights = 9
+    if keyword_set(separate_xi_d) then nheights = nheights + 1
+    yma1 = [ yma/nheights*(nheights-1), 0 ]
+    yma2 = [ yma/nheights*(nheights-1), yma - yma1[0] ]
+    yma3 = [ yma/nheights*(nheights-2), yma - yma2[0] ]
+    yma4 = [ yma/nheights*(nheights-5), yma - yma3[0] ]
+    yma5 = [ yma/nheights*(nheights-8), yma - yma4[0] ]
+    yma6 = [ yma/nheights*(nheights-9), yma - yma5[0] ]
+    yma7 = [ yma/nheights*(nheights-10), yma - yma6[0] ]
+  endif else begin
+    nheights = 12;11
+    if keyword_set(separate_xi_d) then nheights = nheights + 1
+    yma1 = [ yma/nheights*(nheights-1), 0 ]
+    yma2 = [ yma/nheights*(nheights-4), yma - yma1[0] ]
+    yma3 = [ yma/nheights*(nheights-5), yma - yma2[0] ]
+    yma4 = [ yma/nheights*(nheights-8), yma - yma3[0] ]
+    yma5 = [ yma/nheights*(nheights-11), yma - yma4[0] ]
+    yma6 = [ yma/nheights*(nheights-12), yma - yma5[0] ]
+    yma7 = [ yma/nheights*(nheights-13), yma - yma6[0] ]
+  endelse
+
+  ; Plot unfiltered input signal
+  if keyword_set(soirings_plot) then tit='' else tit=rrname
+  plot, tkm(radi), val, /xs, /ys, xr=xr, xtickn=xtn, ytit='I/F', chars=chsz, $
+        yma=yma1, tit=tit, yticki=fit_wavelet3_yti1
+  if keyword_set(soirings_plot) then begin
+    dx = !x.crange[1]-!x.crange[0] 
+    dy = !y.crange[1]-!y.crange[0] 
+    dych = !d.y_size*(1-total(yma1)/yma) / !d.y_ch_size
+    choffset = .5 / dych * dy
+    xyouts, chars=1, !x.crange[0] + dx*.025, !y.crange[0]+choffset*2, '(a)'
+  endif
+
+  ; Plot whole wavelet transform
+  if not keyword_set(soirings_plot) then begin
+    unget_color
+    contour, alog10(power), tkm(radi), wavenum, /xs, /ys, xr=xr, $
+             yr=wavelet_yr, /fill, levels=wavelet_levels, $
+             c_colors=wavelet_colors, xtickn=xtn, $
+             ytit='Wavenumber!C(radians/km)', $
+             chars=chsz, yma=yma2, /noerase
+  endif
+
+  ; Plot filtered input signal
+  plot, tkm(radi), vfilt, /xs, /ys, xr=xr, xtickn=xtn, ytit='Filtered I/F', $
+        chars=chsz, yma=yma3, /noerase, yticki=fit_wavelet3_yti2
+  oplot, tkm(z1[*,0]), z1[*,2], ps=3, co=red()
+  if keyword_set(soirings_plot) then begin                                    
+    dy = !y.crange[1]-!y.crange[0]
+    dych = !d.y_size*(1-total(yma3)/yma) / !d.y_ch_size
+    choffset = .5 / dych * dy
+    xyouts, chars=1, !x.crange[0] + dx*.025, !y.crange[0]+choffset*2, '(b)' 
+  endif                        
+
+  ; If fitting parameters have been chosen, then do the fit now and oplot.
+  ; Or, if novm=1, use fit parameters to generate the final model, and oplot
+  if q eq 1 then begin
+    vma = (!y.crange[1]-!y.crange[0])/2
+    xx0 = min(where( radi gt rres ))
+    radi1 = radi[xx0:n_elements(radi)-1]
+    if keyword_set(novm) then begin
+      if usefp ge 1 then begin
+        pp = _fitparams[jfw].pp
+        pp_sigma = _fitparams[jfw].pp_sigma
+      endif else begin
+        pp = [ vma/10, 10 ]
+        pp_sigma = [ 0.0d0, 0 ]
+      endelse
+      vmodel = fdensity_wave5( radi1, a=pp[0], xi_d=pp[1], mm=mm, phi=phase0, $
+                    rres=rres, sigma=sigma, fresnel_integral=fresnel_integral )
+      dof = n_elements(radi1)-n_elements(pp)
+    endif else begin
+      common fdensity_wave55, dw55_mm, dw55_phase0, dw55_rres, dw55_sigma, dw55_xi_d
+      dw55_mm=mm & dw55_phase0=phase0 & dw55_rres=rres & dw55_sigma=sigma
+      weights = replicate(1.,n_elements(radi1))
+      if usefp ge 1 then begin
+        pp = _fitparams[jfw].pp
+        ; Determine if amplitude was assumed to include a contrast reversal. 
+        if keyword_set(override_reverse) then override_reverse=0 else begin
+          reverse = _fitparams[jfw].sigma_phase le 0
+        endelse
+        ; Determine if pshift was forced one slot to the left
+        if keyword_set(override_forceleft) then override_forceleft=0 else begin
+          forceleft = _fitparams[jfw].sigma_rres le 0
+        endelse
+        ; Determine if xi_D was calculated separately in the past.
+        if keyword_set(override_xi_d) then override_xi_d=0 else begin
+          separate_xi_d = _fitparams[jfw].pp_sigma[1] le 0
+        endelse
+      endif else begin
+        pp = [ vma/10, 10 ]  ; Initial guesses for amplitude and damping
+      endelse
+      if keyword_set(separate_xi_d) then begin
+        ; Calculate xi_D separately, then use
+        ; fdensity_wave5b to calculate only A.
+        ; Smoothing length should be about twice the max distance between 
+        ; 0-phase points
+        int1 = where( z1[*,0] gt rr[x0], count )
+        sm = ( z1[int1[1],0] - z1[int1[0],0] ) / (radi[1]-radi[0]) * 4
+        ; A new and better way to do it.  z1 is location of peaks & troughs
+        smfac = 2
+        sm = max( z1[int1[1:count-1],0] - z1[int1,0] ) $
+             / (radi[1]-radi[0]) * smfac
+        ; Yet another new way.  Use peak-to-peak rather than doubling the
+        ; peak-to-trough.  Also, triple it rather than doubling it.  
+        smfac = 3
+        sm = max( z1[int1[2:count-1],0] - z1[int1,0] ) $
+             / (radi[1]-radi[0]) * smfac
+        if not keyword_set(iterate_xi_d) then iterate_xi_d = 0 else begin
+          minsm = round(sm*.5)
+          maxsm = round(yy1[nyy-1]) - round(yy1[0])
+          minsm = minsm - (minsm mod 2) + 1  ; Enforce odd
+          maxsm = maxsm - (maxsm mod 2) + 1  ; Enforce odd
+          nsm = (maxsm-minsm)/2 + 1
+          _smvfilt = dblarr( n_elements(vfilt), nsm )
+          _maxamp = dblarr( nsm )
+          for ii=0,nsm-1 do begin
+            _sm = ii*2 + minsm
+            fourier_smvfilt = 1
+            if keyword_set(fourier_smvfilt) then begin
+              run_fft, abs(vfilt), power, f, fourier=fourier
+              smvfilt = filter_fft( abs(vfilt), power, f, fourier, $
+                                    pts=where(1/f lt _sm), /noplot )
+            endif else begin
+              smvfilt = smooth(smooth(smooth( abs(vfilt), _sm, /edge_truncat ),$
+                                      _sm,/edge_truncate),_sm,/edge_truncate)
+            endelse
+            _smvfilt[*,ii] = smvfilt
+            maxamp1 = (where( _smvfilt[*,ii] eq max(_smvfilt[*,ii]) ))[0]
+            mkexed, where( deriv(deriv(_smvfilt[*,ii])) gt 0 ), exed, z
+            if (where(exed eq nx-1))[0] eq -1 then exed=[[exed],[nx-1,nx-1]]
+            int2 = exed[ max(where( exed le maxamp1 )) : $
+                         min(where( exed ge maxamp1 ))]
+            int2 = lindgen(int2[1]-int2[0]+1) + int2[0]
+            _maxamp[ii] = interpol( radi[int2], (deriv(_smvfilt[*,ii]))[int2], $
+                                    0 )
+          endfor
+          maxamp = mean(_maxamp)
+          _fit_xi_d = r_to_xi(_maxamp,rres,mm,sigma) * 3^(1./3)
+          fit_xi_d = mean(_fit_xi_d)
+          _sm = interpol( indgen(nsm)*2+minsm, _fit_xi_d, fit_xi_d )
+          if iterate_xi_d ge 2 then sm = _sm
+          sigma_xi_d = stddev(_fit_xi_d)
+        endelse
+        ; Smooth the heck out of the filtered wave, to get the amplitude
+        fourier_smvfilt = 0;1
+        if keyword_set(fourier_smvfilt) then begin
+          smvfilt = abs(vfilt)
+          index = lindgen( nx - (nx mod 2) )
+          run_fft, abs(vfilt[index]), power, f, fourier=fourier, /noplot
+          smvfilt[index] = filter_fft( abs(vfilt[index]), power, f, fourier, $
+                                       pts=where(1/f lt sm), /noplot )
+        endif else begin
+          smvfilt = smooth(smooth(smooth( abs(vfilt), sm, /edge_truncate ),$
+                                  sm,/edge_truncate),sm,/edge_truncate)
+        endelse
+        if iterate_xi_d le 1 then begin
+          ; Select an interval centered on the maximum amplitude, but make sure
+          ; that it doesn't contain points where the derivative starts to head
+          ; back towards zero
+          maxamp1 = (where( smvfilt eq max(smvfilt) ))[0]
+          mkexed, where( deriv(deriv(smvfilt)) gt 0 ), exed, z
+          int2 = exed[ max(where( exed le maxamp1 )) : $
+                       min(where( exed ge maxamp1 ))]
+          int2 = lindgen(int2[1]-int2[0]+1) + int2[0]
+          ; Find the zero-derivative point in the amplitude
+          maxamp = interpol( radi[int2], (deriv(smvfilt))[int2], 0 )
+          ; Find the value of xi associated with r=maxamp, convert to xi_D
+          fit_xi_d = r_to_xi(maxamp,rres,mm,sigma) * 3^(1./3)
+          if keyword_set(newerrbars) then begin
+            ; Convert sm/smfac (which should be simply the largest peak-to-peak 
+            ; wavelength) into the dimensionless units of xi
+            sigma_xi_d = r_to_xi( rres+sm*(radi[1]-radi[0])/smfac, $
+                                  rres, mm, sigma ) * 3^(1./3)
+          endif
+        endif
+        ; Prepare input parameters for MPCURVEFIT
+        function_name = 'fdensity_wave5b'
+        pp = pp[0]
+        dw55_xi_d = fit_xi_d
+      endif else begin
+        function_name = 'fdensity_wave5a'
+      endelse
+      vmodel = mpcurvefit( radi1, vfilt[xx0:n_elements(radi)-1], weights, pp, $
+                           pp_sigma, function_name=function_name, $
+                           iter=iter, chisq=chisq, /double, yerror=yerror )
+      ; Use chi-squared and degrees of freedom to get true uncertainties.
+      dof = n_elements(radi1)-n_elements(pp)
+      pp_sigma = pp_sigma * sqrt( chisq / dof )
+      if keyword_set(separate_xi_d) then begin
+        pp = [ pp, fit_xi_d ]
+        if iterate_xi_d ge 2 or keyword_set(newerrbars) then begin
+          ; Setting error bar on xi_D as zero or negative is signal for
+          ; separate_xi_d = 1
+          pp_sigma = [ pp_sigma, -sigma_xi_d ]
+        endif else begin
+          pp_sigma = [ pp_sigma, 0 ]
+        endelse
+      endif
+    endelse
+    oplot, tkm(radi1), vmodel, co=green()
+    ; Run wavelet on the model, and find its wavelet phase to oplot later
+    run_wavelet, radi1, vmodel, vwave, /noplot
+    vphase = unwrap_phase(get_phase( total(vwave,2), wrap=vwrap) )
+    if keyword_set(iterate_xi_d) and !d.name eq 'X' then begin
+      window, 1
+      plot, indgen(nsm)*2+minsm, _fit_xi_d, ps=-4, /xs, /ys, $
+            xtit='Smoothing Length', ytit='Fitted !Mx!DD!N'
+      oplot, !x.crange, mean(_fit_xi_d)*[1,1], l=2
+      oplot, _sm*[1,1], !y.crange, l=2
+      oplot, !x.crange[[0,1,1,0]], mean(_fit_xi_d)+stddev(_fit_xi_d)*[-1,-1,1,1], l=1
+      oplot, !x.crange, fit_xi_d*[1,1], co=green()
+      oplot, sm*[1,1], !y.crange, co=green()
+      wset, 20
+    endif
+  endif
+
+  ; Plot filtered wavelet transform, with yy
+  unget_color
+  contour, alog10(power1), tkm(radi), wavenum, /xs, /ys, xr=xr, $
+      yr=wavelet_yr, /fill, levels=wavelet_levels, $
+      c_colors=wavelet_colors, xtickn=xtn, ytit='Wavenumber!C(radians/km)', $
+      chars=chsz, yma=yma4, /noerase
+  if keyword_set(showridges) then begin
+    wridges = wavelet_ridges( wave1, radi, wavenum )
+    oplot, tkm(wridges[*,2]), wridges[*,3], ps=4
+  endif
+  oplot, yy[*,0], yy[*,1], thick=2, co=blue()
+  if keyword_set(soirings_plot) then begin                                    
+    dy = !y.crange[1]-!y.crange[0]
+    dych = !d.y_size*(1-total(yma4)/yma) / !d.y_ch_size
+    choffset = .5 / dych * dy
+    xyouts, chars=1, !x.crange[0] + dx*.025, !y.crange[1]-choffset*4, '(c)' 
+  endif                        
+  ; If fitting has been done, then oplot wavemodels and print values
+  if q eq 1 then begin
+    plot_wavemodel, rres, rrname, sigma, color=green()
+    if keyword_set(constrainphase) then begin
+      ptext = ' (Expected)'
+    endif else begin
+      ptext = pm+strtrim(sigma_phase,2) + '  (Expected: '+$
+              strtrim(fix_angles(phase_expected-45,/to360),2)+')'
+    endelse
+    if not keyword_set(soirings_plot) then begin
+      xyouts, !x.crange[0]+(!x.crange[1]-!x.crange[0])/30, chars=1, $
+              !y.crange[1]-(!y.crange[1]-!y.crange[0])/8, color=green(), $
+              'Sigma = '+strtrim(sigma,2)+pm+strtrim(sigma_sigma,2) + '!C' + $
+              'Rres  = '+strtrim(rres,2)+pm+strtrim(sigma_rres,2) + '!C' + $
+              'Phase = '+strtrim(fix_angles(phase0-45,/to360),2)+ptext + '!C'+$
+              'A     = '+strtrim(pp[0],2)+pm+strtrim(pp_sigma[0],2) + '!C' + $
+              'Xi_d  = '+strtrim(pp[1],2)+pm+strtrim(pp_sigma[1],2) + '!C' + $
+              'Chisq/DOF = '+strtrim(chisq/dof,2)
+    endif
+  endif
+
+  ; Select whether to use all of the accumulated phase, or just the mod 180 points
+  if not keyword_exists(dots) then dots = 0;1
+  if keyword_set(dots) then begin
+    rr = z1[*,0]
+    vv = z1[*,1]
+    psdots =  3
+  endif else begin
+    rr = radi
+    vv = totphase
+    psdots = 0
+  endelse
+
+  ; Plot the unwrapped phase
+  plot, tkm(rr), vv, /xs, /ys, xr=xr, ps=psdots, yma=yma5, /noerase, $
+        ytit='Unwrapped Phase', chars=chsz, xtickn=xtn
+
+  ; Show resonance locations, and fitted rres
+  solid_diamonds
+  oplot, tkm(ring_rads), replicate(!y.crange[1],n_elements(ring_rads)), ps=8, co=cyan(), /noclip
+  xyouts, tkm(ring_rads), replicate(!y.crange[1]-(!y.crange[1]-!y.crange[0])*.025,n_elements(ring_rads)), ring_rads_legend, co=cyan(), align=1, orient=90
+  if q eq 1 then oplot, [tkm(rres)], [!y.crange[1]], ps=4, co=green(), /noclip
+  if keyword_set(soirings_plot) then begin                                    
+    dy = !y.crange[1]-!y.crange[0]
+    dych = !d.y_size*(1-total(yma5)/yma) / !d.y_ch_size
+    choffset = .5 / dych * dy
+    xyouts, chars=1, !x.crange[0] + dx*.025, !y.crange[1]-choffset*4, '(d)' 
+  endif                        
+
+  ; x0 and x1 are the interval (in data coords) over which to do the quadratic fit
+  ; xdv0 and xdv1 are the same in pixel coords.
+  ; Either use previous values or find new ones, then oplot.
+  foo = 0
+  if usefp ge 2 then begin
+    x0 = _fitparams[jfw].x0
+    x1 = _fitparams[jfw].x1
+    xdv0 = _fitparams[jfw].xdv0
+    xdv1 = _fitparams[jfw].xdv1
+    foo = 1
+  endif
+  if not keyword_set(foo) then begin
+    if q eq 0 then begin
+      axis, xaxis=0, xr=!x.crange, /xs, xtit='Radius'+tkmtit(), chars=chsz
+      cursor, r0, y, 3
+      cursor, xdv0, y, 4, /normal
+      x0 = min(where( tkm(rr) gt r0 ))
+      help, x0
+      plots, xdv0*[1,1], [0,!d.y_size], /normal, l=1, color=yellow()
+      cursor, r1, y, 3
+      cursor, xdv1, y, 4, /normal
+      x1 = max(where( tkm(rr) lt r1 ))
+      help, x1
+      if x1 lt x0 then begin
+        xtemp = x1
+        xdvtemp = xdv1
+        x1 = x0
+        xdv1 = xdv0
+        x0 = xtemp
+        xdv0 = xdvtemp
+      endif
+    endif
+  endif
+  if keyword_set(soirings_plot) then begin
+    plots, xdv0*[1,1], [4.*!d.y_ch_size*!p.charsize/!d.y_size,$
+                        1-2.*!d.y_ch_size*!p.charsize/!d.y_size], /normal, l=1, color=red()
+    plots, xdv1*[1,1], [4.*!d.y_ch_size*!p.charsize/!d.y_size,$
+                        1-2.*!d.y_ch_size*!p.charsize/!d.y_size], /normal, l=1, color=red()
+  endif else begin
+    plots, xdv0*[1,1], [0,!d.y_size], /normal, l=1, color=red()
+    plots, xdv1*[1,1], [0,!d.y_size], /normal, l=1, color=red()
+    oplot, tkm(rr[x0:x1]), vv[x0:x1], ps=psdots*4./3, color=red()
+  endelse
+
+  ; For first run-through, do the quadratic fit to the phase
+  if q eq 0 then begin
+    ; rres0 is an initial guess at rres.  We'll find the deviation, then add the two
+    ; to get the fitted rres.
+    if usefp ge 1 and not keyword_set(constrainradius) then begin
+      rres0 = _fitparams[jfw].rres
+    endif else begin
+      thoukm = get_thoukm(rr)  ; Poly_fit does not do well with .04% change in x
+      foo = where( _ring_rads_legend eq rrname, count )
+      if count eq 1 then rres0 = _ring_rads[foo[0]] else rres0 = thoukm
+      if keyword_set(rres) and not keyword_set(constrainradius) then rres0=rres
+    endelse
+    ; Use SVDFIT to do the quadratic fit.  Note that, unlike POLY_FIT, SVDFIT asks for
+    ; the number of coefficients, which is 3 for a quadratic.  SVDFIT gives more
+    ; trustworthy values for the error bars on the coefficients.  
+    fit1 = svdfit( rr[x0:x1]-rres0, vv[x0:x1], 3, chisq=chisq, sigma=pfsigma )
+    ; Find the point of zero derivative.  Radius and phase at that point are
+    ; rres and phase0 (remember to add 45 degrees to phase0, as per Shu84).
+    zpt1 = -fit1[1] / fit1[2] / 2
+    rres = zpt1 + rres0
+    _phase0 = poly(zpt1,fit1)  ; = fit1[0] - fit1[1]^2 / 4 / fit1[2] 
+    phase0 = ( _phase0 + 45 ) mod 360
+    if keyword_set(constrainradius) and $
+       not keyword_set(constrainphase) then begin
+      fit1a = fit1    ; in case you might ever want to look at it.
+      _ppq = [ fit1[0], fit1[2] ]
+      fit2 = mpcurvefit( rr[x0:x1]-rres0, vv[x0:x1], $
+                         weights, _ppq, _ppq_sigma, covar=covar, $
+                         function_name='quadratic_holdzero3', /quiet, $
+                         iter=iterq, chisq=chisqq, /double, $
+                         yerror=yerrorq )
+      dofq = n_elements(rr[x0:x1]) - 2
+      fit1 = [ _ppq[0], 0, _ppq[1] ]
+      zpt1 = 0
+      rres = rres0
+      _phase0 = poly(zpt1,fit1) ; = fit1[0] - fit1[1]^2 / 4 / fit1[2] 
+      phase0 = ( _phase0 + 45 ) mod 360
+      ; Unlike SVDFIT, MPCURVEFIT does not scale the error bars, so do it now.
+      pfsigma = [ 0, ppq_sigma * sqrt( chisqq / dofq ) ]
+    endif 
+    if keyword_set(constrainphase) then begin
+      ; Fitting the phase seems too unconstrained to be useful.  The expected
+      ; value is already known, so simply constrain the phase to take this
+      ; value, and fit the other parameters.  
+      ; To do this, we use MPCURVEFIT, calling a function we have defined 
+      ; called quadratic_holdzero.pro, which is a quadratic that is 
+      ; to have its zero-derivative point at y=0.  Thus, we subtract the
+      ; expected phase0 from vv, along with a multiple of 360 degrees.
+      fit1a = fit1    ; in case you might ever want to look at it.
+      dphase = fix_angles( phase_expected - phase0 )
+      _phase0 = _phase0 + dphase
+      weights = replicate( 1., n_elements(rr[x0:x1]) )
+      ; Use the previous SVDFIT results as the initial guess.  
+      ; We'll do the fit three times, to make sure that we're subtracting the 
+      ; correct factor of 360 (this also is initially approximated from fit1).
+      ; Variables in the constrainphase section of the code have "q" appended.
+      ppq = rebin(fit1[1:2],2,3)
+      _ppq = ppq[*,0]
+      ppq_sigma = dblarr(2,3)
+      pshift = [ -1, 0, 1 ]
+      chisqq = dblarr(3)
+      covar = dblarr(2,2,3)
+      iterqq = 0
+      for _j=0,2 do begin
+        j = _j
+        mpquad:
+        if keyword_set(constrainradius) then begin
+          ; Additionally constrain the radial resonance location to be equal
+          ; to the predicted value.  Now we simply have v = p * r^2
+          voverr2 = ( vv[x0:x1] - (_phase0+360*pshift[j]) ) / $
+                    (rr[x0:x1]-rres0)^2
+          _ppq = [ 0, svdfit( rr[x0:x1]-rres0, voverr2, 1, chisq=_chisqq, $
+                              sigma=_ppq_sigma ) ]
+          _ppq_sigma = [ 0, _ppq_sigma ]
+          _covar = [ [0,0], [0,0] ]
+        endif else begin
+          fit2 = mpcurvefit( rr[x0:x1]-rres0, $
+                             vv[x0:x1] - (_phase0+360*pshift[j]), $
+                             weights, _ppq, _ppq_sigma, covar=_covar, $
+                             function_name='quadratic_holdzero', /quiet, $
+                             iter=iterq, chisq=_chisqq, /double, $
+                             yerror=yerrorq )
+        endelse 
+        ppq[*,j] = _ppq
+        ppq_sigma[*,j] = _ppq_sigma
+        chisqq[j] = _chisqq
+        covar[*,*,j] = _covar
+      endfor
+      ; Make sure that we are using the value of pshift giving the best chisq.
+      ; If not, then the fit results (ppq,ppq_sigma,chisqq) are shifted so that
+      ; the best chisq is in the center, and a new third spot (jbest) is fit.
+      jbest = (where( chisqq eq min(chisqq), count ))[0]
+      if keyword_set(forceleft) then jbest = ( jbest - 1 ) > 0
+      if count ne 1 then stop, 'Tie for jbest!'
+      if jbest ne 1 then begin
+        if iterqq lt 5 then iterqq = iterqq + 1 else begin
+          ; Prevent infinite loop.
+          print, 'We''re seeming to have some trouble finding ' + $
+                 'an adequate pshift.'
+          stop
+        endelse
+        if jbest eq 0 then begin
+          int1 = [[ 1, 2 ]]
+          int2 = [[ 0, 1 ]]
+        endif else if jbest eq 2 then begin
+          int1 = [[ 0, 1 ]]
+          int2 = [[ 1, 2 ]]
+        endif else stop  ; This should never happen.
+        ppq[*,int1] = ppq[*,int2]
+        ppq_sigma[*,int1] = ppq_sigma[*,int2]
+        chisqq[int1] = chisqq[int2]
+        covar[*,*,int1] = covar[*,*,int2]
+        j = jbest
+        pshift = pshift - 1 + jbest
+        goto, mpquad
+      endif
+      ; The best value of pshift is now pshift[jbest] = pshift[1]
+      print, 'Pshift = '+strtrim(pshift[jbest],2)+'*360 gives the best '+$
+             'chisq, after '+strtrim(iterqq,2)+' iterations.'
+      ppq = ppq[*,jbest]
+      ppq_sigma = ppq_sigma[*,jbest]
+      chisqq = chisqq[jbest]
+      covar = covar[*,*,jbest]
+      dofq = n_elements(rr[x0:x1]) - 2
+      _phase0 = _phase0 + 360*pshift[jbest]
+      phase0 = ( _phase0 + 45 ) mod 360
+      fit1 = [ ppq[0]^2/4/ppq[1] + _phase0, ppq[0], ppq[1] ]
+      zpt1 = -fit1[1] / fit1[2] / 2
+      rres = zpt1 + rres0
+      ; Unlike SVDFIT, MPCURVEFIT does not scale the error bars, so do it now.
+      pfsigma = [ 0, ppq_sigma * sqrt( chisqq / dofq ) ]
+    endif
+    sigma = k_to_sigma(mm,rres) / (fit1[2]*2*!pi/180)
+    ; When calculating error bars, note that SVDFIT automatically multiplies
+    ; the 1-sigma uncertainty by sqrt(chisq/(n-m)), and returns this in the
+    ; keyword "sigma" when there are no error bars on the input data values.
+    ; Thus, pfsigma are already correct error bars on the fit parameters.
+    sigma_rres = sqrt( ( pfsigma[1]/fit1[2]/2 )^2 + $
+                       ( pfsigma[2]*fit1[1]/fit1[2]^2/2 )^2 )
+    sigma_phase = sqrt( pfsigma[0]^2 + ( 2*pfsigma[1]*fit1[1]/4/fit1[2] )^2 + $
+                        ( pfsigma[2]*fit1[1]^2/4/fit1[2]^2 )^2 )
+    sigma_sigma = k_to_sigma(mm,rres) / (fit1[2]*2*!pi/180) * $
+                  sqrt( ( 4*sigma_rres/rres )^2 + ( pfsigma[2]/fit1[2] )^2 )
+    if keyword_set(newerrbars) then begin
+      if !d.name eq 'X' then begin
+        window, 6
+        !p.multi = [0,1,2]
+        run_fft, vv[x0:x1]-poly(radi[x0:x1]-rres0,fit1), fft_power, fft_f, $
+                 x=radi[x0:x1]/(radi[1]-radi[0]), /noplot, coeff=fft_coeff
+        plot_fft, vv[x0:x1]-poly(radi[x0:x1]-rres0,fit1), fft_power, fft_f, $
+                  ps=-4, yr=[0,5], xtit=' ', coeff=fft_coeff, $
+                  xtickn=replicate(' ',20);, xtit='Wavelength (pixels)'
+        _fft_power = fft_power
+        for k=1,n_elements(fft_power)-1 do begin
+          _fft_power[k] = _fft_power[k-1] + _fft_power[k]
+        endfor
+        _fft_power = _fft_power / max(_fft_power)
+        effscale = interpol( 1/fft_f, _fft_power, 0.9 )
+        plot, 1/fft_f, _fft_power, ps=-4, /xlog, xtit='Wavelength (pixels)', $
+              ytit='Cumulative Fourier Power!Cin Residual Phase', /xs, /ys
+        oplot, [1e-10,effscale,effscale], [0.9,0.9,1e-10], l=1
+        wset, 20
+        !p.multi = 0
+      endif
+      if keyword_set(effscale) then begin
+        print, 'The residual has very little power at short wavelengths, because of correlation between neighboring data points.  We determine the effective resolution as the 90% cutoff .  This occurs at '+strtrim(effscale,2)+' nominal pixels, thus we scale the error bars by sqrt('+strtrim(effscale,2)+') = '+strtrim(sqrt(effscale),2)+'.'
+      endif else begin
+        effscale = 2.8^2
+        print, 'The residual has power at large wavelengths, because of correlation between neighboring data points.  The cutoff (which is the effective resolution) is at 7 or 8 nominal pixels, which you hopefully see confirmed in this plot.  Thus, we scale the error bars by sqrt(8) ~ 2.8'
+      endelse
+      sigma_rres = sigma_rres * sqrt(effscale)
+      sigma_phase = sigma_phase * sqrt(effscale)
+      sigma_sigma = sigma_sigma * sqrt(effscale)
+    endif
+  endif else begin
+    ; If this is the final run-through, then oplot the fitted phase and the
+    ; phase from the filtered wavelet.  Also print fitted values.
+    oplot, [tkm(rres)], [poly(zpt1,fit1)], ps=4, co=green()
+    if keyword_set(soirings_plot) then begin
+      oplot, tkm(radi), poly( radi-rres0, fit1 ), co=green(), l=2
+    endif else begin
+      oplot, tkm(radi), poly( radi-rres0, fit1 ), co=green(), l=1-sign(psdots)
+      oplot, tkm(radi1), vphase+round((_phase0-vphase[0])/360)*360, co=cyan()
+      xyouts, !x.crange[1]-(!x.crange[1]-!x.crange[0])/30, chars=1, $
+              !y.crange[0]+(!y.crange[1]-!y.crange[0])/20, color=green(), $
+              'Chisq/DOF = '+strtrim(chisq/dof,2), align=1
+    endelse
+    ; Plot residual phase
+    plot, tkm(rr), vv - poly(rr-rres0,fit1), /xs, /ys, xr=xr, yr=[-60,60], $
+          ytit='Residual!CPhase', chars=chsz, xtickn=xtn, yma=yma6, /noerase, $
+          yticki=30
+    oplot, !x.crange, [0,0], l=1
+    if keyword_set(soirings_plot) then begin                                    
+      dy = !y.crange[1]-!y.crange[0]
+      dych = !d.y_size*(1-total(yma6)/yma) / !d.y_ch_size
+      choffset = .5 / dych * dy
+      xyouts, chars=1, !x.crange[0] + dx*.025, !y.crange[1]-choffset*4, '(e)' 
+    endif
+    if keyword_set(separate_xi_d) then begin
+      ; Plot amplitude used to calculate xi_D
+      plot, tkm(radi), smvfilt/max(smvfilt), /xs, /ys, xr=xr, yma=yma7, /noerase, $
+            ytit='Relative!CWave!CAmplitude', chars=chsz, xtickn=xtn
+      oplot, tkm(maxamp*[1,1]), !y.crange, l=1
+      ; Overplot a sample of the smoothing length
+      dy = !y.crange[1] - !y.crange[0]
+      rsm = radi[sm] - radi[0]
+      oplot, tkm( maxamp - rsm*[0.2,1.2] ), !y.crange[0] + dy/5*[1,1]
+      oplot, tkm( maxamp - rsm*[0.2,0.2] ), !y.crange[0] + dy/5*[0.7,1.3]
+      oplot, tkm( maxamp - rsm*[1.2,1.2] ), !y.crange[0] + dy/5*[0.7,1.3]
+      if keyword_set(soirings_plot) then begin                                    
+        dy = !y.crange[1]-!y.crange[0]
+        dych = !d.y_size*(1-total(yma7)/yma) / !d.y_ch_size
+        choffset = .5 / dych * dy
+        xyouts, chars=1, !x.crange[0] + dx*.025, !y.crange[1]-choffset*4, '(f)' 
+      endif                        
+    endif
+  endelse
+  ; Whichever plot ended up being the last, now add the axis labels
+  axis, xaxis=0, xr=!x.crange, /xs, xtit='Radius'+tkmtit(), chars=chsz
+  if keyword_set(dolzr) then clzr
+
+endfor
+
+!x.omargin=0
+!y.omargin=0
+!p.multi=oldpm
+!y.omargin=oldyom
+
+print, 'Sigma = '+strtrim(sigma,2)+pm+strtrim(sigma_sigma,2)
+print, 'Rres  = '+strtrim(rres,2)+pm+strtrim(sigma_rres,2)
+print, 'Phase = '+strtrim(phase0,2) + ptext
+print, 'A     = '+strtrim(pp[0],2)+pm+strtrim(pp_sigma[0],2)
+print, 'Xi_d  = '+strtrim(pp[1],2)+pm+strtrim(pp_sigma[1],2)
+print, 'Chisq/DOF = '+strtrim(chisq/dof,2)
+
+; Enter fitted values into fitparams, and save it (unless nosave=1).
+if not keyword_set(fitparams_savefile) then fitparams_savefile='fitparams.sav'
+if keyword_set(findfile(fitparams_savefile)) then restore, fitparams_savefile
+if keyword_set(reverse) then sigma_phase = -sigma_phase
+if keyword_set(forceleft) then sigma_rres = -sigma_rres
+fitparams = { jj:jj, rrname:rrname, sat_lon:sat_lon, im_lon:im_lon, mm:mm, $
+              yy:ptr_new(yy), nyy:nyy, x0:x0, x1:x1, xdv0:xdv0, xdv1:xdv1, $
+              sigma:sigma, rres:rres, _phase0:_phase0, $
+              sigma_sigma:sigma_sigma, sigma_rres:sigma_rres, $
+              sigma_phase:sigma_phase, pp:pp, pp_sigma:pp_sigma }
+if not keyword_set(_fitparams) then _fitparams = fitparams else begin
+  jfw = (where( _fitparams.rrname eq rrname, count ))[0]
+  if count eq 0 then begin
+    _fitparams = [ _fitparams, fitparams ]   ; Add
+    jfw = n_elements(_fitparams)-1
+  endif
+  if count eq 1 then _fitparams[jfw] = fitparams          ; Update
+  if count ge 2 then stop, 'multiple structures in _fitparams for '+rrname
+endelse
+print, 'jj = '+strtrim(jj,2)+'      jfw = '+strtrim(jfw,2)+'      rrname = '+rrname
+if not keyword_set(_noise) then _noise = dblarr(n_elements(_fitparams))
+if jfw eq n_elements(_noise) then _noise = [ _noise, 0 ]
+_noise[jfw] = mean( _errbar[x0:x1] )
+if not keyword_set(nosave) then save, _fitparams, _noise, $
+  filename=fitparams_savefile
+
+; Save model curve, to plot in figure PanSequence1
+if keyword_set(pansequence) then begin
+  _vmodel = vmodel + vrejec[xx0:n_elements(radi)-1]
+  save, radi1, _vmodel, filename=rrname+'.vmodel.sav'
+endif
+
+end
+

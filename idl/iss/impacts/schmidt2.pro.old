@@ -1,0 +1,71 @@
+if not keyword_set(version) then version = 1
+Omega = sqrt(caviar_omega2(130000.0d0))  ; in radians/s, for a = 130000 km
+Omegat = dindgen(601)/100*2*!dpi
+; Equations 24 and 25 of Schmidt white paper, version 21 Nov 2010
+tanphi1 = 2*( 5*sin(Omegat) - 3*Omegat )
+tanphi2 = sqrt(2*( 73 + 18*Omegat^2 - 64*cos(Omegat) - $
+                   9*cos(2*Omegat) - 60*Omegat*sin(Omegat) ))
+tanphi = (tanphi1-tanphi2)/( 16*(sin(Omegat/2))^2 )
+device, decomposed=0
+!p.multi = [0,2,2]
+!y.margin = 0
+!y.omargin = [4,2]
+if version eq 2 or version eq 3 or version eq 5 then begin
+  xtit = 'Orbits'
+  xtn = ''
+endif else begin
+  xtit = ''
+  xtn = replicate(' ',20)
+endelse
+;plot, Omegat/2/!dpi, atan(-tanphi)*180/!dpi, yticki=30
+plot, [min(Omegat),max(Omegat)]/2/!dpi, [0,0], yr=90-[80.5,90], /nodata, /xs, /ys, $
+      xtit=xtit, xtickn=xtn, ytit='Cant Angle (!Uo!N)'
+polyfill, !x.crange[[0,1,1,0,0]], 3.46+[-1,-1,1,1,-1]*.02, co=gray()
+polyfill, !x.crange[[0,1,1,0,0]], 1.63+[-1,-1,1,1,-1]*.04, co=gray()
+oplot, Omegat/2/!dpi, 90-atan(-tanphi)*180/!dpi
+if keyword_set(tiscareno) then begin
+  oplot, co=green(), Omegat/2/!dpi, fix_angles( atan(( 1 - cos(Omegat) )/$
+         ( 1.5*Omegat - 2*sin(Omegat) ))*180/!dpi, /deg, /to360 )
+  oplot, co=blue(), Omegat/2/!dpi, fix_angles( (( 1 - cos(Omegat) )/$
+         ( 1.5*Omegat - 2*sin(Omegat) ))*180/!dpi, /deg, /to360 )
+  oplot, co=yellow(), Omegat/2/!dpi, 1/1.5d0/Omegat*180/!dpi
+endif
+oplot, Omegat/2/!dpi, 90-atan(1.5*Omegat)*180/!dpi, l=5
+if version eq 5 then stop
+bnd = [0,1,1.5,2,2.5,3,3.47,4]
+for j=0,6 do begin
+  if j eq 0 and version eq 1 then begin
+    solid_circles
+    l=0
+;  endif else if j eq 2 then begin
+;    open_circles
+;    l=2
+  endif else begin
+    open_circles;solid_tiny_circles
+    l=1
+  endelse 
+  foo = where( Omegat/2/!dpi gt bnd[j] and Omegat/2/!dpi lt bnd[j+1] )
+  _root = interpol( Omegat[foo]/2/!dpi, atan(-tanphi[foo])*180/!dpi, 90-3.46 )
+  if j eq 0 then root = _root else root = [ root, _root ]
+  if version eq 2 then begin
+    oplot, [_root], [3.46], ps=-8, co=red()
+  endif else begin
+    oplot, _root+[0,(49.15-23.15)*Omega*3600/2/!dpi], [3.46,1.63], $
+           ps=-8, l=l, co=red()
+  endelse
+endfor
+if version eq 2 or version eq 3 then stop
+
+!p.multi[0] = !p.multi[0]-1
+if !d.name eq 'X' then yma=[20,0] else yma=[13,0]
+plot, [0,6], [-1.1,1.1], /nodata, /xs, /ys, yma=yma, $
+      xtit='Orbits', ytit='Second Detection!CCant Angle Residual (!Uo!N)'
+polyfill, !x.crange[[0,1,1,0,0]], [-1,-1,1,1,-1]*sqrt(.04^2+.02^2), co=gray()
+for j=0,6 do begin
+  tt = root[j]+(49.15-23.15)*Omega*3600/2/!dpi
+  residual = interpol( atan(-tanphi)*180/!dpi, Omegat/2/!dpi, tt )-90+1.63
+  if j eq 0 and version eq 1 then solid_circles else open_circles
+  oplot, [tt], [residual], ps=8, co=red()
+endfor
+
+end

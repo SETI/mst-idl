@@ -1,0 +1,18 @@
+function fit_propellers4_subtractavg, rrpi, rrpi_orig, mask, sz
+
+rrpi_temp = rrpi
+for k=0l,sz[2]-1 do begin
+  foogood = where( mask[*,k] eq 1, countgood )
+  if countgood gt 0 then begin
+    foobad = where( mask[*,k] eq 0, countbad )
+    if countbad gt 0 then begin
+      rrpi_temp[foobad,k] = mean(rrpi_temp[foogood,k])
+    endif
+  endif else rrpi_temp[*,k] = 0
+endfor
+rrpi = rrpi_orig - rebin( rebin(rrpi,1,sz[2]), sz[1], sz[2] )
+rrpi = rrpi*mask
+
+return, rrpi
+
+end

@@ -1,0 +1,28 @@
+pro get_radarray, cam_params, cmat, nl, et, polera, poledec, sc, radarray, lonarray
+
+int = 32
+xarray = rebin( lindgen(nl/int+1)*int, nl/int+1, nl/int+1 )
+yarray = rebin( lindgen(1,nl/int+1)*int, nl/int+1, nl/int+1 )
+p2radec_quicker, cam_params, cmat, nl, yarray, xarray, _ra, _dec
+p2ralon_quicker, cmat, et, polera, poledec, sc, _RA, _dec, _rad, _lon
+ 
+_radarray = dblarr(nl/int+1,nl/int+1)
+_lonarray = dblarr(nl/int+1,nl/int+1)
+_raarray = _radarray*0
+_decarray = _radarray*0
+for _x=0,nl/int do for _y=0,nl/int do begin
+  x = _x*int & y = _y*int
+print,_x,_y
+;  if y eq 0 then print,'x = ',x,' / ',nl
+  p2radec,cam_params,cmat,nl,y,x,RA,dec
+  p2ralon,cmat,et,polera,poledec,sc,RA,dec,rad,lon
+  _raarray[_x,_y] = ra
+  _decarray[_x,_y] = dec
+  _radarray[_x,_y] = rad
+  _lonarray[_x,_y] = lon
+endfor
+
+radarray = interpolate( _radarray, findgen(nl)/int, findgen(nl)/int, /grid )
+lonarray = interpolate( _lonarray, findgen(nl)/int, findgen(nl)/int, /grid )
+
+end

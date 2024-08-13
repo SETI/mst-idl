@@ -1,0 +1,213 @@
+; cruise = 1
+; .run orbitrose
+; noenc = 1
+; .run orbitrose
+
+; .run orbitrose
+
+kerndir = '/home/borogove/iss/NAIF/spk/'
+
+if keyword_set(cruise) then begin
+  norm = 1.496d8  ; AU
+  planets = [ 2l, 3l, 4l, 5l, 6l ]
+  periods = [ 224.695, 365.242, 686.930, 4330.60, 10746.94 ]
+  names = [ 'Venus', 'Earth', 'Mars', 'Jupiter', 'Saturn' ]
+  rads = [ 0.7233d0, 1.0, 1.5237, 5.2026, 9.5549 ]
+  xr = [ -3, 2.5 ]
+  yr = [ -1, 9.5 ]
+  savefile = 'cruise.sav'
+  suff = '_cruise'
+  port = 1
+endif else if keyword_set(xm) then begin
+  norm = 60330.0d0  ; Radius of Saturn
+  names = [ 'Enceladus', 'Titan', 'Iapetus' ]
+  rads = [ 238020.0d0, 1221850, 3561300 ] / norm
+  xr = [ -25, 20 ]
+  yr = [ -20, 50 ]
+  savefile = 'xm.sav'
+  suff = '_xm'
+  port = 1
+  if keyword_set(xz) then begin
+    suff = suff + '_xz'
+    nomoons = 1
+    yr = [ -20, 25 ]
+  endif else if keyword_set(yz) then begin
+    suff = suff + '_yz'
+    nomoons = 1
+    xr = [ -25, 50 ]
+    yr = [ -20, 25 ]
+    port = 0
+  endif 
+endif else begin
+  norm = 60330.0d0  ; Radius of Saturn
+  names = [ 'Enceladus', 'Titan', 'Iapetus' ]
+  rads = [ 238020.0d0, 1221850, 3561300 ] / norm
+  xr = [ -140, 70 ]
+  yr = [ -80, 45 ]
+  savefile = 'tour.sav'
+  suff = '_tour'
+endelse
+epoch = julday(1,1,2000,12,0,0) ; 2451545.0d0
+
+if keyword_set(findfile(savefile)) then restore, savefile else begin
+
+  if keyword_set(cruise) then begin
+    cspice_furnsh, kerndir + '000331R_SK_LP0_V1P32.bsp'
+    cspice_furnsh, kerndir + '000331R_SK_V1P32_V2P12.bsp'
+    cspice_furnsh, kerndir + '000331R_SK_V2P12_EP15.bsp'
+    cspice_furnsh, kerndir + '010420R_SCPSE_EP1_JP83.bsp'
+    cspice_furnsh, kerndir + '010423_SK_JP67_SP0.bsp'
+    cspice_furnsh, kerndir + '020425A_SK_SM812_SOI.bsp'
+    cspice_furnsh, kerndir + 'de414.bsp'
+    obs = 0l
+    ref = 'ECLIPJ2000'
+    if not keyword_set(tbase) then tbase = julday(10,15,1997,12,0,0)
+    if not keyword_set(tend) then tend = julday(7,1,2004,0,0,0)
+    dt = 5.0d  ; in days
+  endif else if keyword_set(xm) then begin
+    cspice_furnsh, kerndir + '070918AP_SCPSE_07261_10191.bsp'
+    cspice_furnsh, kerndir + '../fk/saturn_inertial.tk'
+    obs = 6l
+    ref = 'SATURN_INERTIAL'
+    if not keyword_set(tbase) then tbase = julday(7,1,2008,0,0,0)
+    if not keyword_set(tend) then tend = julday(7,1,2010,0,0,0)
+    dt = 0.01d  ; in days
+  endif else begin
+    cspice_furnsh, kerndir + '040622BP_SCPSE_04122_08222.bsp'
+    cspice_furnsh, kerndir + '../fk/saturn_inertial.tk'
+    obs = 6l
+    ref = 'SATURN_INERTIAL'
+    if not keyword_set(tbase) then tbase = julday(5,2,2004,0,0,0)
+    if not keyword_set(tend) then tend = julday(7,1,2008,0,0,0)
+    dt = 0.01d  ; in days
+  endelse
+  sat = -82l
+  nt = long( (tend-tbase) / dt )
+
+  print, ''
+  time = tbase + dt*lindgen(nt) - epoch ; in days from J2000
+  print, 'Using dt = '+strtrim(dt,2)+' days, and nt = '+strtrim(nt,2)+$
+         ', so duration is '+strtrim(dt*(nt-1),2)+' days.'
+  print, 'Time begins at JD '+strtrim(tbase,2)+', which is '+caldate(tbase)
+  print, 'Time ends at JD '+strtrim(tbase+dt*(nt-1),2)+', which is '+$
+         caldate(tbase+dt*(nt-1))
+  print, ''
+
+  pos = dblarr(nt,3)
+  for j=0l,nt-1 do begin
+    _time = time[j] * 86400
+    cspice_spkez, sat, _time, ref, 'NONE', obs, state, ltime
+    pos[j,*] = state[0:2]
+  endfor
+
+  if keyword_set(cruise) then begin
+    for k=0,n_elements(planets)-1 do begin
+      sat = planets[k]
+      tend = ( tbase + periods[k] ) < julday(7,1,2008,0,0,0)
+      nt = long( (tend-tbase) / dt )
+      tt = tbase + dt*lindgen(nt) - epoch ; in days from J2000
+      pp = dblarr(nt,3)
+      for j=0l,nt-1 do begin
+        _time = tt[j] * 86400
+        cspice_spkez, sat, _time, ref, 'NONE', obs, state, ltime
+        pp[j,*] = state[0:2]
+      endfor 
+      case k of
+        0: timev = tt
+        1: timee = tt
+        2: timem = tt
+        3: timej = tt
+        4: times = tt
+      endcase 
+      case k of
+        0: posv = pp
+        1: pose = pp
+        2: posm = pp
+        3: posj = pp
+        4: poss = pp
+      endcase 
+    endfor
+    save, time, pos, timev, posv, timee, pose, timem, posm, $
+          timej, posj, times, poss, filename=savefile
+  endif else begin
+    save, time, pos, filename=savefile
+  endelse 
+
+endelse
+
+if not keyword_exists(noaxes) then noaxes = 1
+if keyword_set(noaxes) then begin
+  tle = 1e-10
+  tn = replicate(' ',20)
+endif else begin
+  tle = 0
+  tn = ''
+endelse
+
+if keyword_set(dolzr) then begin
+  psfile = 'orbitrose'+suff
+  if keyword_set(noenc) then psfile = psfile+'_clean'
+  lzr, psfile, port=port
+  @plot_prepare
+endif
+
+if not keyword_set(cruise) then begin
+  ; September 2005, Iapetus orbits start
+  ; June 2006, Iapetus orbits end, start flip-over
+  ; June 2007, flip-over finished
+  ; March 2008, start to crank up inclination
+;  foo = where( time gt julday(4,1,2007,12,0,0)-epoch )
+;  pos = pos[foo,*]
+;  time = time[foo]
+  zz = pos*0
+  zz[*,2] = 1
+  ang = 225.0d0
+  pos = v_rotate( pos, zz, sin(ang*!dpi/180), cos(ang*!dpi/180) )
+endif
+
+if keyword_set(xz) then begin
+  plot, pos[*,0]/norm, pos[*,2]/norm, xr=xr, yr=yr, /xs, /ys, /isotropic, $
+        xtickle=tle, ytickle=tle, xtickn=tn, ytickn=tn, xtit='x', ytit='z'
+endif else if keyword_set(yz) then begin
+  plot, pos[*,1]/norm, pos[*,2]/norm, xr=xr, yr=yr, /xs, /ys, /isotropic, $
+        xtickle=tle, ytickle=tle, xtickn=tn, ytickn=tn, xtit='y', ytit='z'
+endif else begin
+  plot, pos[*,0]/norm, pos[*,1]/norm, xr=xr, yr=yr, /xs, /ys, /isotropic, $
+        xtickle=tle, ytickle=tle, xtickn=tn, ytickn=tn
+endelse
+solid_circles
+oplot, [0], [0], ps=8
+if keyword_set(cruise) then begin
+  if not keyword_set(noenc) then begin
+    encounters = [ julday(10,15,1997,0,0,0), julday(4,26,1998,0,0,0), $
+                   julday(6,24,1999,0,0,0), julday(8,18,1999,0,0,0), $
+                   julday(12,30,2000,0,0,0), julday(7,1,2004,0,0,0) ] - epoch
+    oplot, interpol( pos[*,0]/norm, time, encounters ), $
+           interpol( pos[*,1]/norm, time, encounters ), ps=8
+  endif
+  for k=0,n_elements(planets)-1 do begin
+    case k of
+      0: time = timev
+      1: time = timee
+      2: time = timem
+      3: time = timej
+      4: time = times
+    endcase 
+    case k of
+      0: pos = posv
+      1: pos = pose
+      2: pos = posm
+      3: pos = posj
+      4: pos = poss
+    endcase 
+    oplot, pos[*,0]/norm, pos[*,1]/norm, l=1
+  endfor 
+endif else if not keyword_set(nomoons) then begin
+  for k=0,n_elements(rads)-1 do begin
+    oplot, replicate( rads[k], 361 ), findgen(361)*!dpi/180, /polar, l=1
+  endfor
+endif
+
+if keyword_set(dolzr) then clzr
+
+end

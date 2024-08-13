@@ -1,0 +1,14 @@
+phi = 0 &$
+mnrad = 0 &$
+mxrad = 0 &$
+mnlon = 0 &$
+mxlon = 0 &$
+resfac = 0 &$
+radscan_xr = 0 &$
+radscan_yr = 0 &$
+radscan_ps = 0 &$
+radscan_tit = 0 &$
+thoukm = 0 &$
+
+;end
+

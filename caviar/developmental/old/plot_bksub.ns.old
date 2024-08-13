@@ -1,0 +1,5 @@
+window,/free,xsize=1024,ysize=1024
+tmpsgma = sigma(bksub_img)
+tv,/order,bytscl(bksub_img,min=-2*tmpsgma, max=2*tmpsgma)
+@make_hist.ns
+print,"sigma = ", tmpsgma

@@ -1,0 +1,65 @@
+function wavelet_ridges, wave, wavenum, rr=rr, minpower=minpower, $
+  highest=highest
+
+if n_params() eq 0 then begin
+  print, 'Syntax:  Result = WAVELET_RIDGES( wave, wavenum, rr=, minpower=, /highest )'
+  print, 'For input n-by-m array wave, m-element vector wavenum, and optional n-element vector rr, returns a n-by-2 array with the first row being the x-index (or value of rr if supplied), and the second row being the location of a local maximum in the wavelet power.  Switch highest to include only the highest value of the power for each x-index.  Input minpower discards all local maxima with power values lower than minpower.'
+  retall
+endif
+
+power = abs(wave^2)
+
+xx = 2
+sz = size(power)
+out = [ [0], [0] ]
+for j=0,sz[1]-1 do begin
+  dd = deriv(power[j,*])
+  d2 = deriv(dd)
+  ; Find places where derivative crosses from +ve to -ve
+  mkexed, where( dd gt 0 ), exed, z
+  ; Crossing is always left of the point in exed
+  exed[1,*] = exed[1,*] + 1
+  exed = reform(exed,2*(z+1))
+  ; Only points more than xx away from the edges
+  ; (If all points fail, then go to the next j)
+  foo = where( exed gt xx and exed lt sz[2]-xx, count )
+  if count gt 0 then begin
+    zero = float(exed[foo])
+    ; Check that power is greater than minpower
+    if not keyword_set(minpower) then minpower = min(power)
+    foo = where( power[j,zero] ge minpower, count )
+    if count gt 0 then begin
+      zero = zero[foo]
+      ; Check that more than xx away from another zero crossing
+      bad = zero*0
+      for k=0,n_elements(zero)-1 do begin
+        foo = where( abs(exed-zero) le xx, count )
+        if count gt 1 then bad[k] = 1
+      endfor
+      foo = where( bad eq 0, count )
+      if count gt 0 then begin
+        zero = zero[foo]
+        ; Check that second derivative is negative
+        foo = where( d2[zero] lt 0, count )
+        if count gt 0 then begin
+          zero = zero[foo]
+          if n_elements(zero) gt 1 then if keyword_set(highest) then begin
+            zero = zero[where( power[j,zero] eq max(power[j,zero]), count )]
+          endif
+          ; Interpolate to get precise location of zero crossing
+          for k=0,count-1 do begin
+            zero[k] = interpol( wavenum[zero[k]-xx:zero[k]+xx], $
+                                deriv(power[j,zero[k]-xx:zero[k]+xx]), 0 )
+            out = [ out, [[j],[zero[k]]] ]
+          endfor
+        endif
+      endif
+    endif
+  endif
+endfor
+
+out = out[1:n_elements(out[*,0])-1,*]
+if keyword_set(rr) then out[*,0] = rr[out[*,0]]
+return, out
+
+end

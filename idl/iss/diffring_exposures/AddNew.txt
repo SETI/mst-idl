@@ -1,0 +1,45 @@
+How to add new data to the diffring_exposures analysis:
+
+; First define the image directory and the savefile (change this as necessary):
+dir = '025/G150PHASE/'
+savefile = '~/idl/iss/diffring_exposures/025_g150phase.sav'
+
+;1) Add directory to the big case statement at the top of diffring_exposures.pro
+;2) Add the appropriate indices to eruns and gruns in run_diffring_exposures.pro
+;3) Move diffring_exposures.sav to a new name (perhaps add ".old2").
+;4) To create the new savefile, 
+run_diffring_exposures
+;5) Now transfer relevant data to immax.sav in the image directory,
+.res
+restore, savefile
+save, immax, ims, emission, phase, $
+      filename='/home/borogove/iss/images/'+dir+'immax.sav'
+;6) Now go to the image directory, and double-check immax:
+restore, 'immax.sav'
+movie_wait = -1
+.run caviar_movie
+; For each image, if immax is not the point of maximum ring brightness:
+cursor, x, y, 1, /dev
+immax[*,j] = [x,nl-y]
+; Or to remove the image entirely:
+immax[*,j] = -1
+; After immax for all images have been checked, and updated if necessary,
+; save the new values, and update the photometric angles:
+@save_immax
+.run immax_update_angles
+
+; Now we need to redo the extraction, so delete savefile and
+; diffring_exposures.sav, then
+run_diffring_exposures
+
+;To check the effects on phase curves:
+allfilters = 1
+.run phasecurves
+
+; To check the background model curves:
+bg = 1 
+allfilters = 1 
+bgonly = 1
+niceplot = 1
+.run phasecurves
+

@@ -1,0 +1,11 @@
+planet_symbol=6
+planet_symbol_size=1.5
+;if !version.arch eq 'ppc' then planet_color=green() else planet_color=getcolor('green')
+if not keyword_set(noplot) then begin & $
+  if !d.n_colors eq 16777216 then planet_color=green() else planet_color=getcolor('green') & $
+endif
+
+if not keyword_set(noplot) then plots,xp,(nl-1)-yp,psym=planet_symbol,symsize=planet_symbol_size,color=make_array(n_elements(planet[*,0]),value=planet_color),/device
+
+;xyouts,xp+6,(nl-4)-yp,strcompress(string(planet[*,0]),/remove_all),/device
+if not keyword_set(noplot) then xyouts,xp+6,(nl-4)-yp,plan_names[*],color=make_array(n_elements(planet[*,0]),value=planet_color),/device

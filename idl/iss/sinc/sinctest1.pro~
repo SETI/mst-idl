@@ -1,0 +1,9 @@
+a = fltarr(100,100)+1
+nk = findgen(8)*5+10
+c = fltarr(3,8)
+for j=0,7 do begin
+  b = caviar_sincinterp3( a, nk[j], 2 )
+  c[*,j] = b[uniq( b, sort(b) )]
+endfor
+
+end

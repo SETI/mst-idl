@@ -1,0 +1,44 @@
+pro plot_wavemodel, ring_rads, ring_rads_legend, sigma, whichres=_whichres, $
+                    notres=notres, fit=fit, mooncolor=mooncolor, color=color, $
+                    xr=_xr, debug=debug
+
+if n_params() eq 0 then begin
+  print, 'Syntax:  PLOT_WAVEMODEL, ring_rads, ring_rads_legend, sigma'
+  retall
+endif
+
+nrr = n_elements(ring_rads)
+if keyword_set(_whichres) then whichres=_whichres else whichres=indgen(nrr)
+if whichres[0] eq -1 then return
+if keyword_exists(notres) then if notres[0] ne -1 then begin
+  whichres = vec_remove( whichres, notres )
+endif
+nwr = n_elements(whichres)
+fit = fltarr( 2, nwr )
+
+if not keyword_exists(mooncolor) then mooncolor=0
+for j=0,nwr-1 do begin
+  k = whichres[j]
+  colon = strpos( ring_rads_legend[k], ':' )
+  if colon ne -1 then begin
+    space = [ rstrpos( ring_rads_legend[k], ' ', colon ), $
+              strpos( ring_rads_legend[k], ' ', colon ) ]
+    if space[1] eq -1 then space[1] = strlen(ring_rads_legend[k])
+    ll = float(strmid( ring_rads_legend[k], space[0]+1, colon-space[0]-1 ))
+    mminusone = float(strmid( ring_rads_legend[k], colon+1, space[1]-colon-1 ))
+    mm = mminusone + 1
+    order = ll - mm + 1
+    if strpos( ring_rads_legend[k], 'BW' ) ne -1 then order = -order
+    fit[1,j] = 2*!pi/3.08/ring_rads[k]^4*60330.^4*(mm-1)/sigma
+    if order lt 0 then fit[1,j] = -fit[1,j]
+    fit[0,j] = -fit[1,j]*ring_rads[k]
+    if keyword_set(color) then clr=color else begin
+      clr = get_mooncolor(ring_rads_legend[k],nocolor=1-mooncolor)
+    endelse
+    if keyword_set(_xr) then xr=_xr else xr=!x.crange
+    oplot, xr, poly( xr*1e3, fit[*,j] ), l=2, co=clr
+  endif
+endfor
+if keyword_set(debug) then stop
+
+end

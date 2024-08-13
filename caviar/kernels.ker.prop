@@ -1,0 +1,7 @@
+\begindata
+KERNELS_TO_LOAD = (
+	 	'/home/sauron2/iss/NAIF/fk/saturn_inertial.tf',
+		'/home/sauron2/iss/NAIF/spk/bleriot_test.bsp',
+		'/home/sauron2/iss/NAIF/spk/body_names'
+		   )
+\begintext

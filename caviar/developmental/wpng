@@ -1,0 +1,25 @@
+
+im_cap=tvrd(true=1)
+
+name_sub_string=strsplit(image_name,'.IMG',/extract)
+
+length_name_sub_string=strlen(name_sub_string)
+
+if length_name_sub_string[0] ne 13 then name_sub_string=strmid(name_sub_string,length_name_sub_string-13,13)
+
+output_name=name_sub_string[0]+'.PNG'
+
+save_path=' '
+
+print,''
+print,'Input path to directory to save image. RETURN saves image in current directory'
+print,'       (Path must include the trailing forward slash, /, at the end)          '
+print,' '
+read,save_path
+print,' '
+
+save_path=strcompress(save_path,/remove_all)
+
+if save_path eq '' then write_png,output_name,im_cap
+
+if save_path ne '' then write_png,save_path+output_name,im_cap 

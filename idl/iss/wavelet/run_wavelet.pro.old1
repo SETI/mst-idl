@@ -1,0 +1,116 @@
+pro run_wavelet, _rr, _vv, _wave, runits=runits, minlam=minlam, maxlam=maxlam, $
+        param=_param, noplot=noplot, xtit=_xtit, ytit=_ytit, xr=xr, $
+        specify_levels=specify_levels, errbar=errbar
+
+if n_params() eq 0 then begin
+  print, 'Syntax:  RUN_WAVELET, rr, vv, wave, runits=, minlam=, maxlam=, param='
+  retall
+endif
+
+common wavelet10, rr, vv, dj, dt, param, period, scale, thoukm, wave, xtit, ytit
+if max(_rr)-min(_rr) gt 1e4 then tkmbase = 100000 else if max(_rr)-min(_rr) gt 1.3e3 then tkmbase=10000 else tkmbase = 1000
+rr = _rr ;tkm( reform(_rr), thoukm=thoukm )
+vv = reform(_vv)
+
+if !d.name eq 'X' then device, decomposed=0
+if !d.name eq 'PS' then !p.font = 1 else !p.font = -1
+if !d.name eq 'PS' then !p.thick = 2 else !p.thick = 1
+!p.charsize=1.5
+
+yr = 0
+tit = ''
+j = 100
+if keyword_set(_param) then param = _param else param = 6
+wavelength = [ '.001', '.003', '.01', '.03', '.1', '.3', '1', '2', '5', '10', '15', '30', '60' ]
+if not keyword_set(runits) then runits = 'km'
+
+nt = n_elements(rr)
+dt = mean( rr[1:nt-1] - rr[0:nt-2] )
+fourier_factor = 4 * !pi / (param+sqrt(2+param^2))
+if not keyword_set(minlam) then minlam = dt*fourier_factor  ; 2.39865
+if not keyword_set(maxlam) then maxlam = minlam*float(nt)/2 ; 49.4469
+; Fake parameters for setting the y-cropping 
+; These used to be actual wavelet parameters, but...
+s0 = minlam / fourier_factor
+dj = alog2(maxlam/minlam) / j
+if keyword_set(_xtit) then xtit=_xtit else xtit='Radius'+tkmtit( rr, thoukm=thoukm, runits=runits )
+if keyword_set(_ytit) then ytit=_ytit else ytit='I/F';'Optical Depth'
+yr = 2 * !pi / fourier_factor / s0 / [ 2.^(j*dj), 1 ]
+; It's better to use the canonical parameters for doing the transform.
+s0 = dt
+dj = 0.125
+j = alog2(float(nt)/2)/dj
+; If j is not an integer, adjust dj so that it is.
+if j ne fix(j) then dj = alog2(float(nt)*dt/s0)/float(fix(j)+1)
+j = fix(j) + 1
+
+vv_recon = vv
+recon = 1;0
+wave = wavelet( vv_recon, dt, /pad, s0=s0, j=j, dj=dj, param=param, period=period, scale=scale, coi=coi, signif=signif, recon=recon, dof=dof, fft_theor=fft_theor )
+_wave = wave   ; Extra copy for sake of common block
+
+; FFT_THEOR, as calculated by wavelet.pro
+fft_theor = signif / (chisqr_cvf(.05,dof)/dof) / stddev(vv)^2
+wavenum = 2*!pi / period
+coi = 2*!pi / coi
+vvv = max(wavenum) - (vv-min(vv))/(max(vv)-min(vv))*(max(wavenum)-min(wavenum))/4
+
+if not keyword_set(noplot) then begin
+
+  ys=9
+  xma=[10,6]
+  if not keyword_set(yr) then yr = [ min(wavenum), max(wavenum) ]
+  loadct, 0
+  yma=[4,-15/!p.charsize]
+  oldpm = !p.multi
+  !p.multi=[0,1,2]
+
+  plot, tkm( rr, thoukm=thoukm ), vv, xma=xma, yma=[15/!p.charsize,2], $
+         /xs, /ys, xtickn=replicate(' ',20), ytit=ytit, tit=tit, xr=xr
+  tit=''
+  power = abs(wave^2)
+  mnp = min(alog10(power))>(-10)
+  mxp = max(alog10(power))
+  lv = 3.  ; Number of contours per order of magnitude
+  mnp = round(mnp*lv)/lv & mxp = round(mxp*lv)/lv
+  levels = findgen( (mxp-mnp)*lv+1 )/lv + mnp
+  if keyword_set(specify_levels) then begin
+    mnp = mnp>(-7)
+    if not keyword_set(cc1) then cc1 = 100
+    if not keyword_set(cc2) then cc2 = 220
+  endif else begin
+    if not keyword_set(cc1) then cc1 = 220
+    if not keyword_set(cc2) then cc2 = 0
+  endelse
+  c_colors = cc2-findgen((mxp-mnp)*lv+1)/((mxp-mnp)*lv)*(cc2-cc1)
+  contour, alog10(power), tkm( rr, thoukm=thoukm ), wavenum, /xs, ys=ys, $
+         xr=xr, yr=yr, xma=xma, yma=yma, /fill, nlevels=15, ylog=0, xtit=xtit, $
+         ytit='Wavenumber (radians/'+runits+')', tit=tit, $
+         levels=levels, c_colors=c_colors
+
+  plots, tkm( rr, thoukm=thoukm ), coi, noclip=0
+  for jj=-1,1,2 do polyfill, tkm( [rr[0],rr,rr[nt-1],rr[[nt-1,0,0]]], thoukm=thoukm ), $
+         [yr[1],coi,yr[1],yr[[0,0,1]]], /line_fill, noclip=0, orient=jj*45, $
+         /data, spacing=.25
+
+  axis, yaxis=1, yticks=n_elements(wavelength)-1, $
+         ytickv = 2*!pi/float(wavelength), ytickn = wavelength, /ys, $
+         ytit='Wavelength ('+runits+')'
+
+  signif = rebin( transpose(signif), nt, j+1 )
+  ;contour, (abs(wave)^2)/signif, tkm( rr, thoukm=thoukm ), wavenum, /overplot, level=1, c_annot='95%'
+
+  sdev = median(errbar)^2
+  siglvl = [ 0.95 ]
+  c_annot = string(siglvl*100,fo='(F4.1)')+'%'
+  _signif = fltarr(1,j+1,n_elements(siglvl))
+  for jj=0,n_elements(siglvl)-1 do _signif[*,*,jj] = fft_theor*sdev*chisqr_cvf(1.-siglvl[jj],dof)/dof
+  _signif = rebin( _signif, nt, j+1, n_elements(siglvl) )
+  for jj=0,n_elements(siglvl)-1 do contour, (abs(wave)^2)/rebin(transpose(fft_theor),nt,j+1), tkm(rr,thoukm=thoukm), wavenum, /overplot, level=sdev*chisqr_cvf(1.-siglvl[jj],dof)/dof, c_annot=c_annot[jj]
+  ;;for jj=0,n_elements(siglvl)-1 do contour, (abs(wave)^2)/_signif, tkm(rr,thoukm=thoukm), wavenum, /overplot, level=1, c_annot=c_annot[jj]
+stop
+  !p.multi = oldpm
+
+endif
+
+end

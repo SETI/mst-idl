@@ -1,0 +1,11 @@
+
+find_satellites,im,et,planet,6d-6,vobs_planet,cmat,cam_params,planet_coords,located_satellites
+
+tv,im,/order
+plots,round(coords[*,1]),round(1023-coords[*,0]),psym=symbol,symsize=symbol_size,/device
+plots,round(located_satellites[*,2]),round(1023-located_satellites[*,1]),psym=symbol,symsize=symbol_size,color=colours,/device
+plots,round(ring_coords[*,1]),1023-round(ring_coords[*,0]),psym=ring_symbol,symsize=ring_symbol_size,color=colours_ring,/device
+
+xyouts,round(coords[*,1])+6,1020-round(coords[*,0]),name,/device
+xyouts,round(coords[*,1])+6,1010-round(coords[*,0]),mag,/device
+xyouts,located_satellites[*,2]+6,1020-located_satellites[*,1],strcompress(string(located_satellites[*,0]),/remove_all),color=colours,/device

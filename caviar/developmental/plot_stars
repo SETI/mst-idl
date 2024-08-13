@@ -1,0 +1,15 @@
+symbol=6
+symbol_size=1.5
+;if !version.arch eq 'ppc' then star_color=cyan() else star_color=getcolor('cyan')
+if not keyword_set(noplot) then begin & $
+  if !d.n_colors eq 16777216 then star_color=cyan() else star_color=getcolor('cyan') & $
+endif
+
+if not keyword_set(noplot) then plots,x,(nl-1)-y,psym=symbol,symsize=symbol_size,color=make_array(n_elements(stars[*,0]),value=star_color),/device
+
+star_names,stars,s_names
+if keyword_set(brightstar) then restore, getenv('DATA2')+'/caviar/developmental/bright_star.sav'
+if keyword_set(brightstar) then s_names[n_elements(s_names)-1] = bsname[brightstar-1]
+
+if not keyword_set(noplot) then xyouts,x+6,(nl-4)-y,s_names,color=make_array(n_elements(stars[*,0]),value=star_color),/device
+if not keyword_set(noplot) then xyouts,x+6,(nl-14)-y,strcompress(string(stars[*,3]/100.0),/remove_all),color=make_array(n_elements(stars[*,0]),value=star_color),/device

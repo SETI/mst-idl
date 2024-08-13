@@ -1,0 +1,5 @@
+; If an image has horizontal bars due to bad lines, then do the following:
+.run make_shadow
+cray = shadow
+blank_cray = 1
+@ns_radscan

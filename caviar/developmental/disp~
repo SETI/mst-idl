@@ -1,0 +1,52 @@
+image_coords,stars,cmat,vobs,cam_params,nl,coords
+image_coords,planet,cmat,vobs_planet,cam_params,nl,planet_coords
+image_coords,ring,cmat,vobs_planet,cam_params,nl,ring_coords
+
+if keyword_set(disp_keepwin) then disp_keepwin=0 else wset,0
+
+tv,im,/order
+x = round(coords[*,1])
+y = round(coords[*,0])
+@plot_stars
+xp = round(planet_coords[*,1])
+yp = round(planet_coords[*,0])
+get_planet_name,planet[*,0],plan_names
+@plot_planets
+xr = round(ring_coords[*,1])
+yr = round(ring_coords[*,0])
+@plot_rings
+@plot_cray
+
+cspice_m2eul,cmat,3,1,3,twisto,deco,rao
+
+rao=rao-(0.5d0*!dpi)
+deco=(0.5d0*!dpi)-deco
+
+rao=rao*360.0d0/(2.0d0*!dpi)
+deco=deco*360.0d0/(2.0d0*!dpi)
+twisto=twisto*360.0d0/(2.0d0*!dpi)
+
+if rao lt 0.0d0 then rao=rao+360.0d0
+if twisto lt 0.0d0 then twisto=twisto+360.0d0
+
+print,' '
+print,format='(d15.10,d15.10,d15.10)',rao,deco,twisto
+print,' '
+
+cmat_trans=transpose(cmat)
+cam_offset_trans=pmat##cmat_trans
+cam_offset=transpose(cam_offset_trans)
+
+cspice_m2q,cam_offset,cam_offset_quat
+
+print,' '
+print,format='(d14.11,d14.11,d14.11,d14.11)',cam_offset_quat
+print,' '
+
+zax=[0.0d0,0.0d0,1.0d0]
+pvec_d=cmat_trans##zax
+pvec=dblarr(3)
+pvec[0]=pvec_d[0,0]
+pvec[1]=pvec_d[0,1]
+pvec[2]=pvec_d[0,2]
+

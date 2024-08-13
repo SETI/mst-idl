@@ -1,0 +1,32 @@
+
+\begindata
+KERNELS_TO_LOAD = (
+                '/home/sauron2/iss/NAIF/fk/vg2_v02.tf',
+                '/home/sauron2/iss/NAIF/ik/vg2_issna_v02.ti',
+                '/home/sauron2/iss/NAIF/ik/vg2_isswa_v01.ti',
+		'/home/sauron2/iss/NAIF/lsk/naif0010.tls',
+                '/home/sauron2/iss/NAIF/sclk/vg200022.tsc',
+ 		'/home/sauron2/iss/NAIF/pck/pck00010.tpc',
+		'/home/sauron2/iss/NAIF/spk/ura091-rocks-merge.bsp',
+                '/home/sauron2/iss/NAIF/spk/vgr2_ura083.bsp',
+		'/home/sauron2/iss/NAIF/spk/ura111.bsp',
+                '/home/sauron2/iss/NAIF/spk/vgr2_nep081.bsp',
+                '/home/sauron2/iss/NAIF/ck/vgr2_super.bc',
+                '/home/sauron2/iss/NAIF/ck/vg2_ura_version1_type1_iss_sedr.bc',
+                '/home/sauron2/iss/NAIF/ck/vg2_nep_version1_type1_iss_sedr.bc'
+                   )
+\begintext
+;rob added naif0011.tls, naif0012.tls, ura091.bsp,ura112.bsp,$
+;	uranus_equatorial_J2000_v1.tf,cpck29Sep2004.tpc
+;
+;temporary change to match RGF kernels below
+;\begindata
+;KERNELS_TO_LOAD = (
+;                '/home/sauron2/iss/NAIF/fk/uranus_equatorial_J2000_v1.tf',
+;                '/home/sauron2/iss/NAIF/lsk/naif0011.tls',
+;                '/home/sauron2/iss/NAIF/pck/cpck29Sep2004.tpc',
+;                '/home/sauron2/iss/NAIF/spk/ura091.bsp',
+;                '/home/sauron2/iss/NAIF/spk/ura112.bsp'
+;                   )
+;\begintext
+

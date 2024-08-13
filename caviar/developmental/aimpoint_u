@@ -1,0 +1,7 @@
+print, 'Define a new aimpoint.  Right-click to select a point on the image, roll scroll-bar to cancel.'
+q = 0
+caviar_rdpix_u,rawim,pixscale,cmat,nl,et,polera,poledec,sc,0,nl-1,x=aimpx,y=aimpy, q=q
+if q eq 0 then aimpoint = [ aimpx, aimpy ]
+q = 0
+@calculate_keywords_u
+@print_keywords

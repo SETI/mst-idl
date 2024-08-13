@@ -1,0 +1,7 @@
+function ltblue
+
+get_color3
+
+return,!d.table_size-4
+
+end

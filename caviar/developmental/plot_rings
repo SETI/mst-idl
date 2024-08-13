@@ -1,0 +1,29 @@
+if not keyword_set(ring_symbol) then ring_symbol=-4
+if keyword_set(nops) then ring_symbol=0
+ring_symbol_size=0.5
+ring_line=2
+;if !version.arch eq 'ppc' then ring_color=red() else ring_color=getcolor('red')
+if not keyword_set(noplot) then begin & $
+  if !d.n_colors eq 16777216 then ring_color=red() else ring_color=getcolor('red') & $
+endif
+
+if not keyword_set(ring_npoints) and keyword_set(findfile('stretch.sav')) then restore, 'stretch.sav'
+if not keyword_set(ring_npoints) then ring_npoints = 360
+if not keyword_set(ring_num) then ring_num = n_elements(xr)/ring_npoints
+jj = lindgen(ring_num+1)*ring_npoints
+if not keyword_set(noplot) then for j=0l,ring_num-1 do plots,xr[jj[j]:jj[j+1]-1],(nl-1)-yr[jj[j]:jj[j+1]-1],psym=ring_symbol,symsize=ring_symbol_size,line=ring_line,color=make_array(n_elements(ring[*,0]),value=ring_color),/device
+
+showing = xr gt 0 and xr lt nl and yr gt 0 and yr lt nl
+dist = (xr-(nl/2-1))^2 + (yr-(nl/2-1))^2
+wherename = lonarr(ring_num)
+for j=0l,ring_num-1 do if (where(showing[jj[j]:jj[j+1]-1]))[0] ne -1 then $
+	wherename[j] = jj[j] + (where( dist[jj[j]:jj[j+1]-1] eq $
+		min(dist[ where(showing[jj[j]:jj[j+1]-1]) + jj[j] ]) ))[0]
+;change = [9,11]
+;wherename[change]=wherename[change]+1
+if (keyword_set(ring_rads_legend) and not keyword_set(nolegend) and not keyword_set(noplot)) then $
+	if n_elements(ring_rads_legend) eq ring_num then $
+	for j=0l,ring_num-1 do if wherename[j] ne 0 then $
+	xyouts, xr[wherename[j]], nl-yr[wherename[j]], ring_rads_legend[j], $
+		/dev, co=ring_color
+

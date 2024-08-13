@@ -1,0 +1,14 @@
+!p.multi = [0,2,2]
+!y.margin = 0
+!y.omargin = [4,2]
+nv = 1000
+v = findgen(nv)/100
+plot, v[100:nv-1], v[100:nv-1]^(-9./4), /xlog, /ylog, l=1, $
+      xr=[0.5,nv/100], yr=[.06,1.1], /xs, /ys, $
+      ytit='F!De!N (dotted) or Relative dM!Di!N/dt (solid)', $
+      xtit='R!Di!N/R!Dcritt!N or v!Desc!N/v!Dcrit!N'
+oplot, v[0:100], v[0:100], l=1
+oplot, v[100:nv-1], v[100:nv-1]^(-1./4)
+oplot, v[0:100], v[0:100]^3
+
+end

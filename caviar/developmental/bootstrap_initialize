@@ -1,0 +1,35 @@
+;; --------------- bootstrap_initialize ----------------- ;;
+;; LAST MODIFIED: P.TORREY 5/15/08
+;; DEPENDENCIES:  NONE
+;; OUTPUT:  et
+;;
+;; SUMMARY:  This routine is used to initialize the et and other parameters
+;;           for the zeroth image of the sequence of interest.  This allows for
+;;           subsequent images to be moved relative to the position and time location
+;;	     of this zeroth image.  this routine is called to initialize the bootstrap
+;;	     code.
+
+restore,'stretch.sav'
+imageSTART = filenames(0)
+periodSTART = rstrpos(imageSTART,'.')
+stemSTART = strmid(imageSTART,0,periodSTART)
+vobs_planet = [0.0d0,0.0d-,0.0d0]
+restore,'spreadsheet.sav'
+ff = (where( strmid(data[0,*],0,11) eq strmid(imageSTART,0,11),count))[0]
+if count ne 1 then stop
+gg = (where( legend eq 'Instrument_Mode_ID', count ))[0]
+if count ne 1 then stop
+nl = 1024
+;case data[gg,ff] of
+;	'FULL': nl = 1024
+;	'SUM2': nl = 512
+;	'SUM4': nl = 256
+;	else: stop
+;endcase
+ff = (where(strmid(filenames,0,11) eq strmid(imageSTART,0,11),count))[0]
+if count ne 1 then stop
+keywords = _keywords[ff]
+restore,'et.sav'
+et = _et[ff]
+@get_sat_prepare1
+@get_cam_params1

@@ -1,0 +1,13 @@
+
+savefile=filestem+'.offset'
+print, savefile
+;if keyword_set(rpk_kernel) then delvar, rpk_kernel
+;restore, savefile
+;if keyword_set(point_descrip) then print, point_descrip   
+
+; I don't think this conditional will be true in any case, but it's good to check. 
+
+;point_descrip = 'stars'
+;save, cmat, point_descrip, point_method, rpk_kernel, filename=savefile
+
+end

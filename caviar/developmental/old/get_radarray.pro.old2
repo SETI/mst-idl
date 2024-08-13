@@ -1,0 +1,44 @@
+pro get_radarray, cam_params, cmat, nl, et, polera, poledec, sc, radarray, lonarray, outofplane=outofplane, nointerp=nointerp, minmaxonly=minmaxonly
+
+if keyword_set(nointerp) then int = 1 else int = 32
+xarray = rebin( lindgen(nl/int+1)*int, nl/int+1, nl/int+1 )
+yarray = rebin( lindgen(1,nl/int+1)*int, nl/int+1, nl/int+1 )
+p2radec_quicker, cam_params, cmat, nl, yarray, xarray, ra, dec
+p2ralon_quicker, cmat, et, polera, poledec, sc, RA, dec, rad, lon, $
+                 outofplane=outofplane
+if keyword_set(outofplane) then return
+
+; Normally the longitude interval is [0,360], but there will be problems if 
+; the data wraps through this point.
+if max(lon) gt 350 and min(lon) lt 10 then begin
+  pitopi = 1
+  ; Go to [-180,180]
+  lon[where(lon gt 180)] = lon[where(lon gt 180)] - 360
+  if max(lon) gt 170 and min(lon) lt -170 then begin
+    ; Go to [-90,270]
+    lon[where(lon lt -90)] = lon[where(lon lt -90)] + 360
+    if max(lon) gt 260 and min(lon) lt -80 then begin
+      ; Go to [-270,90]
+      lon[where(lon gt 90)] = lon[where(lon gt 90)] - 360
+      if max(lon) gt 80 and min(lon) lt -260 then begin
+        print, 'Get_Radarray:  Image seems to wrap through longitudes 0, 90, 180, and 270.'
+        if keyword_set(minmaxonly) then begin
+          print, 'Proceed anyway, since we''re only interested in max and min.'
+          minmaxonly = 2
+        endif else if not keyword_set(nointerp) then begin
+          print, 'You should use a routine that does not interpolate.  Proceed?'
+          stop
+        endif
+      endif
+    endif
+  endif
+endif
+
+radarray = interpolate( rad, findgen(nl)/int, findgen(nl)/int, /grid )
+lonarray = interpolate( lon, findgen(nl)/int, findgen(nl)/int, /grid )
+if keyword_set(minmaxonly) then if minmaxonly eq 2 then lonarray[0:1] = [0,360]
+if keyword_exists(pitopi) then begin
+  lonarray[where(lonarray lt 0)] = lonarray[where(lonarray lt 0)] + 360
+endif
+
+end

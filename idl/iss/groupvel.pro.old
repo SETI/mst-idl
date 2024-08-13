@@ -1,0 +1,21 @@
+if not keyword_exists(j21) then j21=1
+.run resloc
+;!p.multi=[0,2,2]
+;@plot_prepare
+; Find the location of Janus 2:1
+if keyword_set(j21) then rres = resloc(2,1,610,res_descrip=res_descrip) else $
+                         rres = resloc(4,3,610,res_descrip=res_descrip)
+; Define an array of surface densities from 30 to 160 g/cm^2
+if keyword_set(j21) then sigma = findgen(130)+30 else sigma = findgen(40)+10
+
+; Shu's chapter, Eq.41, says c_g = pi * G * sigma / kappa
+kappa = sqrt(resloc_kappa2(rres))
+groupv = !dpi * 6.672e-8 * sigma / kappa * 3.16e7/1e5
+plot, sigma, groupv, /xs, ys=9, xtit='Surface Density (g/cm^2)', $
+      ytit='Group Velocity (km/yr)', xma=[10,10], $
+      tit='At '+res_descrip+', kappa='+string(kappa,fo='(F8.6)')+' s^-1'
+axis, yaxis=1, yr=[min(groupv),max(groupv)]*1460/365.25, /ys, $
+      ytit='Distance after 1460 days (km)'
+;axis, yaxis=1, yr=[min(groupv),max(groupv)]*880/365.25, /ys, $
+;      ytit='Distance after 880 days (km)'
+

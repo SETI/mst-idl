@@ -1,0 +1,186 @@
+pro jemodel, rl1, rl2, rr, dw, nr=nr, jin=jin, time=time, $
+             image_mid_time=image_mid_time, nowrite=nowrite, $
+             sigma=sigma, xi_d=xi_d, separate=separate, tit=_tit, yr=yr, $
+             phasej=phasej, phasee=phasee, radi=radi, val=val, reverse=reverse
+
+if n_params() eq 0 then begin
+  print, 'Syntax:  JEMODEL, rl1, rl2, rr, dw, time=, image_mid_time=, jin='
+  print, 'Makes a model of the rl1:rl2 density wave excited by Janus and Epimetheus.'
+  print, 'Outputs rr and dw are the radius and optical depth of the density wave.'
+  print, 'jin=1 indicates that Janus is currently interior to Epimetheus, jin=0 the opposite (default).'
+  print, 'time indicates the amount of time elapsed since the last reversal, in days.'
+  print, 'Alternatively, can enter the string giving the image mid-time.'
+  retall
+endif
+
+if not keyword_exists(separate) then separate = 1
+if not keyword_set(nr) then nr = 2000
+if not keyword_set(dr) then dr = .1  ; km/pixel
+if not keyword_set(jin) then jin = 0
+if not keyword_set(sigma) then sigma = 35.
+if not keyword_set(xi_d) then xi_d = 10.
+revperiod = 365.25d0 * 4  ; Reversals take place approximately every 4 years.
+if not keyword_set(image_mid_time) then image_mid_time = '2004-183T03:45' ; SOI
+if not keyword_exists(time) then begin
+  year = double(strmid( image_mid_time, 0, 4 ))
+  _doy = double(strmid( image_mid_time, 5, 3 ))
+  hour = double(strmid( image_mid_time, 9, 2 ))
+  min = double(strmid( image_mid_time, 12, 2 ))
+  leap = 1-sign( year mod 4 )
+  foo = doy( _doy, leap=leap, month=mon, day=day )
+  jd = julday( mon[0], day[0], year, hour, min )
+  ; Find time since 1 January 2002, or whatever most recent year is divisible
+  ; by 2 but not 4.  These times are approximate, so don't worry about precision
+  time = ( (year+2) mod 4 )*365.25 + _doy
+endif else time = double(time)
+if time eq 0 then jin = 1 - jin  ; jin describe most recent wave, not upcoming
+
+; Get phases
+phasej = [ jeorbits6(jd,2002,sat=610), jeorbits6(jd,1998,sat=610), $
+           jeorbits6(jd,1994,sat=610) ]
+phasee = [ jeorbits6(jd,2002,sat=611), jeorbits6(jd,1998,sat=611), $
+           jeorbits6(jd,1994,sat=610) ]
+
+; Density wave amplitudes from mass ratio 
+; .0357/.1284 = .278 (Cooper and Murray 2004)
+; 5.28/19.02 = .278 (Jacobson and French 2004)
+ajan = 1.0d0
+aepi = 0.278d
+
+; Resonance locations
+janus = naifsat( 'Janus' )
+epime = naifsat( 'Epimetheus' )
+; rres[0,*]: Janus, rres[1,*]: Epimetheus
+; rres[*,0]: current config, rres[*,1]: other config
+rres = [[ resloc( rl1, rl2, janus, cm04=1+jin ), $
+          resloc( rl1, rl2, epime, cm04=1+jin ) ], $
+        [ resloc( rl1, rl2, janus, cm04=2-jin ), $
+          resloc( rl1, rl2, epime, cm04=2-jin ) ]]
+; Define an array of radius coordinates
+rr = min(rres) + findgen(nr)*dr
+if keyword_set(radi) then if min(rr) lt min(radi) then begin
+  rr = rr[where( rr ge min(radi) )]
+  nr = n_elements(rr)
+endif
+if keyword_set(radi) then if max(rr) gt max(radi) then begin
+  rr = rr[where( rr le max(radi) )]
+  nr = n_elements(rr)
+endif
+; Same locations as rres, but in the form of array indices
+xres = interpol( findgen(nr), rr, rres )
+
+; Calculate the group velocity
+kappa = sqrt(caviar_kappa2( mean(rres) ))
+vgroup = !dpi * 6.672e-8 * sigma / kappa  ; cm/s
+vgroup = vgroup / 1e5 * 86400  ; convert to km/day
+
+dwj = fdensity_wave5( rr-rr[0]+rres[0,0], a=ajan, xi_d=xi_d, mm=rl2+1, $
+                      sigma=sigma, rres=rres[0,0], phi=phasej[0] )
+dwe = fdensity_wave5( rr-rr[0]+rres[1,0], a=aepi, xi_d=xi_d, mm=rl2+1, $
+                      sigma=sigma, rres=rres[1,0], phi=phasee[0] )
+dwj1 = fdensity_wave5( rr-rr[0]+rres[0,0], a=ajan, xi_d=xi_d, mm=rl2+1, $
+                      sigma=sigma, rres=rres[0,0], phi=phasej[1] )
+dwe1 = fdensity_wave5( rr-rr[0]+rres[1,0], a=aepi, xi_d=xi_d, mm=rl2+1, $
+                      sigma=sigma, rres=rres[1,0], phi=phasee[1] )
+dwj2 = fdensity_wave5( rr-rr[0]+rres[0,0], a=ajan, xi_d=xi_d, mm=rl2+1, $
+                      sigma=sigma, rres=rres[0,0], phi=phasej[2] )
+dwe2 = fdensity_wave5( rr-rr[0]+rres[1,0], a=aepi, xi_d=xi_d, mm=rl2+1, $
+                      sigma=sigma, rres=rres[1,0], phi=phasee[2] )
+dw1 = [[[ interpol( dwj, rr-min(rres), rr-rres[0,0] ) ], $
+        [ interpol( dwe, rr-min(rres), rr-rres[1,0] ) ]], $
+       [[ interpol( dwj1, rr-min(rres), rr-rres[0,1] ) ], $
+        [ interpol( dwe1, rr-min(rres), rr-rres[1,1] ) ]]]
+;if keyword_set(reverse) then dw1 = -dw1
+for j=0,1 do for k=0,1 do begin
+  foo = where( rr le rres[j,k], count )
+  if count gt 0 then dw1[where( rr le rres[j,k] ),j,k] = 0
+endfor
+dwjj = dw1[*,0,0]
+dwee = dw1[*,1,0]
+
+if not keyword_set(nrev) then nrev = 100
+propdist = vgroup * ( time + findgen(nrev)*revperiod ) / dr  ; in pixels
+dw2 = dw1
+if propdist[0] ne 0 then propdist = [ 0, propdist ]
+for j=0,1 do for k=0,1 do begin
+  bb = propdist + xres[j,k]
+  bb = [ vec_remove(bb,where( bb gt nr )), nr-1 ]
+  for m=1-k,n_elements(bb)-2,2 do dw2[fix(bb[m]+1)>0:fix(bb[m+1]),j,k] = 0
+endfor
+if keyword_set(noreversals) then begin
+  dw2 = dw1
+  dw2[*,*,1] = 0
+endif
+dwjj = dw2[*,0,0] + dw2[*,0,1]
+dwee = dw2[*,1,0] + dw2[*,1,1]
+dw = dwjj + dwee
+!y.omargin=!y.omargin+[4,2]
+if rl1-rl2 eq 1 then !y.omargin=!y.omargin+[4,2]
+!p.multi=[0,1,1]
+xtn = replicate('',20)
+xtit = 'Radius'+tkmtit()
+if keyword_set(separate) then begin
+  !p.multi = !p.multi + [0,0,1]
+  xtn = [ [replicate(' ',20)], [xtn] ]
+  xtit = [ '', xtit ]
+endif
+if keyword_set(radi) and keyword_set(val) then begin
+  !p.multi = !p.multi + [0,0,1]
+  xtn = [ [replicate(' ',20)], [xtn] ]
+  xtit = [ '', xtit ]
+endif
+nplots = 0
+
+if keyword_set(_tit) then tit=_tit else tit=''
+clr = [ ctred(), ctpurple(), ctblue(), ctcyan() ]
+if jin eq 1 then clr = clr[[1,0,3,2]] ; Red and Cyan are always inner
+if !p.charsize eq 0 then !p.charsize=1
+if keyword_set(radi) and keyword_set(val) then begin
+  plot, tkm(radi), val, /xs, /ys, tit=tit, $
+      xr=tkm([min(rr),max(rr)]), yma=[0,0], xtickn=xtn[*,nplots], $
+      ytit='Observed I/F', xtit=xtit[nplots], chars=!p.charsize*2
+  tit=''
+  nplots = nplots + 1
+endif
+if rl1-rl2 eq 1 then begin
+  ; First-order resonances
+  plot, tkm([min(rr),max(rr)]), [0.5,4.5], /xs, /ys, /nodata, $
+	chars=!p.charsize*2, xtit=xtit[n_elements(xtit)-1], $
+	yma=[0,0], ytickle=1e-10, yticki=1, $
+	ytickn=['Epime 1', 'Epime 2', 'Janus 1', 'Janus 2' ]
+  for j=0,1 do for k=0,1 do begin
+    nozero = where( dw2[*,j,k] ne 0 )
+    mkexed, nozero, exed, z
+    for zz=0,z do polyfill, tkm(rr[exed[[0,1,1,0,0],zz]]), $
+	                 [0,0,1,1,0]*.25+(1-j)*2+0.875+k, co=clr[2*j+k];, /fill
+  endfor
+  goto, finish
+endif
+plot, tkm(rr), dw, /xs, /ys, tit=tit, yr=yr, yma=[0,0], xtickn=xtn[*,nplots], $
+      ytit='Model Wave', xtit=xtit[nplots], chars=!p.charsize*2
+nplots = nplots + 1
+if keyword_set(separate) then begin
+  plot, tkm(rr), dw, /xs, /ys, /nodata, yr=yr, yma=[0,0], $
+	ytit='Model Wave!CComponents', xtit=xtit[nplots], chars=!p.charsize*2
+endif else begin
+  ;oplot, tkm(rr), dwjj, co=ctred()
+  ;oplot, tkm(rr), dwee, co=ctpurple()
+endelse
+for j=0,1 do for k=0,1 do oplot, tkm(rr), dw2[*,j,k], co=clr[2*j+k]
+if not keyword_set(separate) then oplot, tkm(rr), dw, thick=2
+if not keyword_set(nowrite) then begin
+  xyouts, !x.crange[1]-(!x.crange[1]-!x.crange[0])/30, $
+        !y.crange[1]-(!y.crange[1]-!y.crange[0])/8, charsize=1, align=1, $
+        'Sigma = '+strtrim(sigma,2)+'!CXi_d = '+strtrim(xi_d,2)+$
+	'!CJphase = ('+strtrim(fix(phasej[0]),2)+','+$
+	strtrim(fix(phasej[1]),2)+')!CEphase = ('+strtrim(fix(phasee[0]),2)+$
+	','+strtrim(fix(phasee[1]),2)+')'
+endif
+
+finish:
+
+!y.omargin=!y.omargin-[4,2]
+if rl1-rl2 eq 1 then !y.omargin=!y.omargin-[4,2]
+
+;stop
+end

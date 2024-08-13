@@ -1,0 +1,22 @@
+if not keyword_set(filenames) then restore, 'stretch.sav'
+if not keyword_set(j1) then j1 = 0
+if not keyword_set(j2) then j2 = n_elements(filenames) - 1
+if not keyword_exists(save_radscan) then save_radscan = 1
+for jjj=j1,j2 do begin
+  image_name=filenames[jjj]
+  @caviar
+  @ns_radscan
+  radprofimg = rawim - bksub_img
+  lastdot = rstrpos( image_name, '.' )
+  savefilestem = strmid( image_name, 0, lastdot )
+  save, cmat, bksub_descrip, radial_filter_median, bksub_img, radprofimg, $
+        filename=savefilestem+'.bksub'
+  if keyword_set(save_radscan) then begin
+    radscan_cmat = cmat
+    save, radi, val, errbar, radscan_cmat, radscan_np, phiout, $
+          radscan_descrip, filename=savefilestem+'.scan1'
+  endif
+endfor
+
+end
+

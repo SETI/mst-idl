@@ -1,0 +1,19 @@
+PRO lobePeriodFinder, hrs, longs, nmin, nmax, steps
+	dT1 = hrs[1]-hrs[0] & dT2 = hrs[2]-hrs[0] & dT3 = hrs[3]-hrs[0]
+	dL1 = longs[1]-longs[0] & dL2 = longs[2]-longs[0] & dL3 = longs[3]-longs[0]
+
+	omegapersi8 = nmin + (nmax-nmin)*indgen(steps)/float(steps) ;)
+
+	dPhi1 = ((dL1 - omegapersi8*dT1) mod 360 + 360) mod 360
+	dPhi2 = ((dL2 - omegapersi8*dT2) mod 360 + 360) mod 360
+	dPhi3 = ((dL3 - omegapersi8*dT3) mod 360 + 360) mod 360
+
+	plot, omegapersi8, dPhi1, xtitle = 'Omega (deg/hr)', $
+		ytitle = 'deltaPhi mod 360', yr = [0,360], psym = 1, $
+		ystyle = 1, yticks = 4 
+	oplot, omegapersi8, dPhi2, psym = 4
+	oplot, omegapersi8, dPhi2, psym = 3
+
+	legend, ['039','174', '194'], psym = [3,1,4],charsize = 1,/left,/top
+
+END

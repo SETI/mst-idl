@@ -1,0 +1,5 @@
+jjj=jjj+1 & print,jjj & image_name=filenames[jjj]
+@caviar
+.run cosray_auto
+.run save_cray
+@radscan

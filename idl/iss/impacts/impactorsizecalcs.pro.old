@@ -1,0 +1,281 @@
+if keyword_set(old) then atau = 0.507 else atau = 0.604213
+smin = 1e-6
+smax = 1.0
+restore, '$HOME/idl/iss/impacts/mie/mie_phase_functions.sav' 
+
+if keyword_set(dolzr) then paperplot = 1
+if keyword_set(paperplot) then allclouds = 0
+plot1:
+if keyword_set(old) then begin
+  restore, 'impact_table.sav.2'
+  foo = indgen(nimpact)
+  foo = vec_remove( foo, [ (where( match eq 'B ' ))[1:2], $
+                           (where( match eq 'C ' ))[0:1], $
+                           (where( match eq 'A1' ))[0], $
+                           (where( match eq 'A2' ))[0] ] )
+  _eatau = _ea
+endif else begin
+  restore, 'impact_table.sav'
+  foo = indgen(nimpact)
+  foo = vec_remove( foo, [ (where( match eq 'C ' ))[1:2], $
+                           (where( match eq 'A1' ))[0], $
+                           (where( match eq 'A2' )), $
+                           (where( match eq 'C6' ))[0] ] )
+endelse
+nfoo = n_elements(foo)
+
+omega = sqrt(caviar_omega2( _radlon[0,*] ))*3600  ; in hours
+age = 2./3 / omega / tan(_theta)
+if keyword_set(allclouds) then begin
+  j = indgen(nfoo)
+  nn = floor( age[foo]*omega[foo]/2/!pi * 2 )
+  qq = 4
+  m_over_ea_rho = 4.0/3*alog(smax/smin)*smin
+  phasei = intarr(n_elements(j))
+  for k=0,nfoo-1 do case match[foo[k]] of
+    'C1':  phasei[k] = 0
+    'C2':  phasei[k] = 0
+    'C3':  phasei[k] = 0
+    'C4':  phasei[k] = 0
+    'C5':  phasei[k] = 0
+    'B ':  phasei[k] = 1
+    'C ':  phasei[k] = 1
+    'A1':  phasei[k] = 2
+    'A2':  phasei[k] = 3
+    'C6':  phasei[k] = 0
+  endcase 
+endif else begin
+  j = (where( match[foo] eq 'A1' ))[0]
+  nn = [ 3, 3, 3, 3, 6, 6, 6, 6 ]
+  qq = [ 2, 3, 4, 5, 2, 3, 4, 5 ]
+  m_over_ea_rho = [ 4.0*(3-2)/3/(4-2)*smax, 4.0/3/alog(smax/smin)*smax, $
+                    4.0/3*alog(smax/smin)*smin, 4.0*(5-3)/3/(5-4)*smin, $
+                    4.0*(3-2)/3/(4-2)*smax, 4.0/3/alog(smax/smin)*smax, $
+                    4.0/3*alog(smax/smin)*smin, 4.0*(5-3)/3/(5-4)*smin ]
+  if keyword_set(old) then begin
+    m_over_ea_rho[[2,6]] = 0.25
+    print, 'WARNING:  For purposes of reproducing the pre-impactclouds12 '+$
+           'calculations, M/(EA*rho) for q=4 has been artificially set to '+$
+           '0.25, a value that is similar to that for q=3.'
+  endif
+  phasei = 2
+endelse
+nnn = n_elements(nn)
+if keyword_set(tex) then begin
+  f12 = strjoin(replicate('," & ",F12.3',nnn))
+  i12 = strjoin(replicate('," & ",I12',nnn))
+  e12 = strjoin(replicate('," & ",E12.1',nnn))
+endif else begin
+  f12 = strjoin(replicate(',F12.3',nnn))
+  i12 = strjoin(replicate(',I12',nnn))
+  e12 = strjoin(replicate(',E12.1',nnn))
+endelse
+if keyword_set(old) then pp=3 else pp=2
+eatau = _eatau[foo[j]] * phasefac[phasei,pp]/phasefac[phasei,qq-min(qindex)]
+eatau_init = eatau*exp(nn*atau)
+rho = 1e3
+mcloud = eatau_init*1e6 * $     ; m^2
+         m_over_ea_rho * $      ; m
+         rho                    ; kg/m^3
+mcloud = reform(mcloud)
+yy = 1e-4
+mimp = mcloud * yy
+rimp = ( mimp * 3./4/!pi/rho )^(1./3)
+if keyword_set(allclouds) then begin
+  sigma1 = fltarr(nnn)
+  for k=0,nfoo-1 do case strmid(match[foo[k]],0,1) of
+    'A':  sigma1[k] = 1000
+    'B':  sigma1[k] = 3000
+    'C':  sigma1[k] = 10
+  endcase 
+  sigma2 = sigma1
+  sigma2[where( strmid(match[foo],0,1) eq 'A' )] = 400
+  rstream = fltarr(nnn)
+  for k=0,nfoo-1 do case match[foo[k]] of
+    'C1':  rstream[k] = 2*1e3
+    'C2':  rstream[k] = 5*1e3
+    'C3':  rstream[k] = 3*1e3
+    'C4':  rstream[k] = 1*1e3
+    'C5':  rstream[k] = 3*1e3
+    'B ':  rstream[k] = 10*1e3
+    'C ':  rstream[k] = 2*1e3
+    'A1':  rstream[k] = 50*1e3
+    'C6':  rstream[k] = 5*1e3
+  endcase 
+endif else begin
+  sigma1 = fltarr(nnn)
+  sigma1[where( rimp gt 120 )] = 400
+  sigma1[where( rimp le 120 )] = 1000
+  sigma2 = replicate( 400., nnn )
+  rstream = replicate( 50*1e3, nnn )
+endelse
+mtarg1 = !pi*rimp^2*sigma1
+mtarg2 = !pi*rstream^2*sigma2
+if keyword_set(tex) then begin
+  if keyword_set(allclouds) then begin
+    print, strjoin(replicate(' ',40))+strjoin('          '+match[foo])
+    print, '\hline'
+    print, fo='("Number of half-orbits since impact ($N$): "'+i12+'," \\")', nn
+    print, fo='("Equivalent area$^a$, km$^2$ ($EA$): "'+i12+'," \\")', $
+           round( eatau / 10.^(floor(alog10(eatau))-3) ) * $
+           10.^(floor(alog10(eatau))-3)
+    print, fo='("Initial equivalent area, km$^2$ ($EA_\mathrm{initial}$): "'+$
+           i12+'," \\")', $
+           round( eatau_init / 10.^(floor(alog10(eatau_init))-2) ) * $
+           10.^(floor(alog10(eatau_init))-2)
+    print, fo='("Initial cloud mass, $10^6$ kg ($M_\mathrm{cloud}$): "'+$
+           i12+'," \\")', $
+           round( mcloud/1e6 / 10.^(floor(alog10(mcloud))-8) ) * $
+           10.^(floor(alog10(mcloud))-8)
+    print, fo='("Impactor mass, $10^3$ kg ($M_\mathrm{impactor}$): "'+$
+           i12+'," \\")', $
+           round( round( mimp/1e3 / 10.^(floor(alog10(mimp))-5) ) * $
+                  10.^(floor(alog10(mimp))-5) )
+    print, fo='("Impactor radius, m ($R_\mathrm{solid~impactor}$): "'+$
+           i12+'," \\")', $
+           round( round( rimp / 10.^(floor(alog10(rimp))-1) ) * $
+                  10.^(floor(alog10(rimp))-1) )
+    print, fo='("Target mass available, $10^3$ kg '+$
+           '($M_\mathrm{target}^\mathrm{solid~impactor}$): "'+i12+'," \\")', $
+           round( round( mtarg1/1e3 / 10.^(floor(alog10(mtarg1))-5) ) * $
+                  10.^(floor(alog10(mtarg1))-5) )
+    print, fo='("Impactor stream radius, km ($R_\mathrm{impactor~stream}$): "'+$
+           i12+'," \\")', round(rstream/1e3)
+    print, fo='("Target mass available, $10^6$ kg '+$
+           '($M_\mathrm{target}^\mathrm{impactor~stream}$): "'+i12+'," \\")', $
+           round( mtarg2/1e6 / 10.^(floor(alog10(mtarg2))-6) ) * $
+           10.^(floor(alog10(mtarg2))-6)
+  endif else begin
+    print, fo='("Number of half-orbits since impact ($N$): "'+i12+'," \\")', nn
+    print, fo='("Size-distribution power-law index ($q$): "'+i12+'," \\")', qq
+    print, '\hline'
+    print, fo='("Equivalent area, km$^2$ ($EA$): "'+i12+'," \\")', $
+           round( eatau / 10.^(floor(alog10(eatau))-3) ) * $
+           10.^(floor(alog10(eatau))-3)
+    print, fo='("Initial equivalent area, km$^2$ ($EA_\mathrm{initial}$): "'+$
+           i12+'," \\")', $
+           round( eatau_init / 10.^(floor(alog10(eatau_init))-2) ) * $
+           10.^(floor(alog10(eatau_init))-2)
+    print, fo='("Initial cloud mass, $10^6$ kg ($M_\mathrm{cloud}$): "'+$
+           i12+'," \\")', $
+           round( mcloud/1e6 / 10.^(floor(alog10(mcloud))-8) ) * $
+           10.^(floor(alog10(mcloud))-8)
+    print, fo='("Impactor mass, $10^3$ kg ($M_\mathrm{impactor}$): "'+$
+           i12+'," \\")', $
+           round( round( mimp/1e3 / 10.^(floor(alog10(mimp))-5) ) * $
+                  10.^(floor(alog10(mimp))-5) )
+    print, fo='("Impactor radius, m ($R_\mathrm{solid~impactor}$): "'+$
+           i12+'," \\")', $
+           round( round( rimp / 10.^(floor(alog10(rimp))-1) ) * $
+                  10.^(floor(alog10(rimp))-1) )
+    print, fo='("Target mass available, $10^3$ kg '+$
+           '($M_\mathrm{target}^\mathrm{solid~impactor}$): "'+i12+'," \\")', $
+           round( round( mtarg1/1e3 / 10.^(floor(alog10(mtarg1))-5) ) * $
+                  10.^(floor(alog10(mtarg1))-5) )
+    print, fo='("Impactor stream radius, km ($R_\mathrm{impactor~stream}$): "'+$
+           i12+'," \\")', round(rstream/1e3)
+    print, fo='("Target mass available, $10^6$ kg '+$
+           '($M_\mathrm{target}^\mathrm{impactor~stream}$): "'+i12+'," \\")', $
+           round( mtarg2/1e6 / 10.^(floor(alog10(mtarg2))-6) ) * $
+           10.^(floor(alog10(mtarg2))-6)
+  endelse
+endif else if keyword_set(allclouds) then begin
+  print, strjoin(replicate(' ',41))+strjoin('          '+match[foo])
+  print, strjoin(replicate('-',41+12*nfoo))
+  print, fo='("Number of half-orbits since impact (N):  "'+i12+')', nn
+  print, fo='("Equivalent area, km^2 (tau):             "'+f12+')', eatau
+  print, fo='("Initial equivalent area, km^2 (tau):     "'+f12+')', eatau_init
+  print, fo='("Initial cloud mass, 10^3 kg (Mcloud):    "'+f12+')', mcloud/1e3
+  print, fo='("Impactor mass, kg (Mimp):                "'+f12+')', mimp
+  print, fo='("Impactor radius, m (Rimp):               "'+f12+')', rimp
+  print, fo='("Target mass available, kg (Mtarg1):      "'+f12+')', mtarg1
+  print, fo='("Impactor stream radius, km (Rstream):    "'+f12+')', rstream/1e3
+  print, fo='("Target mass available, 10^9 kg (Mtarg2): "'+f12+')', mtarg2/1e9
+endif else begin
+  print, fo='("Number of half-orbits since impact (N):  "'+i12+')', nn
+  print, fo='("Size-distribution power-law index (q):   "'+i12+')', qq
+  print, fo='("Equivalent area, km^2 (tau):             "'+f12+')', eatau
+  print, fo='("Initial equivalent area, km^2 (tau):     "'+f12+')', eatau_init
+  print, fo='("Initial cloud mass, 10^9 kg (Mcloud):    "'+f12+')', mcloud/1e9
+  print, fo='("Impactor mass, 10^6 kg (Mimp):           "'+f12+')', mimp/1e6
+  print, fo='("Impactor radius, m (Rimp):               "'+f12+')', rimp
+  print, fo='("Target mass available, 10^6 kg (Mtarg1): "'+f12+')', mtarg1/1e6
+  print, fo='("Impactor stream radius, km (Rstream):    "'+f12+')', rstream/1e3
+  print, fo='("Target mass available, 10^12 kg (Mtarg2):"'+f12+')', mtarg2/1e12
+endelse
+
+solid_circles
+if keyword_set(allclouds) then begin
+  plot, [-.5,nnn-.5], $
+        [min([mcloud,mtarg1,mtarg2]),max([mcloud,mtarg1,mtarg2])], $
+        /nodata, /xs, /ylog, xticki=1, xtickn=match[foo], xtickle=1e-10, $
+        ytit='Cloud or Target Mass (kg)', ys=8
+  oplot, mcloud, ps=-8
+  oplot, mtarg1, ps=-8, l=1
+  oplot, mtarg2, ps=-8, l=2
+  ;oplot, [0,0.7], 10^(!y.crange[0] + (!y.crange[1]-!y.crange[0])*[.92,.92])
+  ;oplot, [0,0.7], 10^(!y.crange[0] + (!y.crange[1]-!y.crange[0])*[.88,.88]),l=1
+  ;oplot, [0,0.7], 10^(!y.crange[0] + (!y.crange[1]-!y.crange[0])*[.84,.84]),l=2
+  ;xyouts, 1, 10^(!y.crange[0] + (!y.crange[1]-!y.crange[0])*[.92,.92]), $
+  ;        'M!Dcloud!N'
+  ;xyouts, 1, 10^(!y.crange[0] + (!y.crange[1]-!y.crange[0])*[.88,.88]), $
+  ;        'M!S!Dtarget!N!R!Usolid impactor'
+  ;xyouts, 1, 10^(!y.crange[0] + (!y.crange[1]-!y.crange[0])*[.84,.84]), $
+  ;        'M!S!Dtarget!N!R!Uimpactor stream'
+  axis, yaxis=1, ys=5, yr=(10^!y.crange/1e7*3/4/!pi)^(1./3), ytick_get=ytg
+  ytg = ytg[where( ytg ge .01 and ytg le 10 )]
+  ytn = strarr(n_elements(ytg))
+  for k=0,n_elements(ytg)-1 do begin
+    if ytg[k] lt 1 then begin
+      ytn[k] = string( ytg[k], fo='(F'+strtrim(2-fix(alog10(ytg[k])),2)+$
+                                   '.'+strtrim(-fix(alog10(ytg[k])),2)+')' )
+    endif else begin
+      ytn[k] = string( ytg[k], fo='(I'+strtrim(1+fix(alog10(ytg[k])),2)+')' )
+    endelse
+  endfor
+  axis, yaxis=1, ys=1, yr=(10^!y.crange/1e7*3/4/!pi)^(1./3), $
+        ytit='    Impactor Radius (m)', $
+        ytickv=ytg, yticks=n_elements(ytg)-1, ytickn=ytn
+endif else begin
+  if keyword_set(paperplot) then begin
+    if keyword_set(dolzr) then begin
+      lzr, 'impactorsizecalcs', /half
+      @plot_prepare
+      plot_color
+      device, /cmyk
+    endif 
+    !p.multi = [0,2,2]
+  endif 
+  plot, [min(qq)-0.25,max(qq)+0.25], $
+        [min([mcloud,mtarg1,mtarg2]),max([mcloud,mtarg1,mtarg2])], $
+        /nodata, /xs, /ylog, xtit='Size-distribution power-law index, q', $
+        ytit='Cloud or Target Mass (kg)'
+  for k=1,0,-1 do begin
+    if k eq 0 then color=ctgreen() else color=ctred()
+    if k eq 0 then text='N=3' else text='N=6'
+    oplot, qq[k*4:k*4+3], mtarg2[k*4:k*4+3], ps=-8, color=color, l=2
+    oplot, qq[k*4:k*4+3], mcloud[k*4:k*4+3], ps=-8, color=color
+    oplot, qq[k*4:k*4+3], mtarg1[k*4:k*4+3], ps=-8, color=color, l=1
+    ;xyouts, 5, 10^(!y.crange[0] + (!y.crange[1]-!y.crange[0])*(.9-k*.08)), $
+    ;        text, color=color, align=1
+    xyouts, 2, 10^(!y.crange[0] + (!y.crange[1]-!y.crange[0])*(.18-k*.08)), $
+            text, color=color
+  endfor 
+  ;y1 = .08 & y2 = .2 & y3 = .32
+  ;oplot, [2,2.2], 10^(!y.crange[0]+.3+(!y.crange[1]-!y.crange[0])*[y3,y3])
+  ;oplot, [2,2.2], 10^(!y.crange[0]+.3+(!y.crange[1]-!y.crange[0])*[y2,y2]), l=1
+  ;oplot, [2,2.2], 10^(!y.crange[0]+.3+(!y.crange[1]-!y.crange[0])*[y1,y1]), l=2
+  ;xyouts, 2.3, 10^(!y.crange[0] + (!y.crange[1]-!y.crange[0])*y3), $
+  ;        'M!Dcloud!N'
+  ;xyouts, 2.3, 10^(!y.crange[0] + (!y.crange[1]-!y.crange[0])*y2), $
+  ;        'M!S!Dtarget!N!R!Usolid impactor'
+  ;xyouts, 2.3, 10^(!y.crange[0] + (!y.crange[1]-!y.crange[0])*y1), $
+  ;        'M!S!Dtarget!N!R!Uimpactor stream'
+  if keyword_set(paperplot) then begin
+    allclouds = 1
+    goto, plot1
+  endif 
+endelse
+if keyword_set(dolzr) then clzr
+
+end

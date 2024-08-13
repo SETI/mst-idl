@@ -1,0 +1,437 @@
+if not keyword_set(silent) then begin
+  print, '------- REPOINT.PRO -------'
+endif
+sm = 0
+rres = 0
+if not keyword_set(auto) then auto = 0
+if keyword_set(findfile(image_name+'.rep')) then begin
+  restore, image_name+'.rep'
+  if keyword_set(auto) and keyword_set(guider) then begin
+    rres = guider
+    rresnum = where( _ring_rads eq rres, count )
+    if count eq 1 then rres_name=_ring_rads_legend[rresnum] else rres_name=''
+  endif
+endif else begin
+  sm = 200l
+  porder = 3
+endelse
+if keyword_set(repoint_results) and not keyword_set(nrr) then nrr = n_elements(repoint_results[0,*])
+if keyword_set(repoint_results) and not keyword_set(keep_redge) and not keyword_set(auto) then goto, showresults
+if not keyword_set(silent) then begin
+  print, 'First, measure a reprojected image to get an edge curve.'
+  print, '   (If you''ve already defined redge, then set keep_redge=1)'
+endif
+
+repstart:
+if not keyword_set(keep_redge) then redge = edgefit( rpi, rrpi, mnrad, mxrad, mnlon, mxlon, yy=yy, redge_sigma=redge_sigma, nosmooth=nosmooth, nopad=nopad, fittype=fittype, guider=guider, keywords=keywords, noplot=noplot, bke=bke, cush=cush, smoothdata=smoothdata, win=efwin, ring=ring, rrd=ring_rads, rrlegend=ring_rads_legend, efpr=efpr )
+ll = redge[0,*]
+rr = redge[1,*]
+nll = n_elements(ll)
+  if keyword_set(smooth) then sm=smooth
+
+if not keyword_set(silent) then begin
+  print, '------- Select Smoothing Length -------'
+endif
+smoothing:
+if not keyword_exists(usesmooth) then usesmooth = 1
+if keyword_set(usesmooth) then begin
+  ll_smooth = ll[sm:nll-sm-1]
+  rr_smooth = smooth(smooth(rr,sm),sm)
+  rr_smooth = rr_smooth[sm:nll-sm-1]
+endif else begin
+  ll_smooth = ll
+  if not keyword_set(porder) then porder=3
+  rr_smooth = poly( ll, poly_fit(ll,rr,porder) )
+endelse
+
+if keyword_set(dolzr) then begin &$
+  if not keyword_set(psname) then psname='repoint' &$
+  lzr, psname &$
+  plot_color &$
+  @plot_prepare &$
+  clr1 = 'black' &$
+endif else begin &$
+  clr1 = 'white' &$
+  if not keyword_set(noplot) then window, 9 &$
+endelse
+clr2 = 'green'
+
+ytit = 'Radius'+tkmtit( rr_smooth, thoukm=thoukm )
+if not keyword_set(noplot) then begin
+  !p.multi = 0
+  plot_nosci, ll, tkm( rr, thoukm=thoukm ), /xs, /ys, xtit='Lontigude (deg)', $
+      ytit=ytit, ps=3, tit='Observed curve', charsize=1.5
+  oplot, ll_smooth, tkm( rr_smooth ), co=green()
+endif
+
+reply = ''
+while reply eq '' do begin
+  if not keyword_set(silent) then begin
+    if keyword_set(usesmooth) then begin
+      if keyword_set(dw) then dw_s='continue' else dw_s='begin a'
+      print, 'Dots show the fitted edge.  The green line is smoothed over '+strtrim(sm,2)+' pixels.'
+      print, 'Proceed?  ([y]es/'+dw_s+' [d]ensity wave/[c]hange smoothing length/use [p]olynomial instead/[q]uit)'
+    endif else begin
+      print, 'Dots show the fitted edge.  The green line is a polynomial fit of order '+strtrim(porder,2)+'.'
+      print, 'Proceed?  ([y]es/begin a [d]ensity wave/[c]hange polynomial order/use [s]mooth instead/[q]uit)'
+    endelse
+  endif
+  if keyword_set(auto) then reply='y' else read, reply
+  if reply eq 'q' then retall else if reply eq 'c' then begin
+    reply1 = ''
+    while reply1 eq '' do begin
+      if not keyword_set(silent) then begin
+        if keyword_set(usesmooth) then begin
+          print, 'Enter a new smoothing length.'
+        endif else begin
+          print, 'Enter a new polynomial order.'
+        endelse
+      endif
+      read, reply1
+      reply1 = long(reply1)
+      if reply1 lt 1 then reply1='' else begin
+        if keyword_set(usesmooth) then sm = reply1 else porder = reply1
+        goto, smoothing
+      endelse
+    endwhile
+  endif else if reply eq 'd' then begin
+    if not keyword_set(dw) then begin
+      redge1 = redge
+      dw = 1
+      nosmooth = 1
+      wset, drawid
+      print, 'Now fit the second arm of the density wave.'
+      goto, repstart
+    endif else if dw eq 1 then begin
+      redge2 = redge
+      dw = 2
+      nosmooth = 1
+      wset, drawid
+      print, 'Now fit the third arm of the density wave.'
+      goto, repstart
+    endif else if dw eq 2 then begin
+      redge3 = redge
+      goto, radiusmenu1
+      dw1:
+      redge = dw_to_rres( redge1, redge2, redge3, rres, tit=rres_name )
+      ll = redge[0,*]
+      rr = redge[1,*]
+      nll = n_elements(ll)
+      nosmooth = 0
+      dw = 0
+      goto, smoothing
+    endif
+  endif else if reply eq 's' then begin
+    usesmooth = 1
+    goto, smoothing
+  endif else if reply eq 'p' then begin
+    usesmooth = 0
+    goto, smoothing
+  endif else if reply ne 'y' then reply=''
+endwhile
+winset, 8, nowin
+if nowin eq 0 then wdelete, 8
+oldpm = !p.multi
+!p.multi = [0,2,2]
+
+if not keyword_set(silent) then begin
+  print, '------- Select Radius to Fit -------'
+  print, 'The mean radius of the fit is '+strtrim(mean(rr_smooth),2)+' km'
+  print, 'Do you want to type in a value, or use one of the radii marked on the image?'
+endif
+reply = ''
+if keyword_set(rres) then begin
+  foo = where( rres eq ring_rads, count )
+  if count gt 0 then begin
+    txtadd = ', corresponding to '+ring_rads_legend[foo]
+  endif else begin
+    txtadd = ''
+  endelse
+  if not keyword_set(silent) then begin
+    print, 'Last time, you used r = '+strtrim(rres,2)+txtadd
+  endif
+endif
+while reply eq '' do begin
+  radiusmenu:
+  if not keyword_set(silent) then begin
+    print, '[r]e-use value from last time, [s]elect a marked radius, [t]ype in radius value, '
+    print, '[u]se a model where radius varies w/longitude, [q]uit'
+  endif
+  if keyword_set(auto) then reply='t' else read, reply
+  if reply eq 'q' then retall else if reply eq 's' then begin
+    radiusmenu1:
+    nrr = n_elements(ring_rads)
+    for j=0,nrr-1 do print, string(j+1,'(I4)')+'     '+string(ring_rads[j],fo='(F12.2)')+'      '+ring_rads_legend[j]
+    reply1 = ''
+    while reply1 eq '' do begin
+      if keyword_set(dw) then begin
+        print, 'Select a marked feature [1-'+strtrim(nrr,2)+']'
+      endif else begin
+        print, 'Select a marked feature [1-'+strtrim(nrr,2)+'], or [m]ain radius menu'
+      endelse
+      read, reply1
+      if reply1 eq 'm' then begin
+        reply = ''
+        goto, radiusmenu
+      endif
+      reply1 = long(reply1)
+      if reply1 lt 1 or reply1 gt nrr then reply1=''
+    endwhile
+    rres = ring_rads[reply1-1]
+    rres_name = ring_rads_legend[reply1-1]
+    if keyword_set(dw) then goto, dw1
+  endif else if reply eq 't' then begin
+    reply1 = ''
+    while reply1 eq '' do begin
+      print, 'Enter a radius value.'
+      if keyword_set(auto) then reply1=guider else read, reply1
+      reply1 = double(reply1)
+      if reply1 eq 0 then reply1='' else rres=reply1
+    endwhile
+  endif else if reply eq 'u' then begin
+    print, 'This option has not yet been implemented.'
+    reply = ''
+  endif else if reply ne 'r' then reply=''
+endwhile
+@save_repoint_results
+
+if startlon eq 0 and stoplon eq 360 then begin
+  startlon = keywords.ringplane_least_orbital_longitude
+  stoplon = keywords.ringplane_greatest_orbital_longitude
+endif
+ncoords = 3600
+get_ring,et,rres,startlon,stoplon,polera,poledec,ncoords,ring1,699L,light_time=light_time
+get_ring,et,rr_smooth,0,0,polera,poledec,nll,ring_fit,699L,lons=ll_smooth,light_time=light_time
+image_coords, ring1, cmat, vobs_planet, cam_params, nl, coords, x=xx1, y=yy1
+xx1 = coords[*,1]
+yy1 = coords[*,0]
+image_coords, ring_fit, cmat, vobs_planet, cam_params, nl, coords, x=xx_fit, y=yy_fit
+xx_fit = coords[*,1]
+yy_fit = coords[*,0]
+
+;plot, xx_fit, yy_fit, /xs, /ys, xtit='x', ytit='y', yr=[max(yy1),min(yy1)]
+notick=replicate(' ',20)
+if not keyword_set(noplot) then begin
+  plot, xx_fit, yy_fit, /nodata, ys=16, xtickn=notick, ytickn=notick, tit='Curves in image coordinates:!CExpected ('+clr1+') and observed ('+clr2+')'
+  !y.crange = !y.crange[[1,0]]
+  axis, /data, /save, xaxis=0, xtit='x (pixels)'
+  axis, /data, /save, yaxis=0, ytit='y (pixels)'
+  oplot, xx1, yy1
+  oplot, xx_fit, yy_fit, co=green()
+endif
+
+redohoriz:
+vh = [ 'vertical', 'horizontal' ]
+if keyword_set(auto) and keyword_set(horizauto) then horiz=horizauto
+if keyword_set(horiz) then begin
+  x1 = yy1
+  y1 = xx1
+  x_fit = yy_fit
+  y_fit = xx_fit
+  t1 = 'x'
+  t2 = 'dy/dx'
+  t3 = 'y'
+endif else begin
+  horiz = 0
+  x1 = xx1
+  y1 = yy1
+  x_fit = xx_fit
+  y_fit = yy_fit
+  t1 = 'y'
+  t2 = 'dx/dy'
+  t3 = 'x'
+endelse
+tun = ' (pixels)'
+
+dx1 = deriv( y1, x1 )
+if abs(where(dx1 eq min(dx1))-where(dx1 eq max(dx1))) lt 10 then begin
+  ; If dx1 has a singularity in the middle, then choose only the branch
+  ; corresponding to the fitted curve, so that it does not disrupt interpol
+  ; First find the location of the singularity
+  foo = min([ where(dx1 eq min(dx1)), where(dx1 eq max(dx1)) ])
+  ; Now find the range of indices that can possibly correspond to the
+  ; fitted curve
+  foo1 = where( x1 ge min(x_fit) and x1 lt max(x_fit) and $
+                y1 ge min(y_fit) and y1 le max(y_fit), count )
+  if not keyword_set(count) then stop
+  if max(foo1) le foo then begin
+    x1 = x1[0:foo-5]
+    y1 = y1[0:foo-5]
+    dx1 = dx1[0:foo-5]
+  endif else if min(foo1) gt foo then begin
+    x1 = x1[foo+6:ncoords-1]
+    y1 = y1[foo+6:ncoords-1]
+    dx1 = dx1[foo+6:ncoords-1]
+  endif else begin
+    stop, 'Have you chosen a curve that becomes both horizontal and vertical?'
+  endelse
+endif
+dx_fit = deriv( y_fit, x_fit )
+;if (where( abs([dx1,dx_fit]) gt 10 ))[0] ne -1 then begin
+if (where( abs(dx_fit) gt 10 ))[0] ne -1 then begin
+  reply = ''
+  while reply eq '' do begin
+    print, 'Derivative ('+t2+') is greater than 10.  Does your edge become '+vh[1-horiz]+' but not '+vh[horiz]+'?  (y/n/q)'
+    if keyword_set(auto) then begin
+      if keyword_set(horizauto) then reply='n' else reply='y' 
+    endif else read, reply
+    if reply eq 'q' then retall else if reply eq 'y' then begin
+      horiz = 1 - horiz
+      goto, redohoriz
+    endif else if reply ne 'n' then reply=''
+  endwhile
+endif
+
+y1a = interpol( y1, dx1, dx_fit )
+
+if not keyword_set(noplot) then begin
+  plot, y_fit, dx_fit, ys=16, xtit=t1+tun, ytit=t2, tit='Curve Derivatives in image coordinates:!CExpected ('+clr1+') and observed ('+clr2+')'
+  oplot, y1, dx1
+  oplot, y_fit, dx_fit, co=green()
+  ;oplot, y1a, dx_fit, co=yellow(), ps=3
+endif
+
+dy = mean(y_fit-y1a)  ;stddev also
+dy_sig = stddev(y_fit-y1a)
+if not keyword_set(noplot) then begin
+  plot, y_fit-y1a, dx_fit, ys=16, ytit=t2, xtit='delta '+t1+tun, $
+      tit='Line up '+t2+' to get '+t1+' offset'
+  oplot, dy*[1,1], !y.crange, l=1, co=red()
+  ;print, dy
+endif
+
+;ff = poly_fit(y_fit,y_fit-y1a,1)
+;_ff[k,*] = [[ff],[rres]]
+;;plot_blank
+;endfor
+
+x1a = interpol( x1, y1, y_fit-dy )
+dx = mean(x_fit-x1a)
+dx_sig = stddev(x_fit-x1a)
+if not keyword_set(noplot) then begin
+  plot, y_fit-dy, x_fit-x1a, /xs, /ys, xtit=t1+tun, ytit='delta '+t3+tun, $
+      tit='Line up '+t1+' to get '+t3+' offset'
+  oplot, !x.crange, dx*[1,1], l=1, co=red()
+endif
+if keyword_set(dolzr) then clzr
+
+if not keyword_set(rres_name) then rres_name = ''
+if not keyword_set(repoint_results) then begin
+  repoint_results = dblarr(5)
+  repoint_results_names = ',"     '+rres_name+'"'
+endif else begin
+  repoint_results = [ [repoint_results], [dblarr(5)] ]
+  repoint_results_names = [ repoint_results_names, ',"     '+rres_name+'"' ]
+endelse
+nrr = n_elements(repoint_results[0,*])
+if keyword_set(horiz) then begin
+  repoint_results[*,nrr-1] = [ rres, dy, dy_sig, -dx, dx_sig ]
+  ;x_move = dy
+  ;xmsig = dy_sig
+  ;y_move = -dx
+  ;ymsig = dx_sig
+endif else begin
+  repoint_results[*,nrr-1] = [ rres, dx, dx_sig, -dy, dy_sig ]
+  ;x_move = dx
+  ;xmsig = dx_sig
+  ;y_move = -dy
+  ;ymsig = dy_sig
+endelse
+
+showresults:
+repoint_results_names = repoint_results_names[ sort(repoint_results[0,*]) ]
+repoint_results = repoint_results[ *, sort(repoint_results[0,*]) ]
+@save_repoint_results
+x_move = mean(repoint_results[1,*])
+if nrr eq 1 then xmsig=0 else xmsig = stddev(repoint_results[1,*])
+y_move = mean(repoint_results[3,*])
+if nrr eq 1 then ymsig=0 else ymsig = stddev(repoint_results[3,*])
+repfo = '(I2,"   ",F12.2,"     ",F8.3," +- ",F7.3,"     ",F8.3," +- ",F7.3'
+resfo = '("Mean Result           ",F8.3," +- ",F7.3,"     ",F8.3," +- ",F7.3)'
+
+;print, '------- Results -------'
+;print, 'x_move = '+strtrim(x_move,2)
+;print, 'y_move = '+strtrim(y_move,2)
+;print, 'To implement this repointing, run @move_bypixel followed by @save_point
+
+if auto le 1 then begin
+  print, ''
+  print, '##       Location            x_move                  y_move'
+  print, '--       --------            ------                  ------'
+  for j=0,nrr-1 do print, j+1, repoint_results[*,j], fo=repfo+repoint_results_names[j]+')'
+  print, '                        ---------------         ---------------'
+  print, x_move, xmsig, y_move, ymsig, fo=resfo
+  print, ''
+  reply = ''
+endif
+while reply eq '' do begin
+  if keyword_set(auto) then reply='q' else begin
+    print, '[s]ave this ring feature, [a]dd a new ring feature, [r]estore a ring feature'
+    print, 'and add it, [d]elete a ring feature, [D]elete all, [m]ove image pointing, [q]uit'
+    read, reply
+  endelse
+  if reply eq 's' then begin
+    print, 'To save a ring feature, you must type .run save_redge.  '
+    print, 'You may then type .run repoint to restart this routine.'
+  endif else if reply eq 'a' then begin
+    keep_redge = 0
+    if keyword_set(efwin) then winset, efwin
+    goto, repstart
+  endif else if reply eq 'r' then begin
+    print, 'To restore a ring feature, you must type .run restore_redge.  '
+    print, 'You may then type .run repoint to restart this routine, '
+    print, 'though you should make sure to have keep_redge=1.'
+  endif else if reply eq 'D' then begin
+    print, 'Deleting last ring feature.'
+    delete_all:
+    repoint_results = 0
+    repoint_results_names = ''
+    if keyword_set(efwin) then winset, efwin
+    @save_repoint_results
+  endif else if reply eq 'd' then begin
+    reply1 = ''
+    while reply1 eq '' do begin
+      print, 'Enter feature number to delete, or -1 for none'
+      read, reply1
+      reply1 = fix(reply1)
+      if reply1 eq 0 then reply1='' else if reply1 gt 0 then begin
+        if reply1 gt nrr then begin
+          print, 'Number entered is greater than number of ring features.'
+        endif else if nrr eq 1 then begin
+          goto, delete_all
+        endif else begin
+          repoint_results = repoint_results[*,vec_remove(indgen(nrr),reply1-1)]
+          repoint_results_names = repoint_results_names[vec_remove(indgen(nrr),reply1-1)]
+          nrr = n_elements(repoint_results[0,*])
+          @save_repoint_results
+        endelse
+      endif
+    endwhile
+    goto, showresults
+  endif else if reply eq 'm' then begin
+    @move_bypixel
+    print, 'Remember to CREATE A NEW REPROJECTION before fitting any more features.'
+    period = rstrpos( image_name, '.' )
+    savefile = strmid( image_name, 0, period )+'.offset'
+    point_descrip = repoint_results_names
+    if keyword_set(findfile(savefile)) then begin
+      reply1 = ''
+      while reply1 eq '' do begin
+        print, savefile+' already exists.  Overwrite?  (y/n)'
+        read, reply1
+        if reply1 eq 'y' then begin
+          overwrite = 1
+          @save_point
+        endif else if reply1 eq 'n' then begin
+          print, 'Pointing information NOT saved.'
+        endif else reply1=''
+      endwhile
+    endif else begin
+      @save_point
+    endelse
+  endif else if reply ne 'q' then reply=''
+endwhile
+
+!p.multi = oldpm
+
+end

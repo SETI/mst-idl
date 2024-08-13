@@ -1,0 +1,17 @@
+\begindata
+KERNELS_TO_LOAD = (
+		'/Users/mwe/osxnav/current/naif0007.tls',
+		'/Users/mwe/osxnav/current/cas00084.tsc',
+		'/Users/mwe/osxnav/current/pck00007.tpc',
+		'/Users/mwe/osxnav/current/030201AP_SK_SM546_T45.bsp',
+		'/Users/mwe/osxnav/current/020514_SE_SAT105.bsp',
+		'/Users/mwe/osxnav/current/sat128.bsp',
+		'/Users/mwe/osxnav/current/sat138.bsp',
+		'/Users/mwe/osxnav/current/de405s.bsp',
+		'/Users/mwe/osxnav/current/040513AP_SCPSE_04122_08222.bsp',
+		'/Users/mwe/osxnav/current/04009_04051pg.bc',
+		'/Users/mwe/osxnav/current/04051_04092pg.bc',
+		'/Users/mwe/osxnav/current/04092_04135pg.bc',
+                '/Users/carl/mwecav/new/04135_04171pc_psiv2.bc',
+		   )
+\begintext

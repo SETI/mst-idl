@@ -1,0 +1,96 @@
+; This is a version of Caviar which only loads the kernels and other image 
+; parameters into the IDL environment.  
+; Lines which require graphics capability have been commented out.  
+; All .run lines have also been commented out, so that this file itself can
+;   be called from within a .run
+
+;if !version.arch eq 'ppc' or !d.n_colors eq 16777216 then device, decomposed=0
+;;if !version.arch eq 'ppc' then device, decomposed=0
+;
+;tvlct,indgen(256),indgen(256),indgen(256)
+
+icy_setup
+;.run ucac2_subroutines_wrappers.pro
+
+sc=-82L
+
+nacmat=[[-0.00148701973d0,-0.000171828726d0,0.99999888d0],$
+[-0.999998729d0,-0.000575703737d0,-0.00148711843d0],$
+[0.000575958621d0,-0.99999982d0,-0.000170972424d0]]
+
+;camera parameters for Bill Owen, JPL interoffice
+;memorandum 312.E-2003-001
+na_cam_params=dblarr(12)
+na_cam_params[0]=2002.703;focal length NAC
+na_cam_params[1]=8.28d-6; epsilon2
+na_cam_params[2]=5.45d-6;epsilon5
+na_cam_params[3]=-19.67d-6;epsilon6
+na_cam_params[4]=83.33333333333333;Kx
+na_cam_params[5]=0.0;Kxy
+na_cam_params[6]=0.0;Kyx
+na_cam_params[7]=83.3428;Ky
+na_cam_params[8]=0.0;
+na_cam_params[9]=0.0;
+na_cam_params[10]=0.095;Big Omega
+na_cam_params[11]=3.0d-6;fov of one pixel
+wa_cam_params=dblarr(12)
+wa_cam_params[0]=200.7761;focal length WAC
+wa_cam_params[1]=60.89d-6; epsilon2
+wa_cam_params[2]=4.93d-6;epsilon5
+wa_cam_params[3]=-72.28d-6;epsilon6
+wa_cam_params[4]=83.33333333333333;Kx
+wa_cam_params[5]=0.0;Kxy
+wa_cam_params[6]=0.0;Kyx
+wa_cam_params[7]=83.34114;Ky
+wa_cam_params[8]=0.0;
+wa_cam_params[9]=0.0;
+wa_cam_params[10]=-0.018;Big Omega
+wa_cam_params[11]=3.0d-5;fov of one pixel
+
+vobs_planet=[0.0d0,0.0d0,0.0d0]
+
+kind = 'SPK'
+cspice_ktotal, kind, spkcount
+if spkcount eq 0 then cspice_furnsh,getenv("CAVIAR_KERNELS") else print, 'NOTE: Caviar has detected kernels already loaded.  If these kernels did not come from Caviar''s kernels.ker file, there may be trouble.  Not loading further kernels.'
+;cspice_furnsh,getenv("CAVIAR_KERNELS")
+
+;.run get_image_name
+
+; Load the COMMON blocks CalibrateGuiCommon and CalibrateGuiOpts. 
+; Also load the current version of Cisscal in the variable CisscalVers
+@cisscal_common_caviar
+DebugFlag = 0
+
+ImageObj = OBJ_NEW('CassImg')
+ImageObj->ReadVic,image_name
+rawim=ImageObj->Image()
+fix_badlines, image_name, rawim
+;.run restore_stretch
+_rawim = rawim
+_rawim = _rawim - min(_rawim)
+;_rawim = (_rawim)^(1./6)
+im=_rawim*248/max(_rawim)
+im=byte(im)
+label=ImageObj->LabelArray()
+
+image_data,label,et,epoch,exposure,cam_name,pmat,nl,found
+
+if cam_name eq 'ISSNA' then cam_params=na_cam_params 
+if cam_name eq 'ISSNA' then fovsearch=0.7d0
+if cam_name eq 'ISSWA' then cam_params=wa_cam_params
+if cam_name eq 'ISSWA' then fovsearch=3.6d0
+
+;if not keyword_set(noplot) then window,1,xsize=nl,ysize=nl
+;
+;if not keyword_set(noplot) then wset,1
+;if not keyword_set(noplot) then tv,im,/order
+
+cmat=nacmat##pmat
+cmat_orig = cmat
+
+@restore_point2
+;de-commented by MMH on 10/22/04
+pointing_ra_dec,cmat,RA,dec
+
+polera=40.58756d0;
+poledec=83.53684d0;RA and dec of Saturn N pole from  pck00007.tpc, epoch 2004 JAN 01 12:00:00. TDB

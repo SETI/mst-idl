@@ -1,0 +1,162 @@
+dir='/home/borogove/iss/images/SOI/SOISPTURN'
+phasej = [ 0.0d0, 0.0d0 ]
+phasee = [ 0.0d0, 0.0d0 ]
+dradi = 0
+reverse = 0
+sigma = 35.
+xi_d = 0
+minlam = 1.5
+nr = 0
+image_mid_time = ''
+if keyword_set(qland) or keyword_set(hland) then wavelet_charsz=1 else wavelet_charsz=1.5
+if keyword_set(hland) and keyword_set(dolzr) then !y.omargin=[0,15]
+
+;; Janus 9:7
+;tit='SOISPTURN -- Janus/Epimetheus 9:7'
+;psname='~/Desktop/je97model_soi'
+;ll = 9
+;mm = 8
+;jimg = 27
+;dradi = 8
+;phasej[1] = 110
+;phasee[1] = 30
+;reverse = 1
+;xi_d = 11.
+
+;; Janus 9:7 in 008/RDHRCOMP
+;dir='/home/borogove/iss/images/008/RDHRCOMP'
+;image_mid_time='2005-141'
+;tit='008/RDHRCOMP -- Janus/Epimetheus 9:7'
+;psname='~/Desktop/je97model_8'
+;ll = 9
+;mm = 8
+;jimg = 7
+;dradi = -10
+;phasej[1] = 0
+;phasee[1] = 0
+;reverse = 0
+;xi_d=7.
+;sigma=40.
+
+;; Janus 7:5
+;tit='SOISPTURN -- Janus/Epimetheus 7:5'
+;psname='~/Desktop/j75model_soi'
+;ll = 7
+;mm = 6
+;jimg = 18
+;sigma = 13.5
+;dradi = -10
+;phasej[1] = 120
+;phasee[1] = 90
+;xi_d = 7.5
+;nr = 1500
+
+;; Janus 7:5 in 008/RDHRCOMP
+;dir='/home/borogove/iss/images/008/RDHRCOMP'
+;image_mid_time='2005-141'
+;tit='008/RDHRCOMP -- Janus/Epimetheus 7:5'
+;psname='~/Desktop/j75model_8'
+;ll = 7
+;mm = 6
+;jimg = 11
+;sigma = 13.5
+;phasej[1] = 180
+;phasee[1] = 180
+;xi_d = 6.
+;nr = 1500
+
+;; Janus 11:9 in 008/RDHRCOMP
+;dir='/home/borogove/iss/images/008/RDHRCOMP'
+;image_mid_time='2005-141'
+;tit='008/RDHRCOMP -- Janus/Epimetheus 11:9'
+;psname='~/Desktop/j119model_8'
+;ll = 11
+;mm = 10
+;jimg = 5
+;dradi = -6
+;phasej[1] = 0
+;phasee[1] = 0
+;xi_d = 6.
+;nr = 1500
+
+; Janus 2:1 in 008/RDHRCOMP
+dir='/home/borogove/iss/images/008/RDHRCOMP'
+image_mid_time='2005-141'
+tit='008/RDHRCOMP -- Janus/Epimetheus 2:1'
+psname='~/Desktop/j21model_8'
+ll = 2
+mm = 2
+jimg = 27
+sigma = 60
+dradi = 0;23
+phasej[1] = 120
+phasee[1] = 90
+xi_d = 20
+nr = 4000
+
+;; Janus 2:1
+;tit='SOISPTURN -- Janus/Epimetheus 2:1'
+;psname='~/Desktop/j21model_soi'
+;ll = 2
+;mm = 2
+;jimg = 10
+;sigma = 60
+;dradi = 23
+;phasej[1] = 120
+;phasee[1] = 90
+;xi_d = 20
+;nr = 8000
+
+;; Janus 4:3
+;tit='SOISPTURN -- Janus/Epimetheus 4:3'
+;psname='~/Desktop/j43model_soi'
+;ll = 4
+;mm = 4
+;jimg = 23
+;sigma = 35
+;dradi = 15
+;phasej[1] = 120
+;phasee[1] = 90
+;xi_d = 20
+;nr = 4000
+
+cd, dir
+restore, 'stretch.sav'
+image_name=filenames[jimg]
+noplot = 1
+@caviar
+device, decomposed=1
+im_lon = _keywords[jimg].ringplane_aimpoint_longitude[0];323.10368
+sat = 610
+@get_sat_coords
+jan_lon = sat_polar[1];-109.71312
+sat = 611
+@get_sat_coords
+epi_lon = sat_polar[1];110.77887
+phasej[0] = fix_angles( (im_lon-jan_lon)*mm mod 360, /to360 )
+phasee[0] = fix_angles( (im_lon-epi_lon)*mm mod 360, /to360 )
+period = rstrpos( image_name, '.' )
+filestem = strmid( image_name, 0, period )
+restore, filestem+'.scan1'
+if keyword_set(dolzr) then begin &$
+  lzr, psname, port=port, half=half, qland=qland, hland=hland &$
+  plot_color &$
+  plot_prepare1 &$
+  specify_levels = 1 &$
+endif else specify_levels = 0
+if keyword_set(wavelet_charsz) then !p.charsize=wavelet_charsz
+if !d.name eq 'X' then window, !d.window+1
+jemodel, ll, mm-1, rr, dw, tit=tit, sigma=sigma, xi_d=xi_d, phasej=phasej, $
+         phasee=phasee, radi=radi+dradi, val=val, reverse=reverse, nr=nr, $
+         image_mid_time=image_mid_time
+
+;radi = rr
+;val = dw
+;if !d.name eq 'X' then window, !d.window+1
+;_errbar = val*0+.3
+;equal = 0
+;wavelet_tit=tit+' Model'
+;mooncolor = 1
+;@run_wavelet1
+
+if keyword_set(dolzr) then clzr

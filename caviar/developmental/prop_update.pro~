@@ -1,0 +1,2 @@
+sfile = [ 'propellers.sav', 'prop_reproj.sav', 'prop_reproj_res.sav', 'fit_propellers4.sav' ]
+if keyword_set(findfile(sfile[j]+'.old')) then stop, sfile[j]+'.old exists'

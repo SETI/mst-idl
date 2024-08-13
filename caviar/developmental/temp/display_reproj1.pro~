@@ -1,0 +1,40 @@
+pro display_reproj1_event, event
+  !mouse.x = event.x
+  !mouse.y = event.y
+  !mouse.button = event.release
+end
+
+pro display_reproj1, screenx, screeny, rpj_sz, rpi, draw, drawid, noplot=noplot
+
+    if keyword_set(noplot) then return
+    ; gilthoniel's screen size is 1920x1200
+    if not keyword_set(screenx) then screenx = 1890
+    if not keyword_set(screeny) then screeny = 1000
+    device, retain=2
+
+    jw=0
+    nowin=0
+    while nowin eq 0 do begin &$
+      jw = jw + 1 &$
+      winset, 31+jw, nowin &$
+    endwhile
+    base = widget_base(title='IDL '+strtrim(31+jw,2)+':  Reprojected Image '+strtrim(rpj_sz[1],2)+'x'+strtrim(rpj_sz[2],2))
+    xss = rpj_sz[1]<screenx
+    yss = rpj_sz[2]<screeny
+    draw = widget_draw( base, /scroll, xs=rpj_sz[1], ys=rpj_sz[2], $
+           x_scroll_size=xss, y_scroll_size=yss, /button_event )
+    widget_control, /realize, base
+    widget_control, draw, get_value=drawID
+    wset, drawID
+    if drawID ne 31+jw then print, 'Oops, Window number in title bar is incorrect; drawID is actually '+strtrim(drawID,2)
+    if keyword_set(rpi) then tv, rpi
+    ;nw = fix( float(rpj_sz[1])/1920 ) + 1
+    ;for kk=0,nw-1 do begin
+    ;  if kk eq nw-1 then xxw = rpj_sz[1] mod 1920 else xxw = 1920
+    ;  window, 3+kk, xs=xxw, ys=rpj_sz[2], $
+    ;                     xpos=0, ypos=(rpj_sz[2]+25)*(nw-kk-1)+25
+    ;  tv, rpi[kk*1920:kk*1920+xxw-1,*]
+    ;endfor
+    xmanager, 'display_reproj1', base, /no_block
+
+end

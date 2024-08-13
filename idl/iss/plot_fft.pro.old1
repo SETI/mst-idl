@@ -1,0 +1,81 @@
+pro plot_fft, y, power, f, xlog=xlog, ylog=ylog, base2=base2, xunits=xunits, xtit=xtit, ytit=ytit, tit=tit, ps=ps, xr=xr, yr=yr, coeff=coeff, nosignif=nosignif, xx=xx, yy=yy, oplot=oplot, color=color, no95=no95, plotf=plotf, xtickn=_xtn, xma=_xma, yma=_yma
+
+if n_params() eq 0 then begin
+  print, 'Syntax:  PLOT_FFT, y, power, f, xlog=[0|1], xunits='
+  retall
+endif
+
+n = n_elements(y)
+variance = stddev(y)^2
+lambda = 1./f
+coeff = n/2/variance
+yy = power*coeff
+
+if !p.font eq -1 then sigma = '!7r!3' else sigma = '!Ms';'sigma'
+if not keyword_exists(xlog) then xlog = 1
+if not keyword_set(xtit) then xtit='Wavelength'
+if keyword_set(xlog) and keyword_set(base2) then xtit='log!D2!N(Wavelength)'
+if keyword_set(plotf) then xtit='Frequency'
+if keyword_set(xunits) then xtit = xtit + xunits
+if not keyword_set(ytit) then ytit='Variance ('+sigma+'!U2!N)'
+if not keyword_set(ps) then ps = 0
+if not keyword_set(tit) then tit=''
+if not keyword_set(_xtn) then _xtn = ''
+if keyword_set(_xma) then xma=_xma else xma=[10,3]
+if keyword_set(_yma) then yma=_yma else yma=[4,2]
+
+if keyword_set(xlog) and keyword_set(base2) then begin
+  xx = alog2(lambda)
+  plot, xx, yy, /xs, /ys, xtit=xtit, ytit=ytit, tit=tit, ps=-4, xtickn=replicate(' ',20), xtick_get=v, xticklen=1e-10, xma=xma, yma=yma
+  v0 = min(v)-1 & v1 = max(v)+1
+  for j=0,1 do begin
+    if j eq 0 then xtn = 2.^v else xtn = replicate(' ',20)
+    if keyword_set(_xtn) then xtn = _xtn
+    axis, xaxis=j, /data, /xs, xtickv=v, xticks=n_elements(v)-1, xtickn=xtn
+;    vv = findgen((v1-v0+1)*10-1)/10+v0+.1
+    vv = (findgen(8)+2)*v0
+    for jj=1,v1-v0-1 do vv = [ vv, (findgen(8)+2)*(v0+jj) ]
+    axis, xaxis=j, /data, /xs, xtickv=vv, xticks=n_elements(vv)-1, $
+          xtickn=replicate(' ',20), xticklen=!p.ticklen/2
+  endfor
+endif else begin
+  if keyword_set(plotf) then xx = f else xx = lambda
+  if keyword_set(oplot) then begin
+    oplot, xx, yy, ps=ps, co=color 
+  endif else begin
+    plot, xx, yy, xlog=xlog, ylog=ylog, /xs, /ys, xtit=xtit, ytit=ytit, $
+        tit=tit, ps=ps, xtick_get=v, xr=xr, yr=yr, xtickn=_xtn, xma=xma, yma=yma
+  endelse
+  if n_elements(v) lt 3 and keyword_set(xlog) then for j=0,1 do begin
+    if keyword_set(halflog25) then begin
+      vv = [ '0.002', '0.02', '0.2', '2', '20', '200', '2000' ]
+      vv = [ vv, '0.005', '0.05', '0.5', '5', '50', '500', '5000' ]
+    endif else begin
+      vv = [ '0.003', '0.03', '0.3', '3', '30', '300', '3000' ]
+    endelse
+    if j eq 0 then xtn = vv else xtn = replicate(' ',20)
+    if keyword_set(_xtn) then xtn = _xtn
+    axis, xaxis=j, /data, /xs, xtickv=vv, xticks=n_elements(vv)-1, xtickn=xtn
+  endfor
+endelse
+
+if not keyword_set(nosignif) then begin
+  siglvl = 95
+  ; Because the FFT is complex, white noise would be two independent, 
+  ; normally-distributed variables.  Thus 2 degrees of freedom.  
+  ; A real-valued FFT would have dof=1.
+  dof = 2
+  signif = chisqr_cvf(1.-siglvl/100.,dof)/dof
+  oplot, xx, replicate( signif, n_elements(f) ), l=1
+  if keyword_set(xlog) then begin
+    xxrng = max(xx) / min(xx)
+    xxy = max(xx) / xxrng^.15
+  endif else begin
+    xxrng = max(xx) - min(xx)
+    xxy = max(xx) - xxrng*.15
+  endelse
+  yyrng = max(yy) - min(yy)
+  if not keyword_set(no95) then xyouts, xxy, signif + yyrng*.03, strtrim(siglvl,2)+'%', /data
+endif
+
+end

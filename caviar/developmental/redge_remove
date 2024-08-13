@@ -1,0 +1,29 @@
+print, '------- REDGE_REMOVE.PRO -------'
+print, 'Use this script to remove bad data from fitted edges'
+rrbegin:
+window, 14
+!p.multi=0
+plot_redge, redge, redge_sigma, keywords=keywords
+print, 'Click on the left-hand boundary of the bad area.'
+cursor, xx1, y, 3, /data
+x1 = min(where(redge[0,*] gt xx1))
+thoukm = get_thoukm(redge[1,*])
+oplot, [redge[0,x1]], tkm( [redge[1,x1]], thoukm=thoukm ), ps=4, co=red()
+print, 'Click on the right-hand boundary of the bad area.'
+cursor, xx2, y, 3, /data
+x2 = max(where(redge[0,*] lt xx2))
+oplot, [redge[0,x2]], tkm( [redge[1,x2]], thoukm=thoukm ), ps=4, co=red()
+oplot, [redge[0,x1:x2]], tkm( [redge[1,x1:x2]], thoukm=thoukm ), co=red()
+
+print, 'Remove this interval from redge? (y/n)'
+reply = ''
+while reply eq '' do begin
+  read, reply
+  if reply eq 'y' then begin
+    aa = vec_remove( lindgen(n_elements(redge[0,*])), lindgen(x2-x1+1)+x1 )
+    redge = redge[*,aa]
+    redge_sigma = redge_sigma[*,aa]
+  endif else if reply ne 'n' then reply=''
+endwhile
+
+end

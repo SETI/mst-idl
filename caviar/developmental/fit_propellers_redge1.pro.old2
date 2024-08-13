@@ -1,0 +1,501 @@
+; This code is based on $DATA/images/SOI/SOISPTURN/make_sgaps_redge.pro
+
+device, decompose=0
+notn = replicate(' ',20)
+;if not keyword_set(prop_reproj) then restore, 'prop_reproj.sav'
+if not keyword_set(prop_reproj) then restore, 'prop_reproj_redge.sav'
+npr = n_elements(prop_reproj)
+if not keyword_set(j1) then j1 = 0l
+if not keyword_set(j2) then j2 = npr - 1
+if not keyword_set(origres) then rfac1 = 3. ; display only
+if rfac1 mod 2 eq 0 then print, 'It''s best for rfac1 to be odd.'
+if rfac1 eq 1 then offs=0 else offs=rfac1/2-0.1
+if keyword_set(dolzr) then niceplot = 1
+
+if not keyword_exists(lonsm) then lonsm = 16;30;5
+sfilestem = 'fit_propellers_redge1'
+sfile = sfilestem+'_'+strtrim(lonsm,2)+'.sav'
+if keyword_set(impact) then if impact eq 2 then sfile = sfilestem+'.sav'
+if keyword_set(findfile(sfile)) then restore, sfile else begin
+  _guide1 = lonarr(npr)
+  _guider = lonarr(npr)
+  if keyword_set(impact) then begin
+    nedgebnd = 2
+    if impact eq 1 then begin
+      age = dblarr(npr)
+      sigma_age = dblarr(npr)
+      lcenbnd_sigma = dblarr(nedgebnd/2,npr)
+    endif else begin
+      _lonsm = [16,6,16,16,10]
+    endelse
+    fit1 = dblarr(2,npr)
+    sigma1 = dblarr(2,npr)
+  endif else begin
+    nedgebnd = 4
+  endelse
+  cenbnd = intarr(nedgebnd/2,npr)
+  lcenbnd = dblarr(nedgebnd/2,npr)
+  edgebnd = intarr(nedgebnd,npr)
+  ledgebnd = dblarr(nedgebnd,npr)
+  prop_radx = dblarr(nedgebnd/2,npr)
+  prop_radx_sigma = dblarr(nedgebnd/2,npr)
+  prop_redge = { redge:ptr_new(0), redge_sigma:ptr_new(0) }
+  ;; This mistake means that all sav files initiated (not even
+  ;; necessarily current datestamp) before 9 July 2010 do not have
+  ;; a proper record of redge
+  ;prop_redge = replicate( prop_redge, npr )
+  for j=1,npr-1 do prop_redge = [ prop_redge, { redge:ptr_new(0), $
+                                         redge_sigma:ptr_new(0) } ]
+  subtractavg = bytarr(npr)
+  hipass = bytarr(npr)
+endelse
+if not keyword_set(subtractavg) then subtractavg = bytarr(npr)
+if not keyword_set(hipass) then hipass = bytarr(npr)
+if n_elements(hipass) eq 1 then hipass = rebin( hipass, npr )
+
+; Factors for calculating mass (see $DATA/images/SOI/SOISPTURN/sgaps_mass.pro)
+cap_g = 6.672e-8   ;cm^3/g/s^2
+ms = 5.685e29  ;g
+rho = .5e15    ;g/km^3 
+
+for j=j1,j2 do begin
+
+  ; Unpack reprojected image and associated value, define grid arrays.
+  rrpi = *( prop_reproj[j].rrpi )
+  sz = size(rrpi)
+  mnrad = prop_reproj[j].radlon[0]
+  mxrad = prop_reproj[j].radlon[1]
+  mnlon = prop_reproj[j].radlon[2]
+  mxlon = prop_reproj[j].radlon[3]
+  radx = make_radi( mnrad, mxrad, mnlon, mxlon, sz, loni=lonx, $
+                    dradi=dradx, dloni=dlonx )
+  if keyword_set(hipass[j]) then begin
+    foo = wher( rrpi eq 0, count )
+    sm = 50
+    rrpi = rrpi - smooth(rrpi,sm)
+    if count gt 0 then for k=0,count-1 do begin
+      ; Image edge included in rrpi
+      rrpi[ (foo[0,k]-sm/2)>0 : (foo[0,k]+sm/2)<(sz[1]-1), $
+            (foo[1,k]-sm/2)>0 : (foo[1,k]+sm/2)<(sz[2]-1) ] = 0
+    endfor
+  endif
+  if keyword_set(subtractavg[j]) then begin
+    ; If the edge of the image seems to be included, then set contaminated
+    ; values equal to image median to avoid confusing the fitting routine.
+    foo = wher( rrpi eq 0, count )
+    mask = bytarr( sz[1], sz[2] ) + 1
+    if count gt 10 then begin
+      print, 'rrpi contains zeroes, so assume it goes off the edge of the image.'
+      box = 1;5
+      if prop_reproj[j].xy[2] gt 850 then box = 0
+      for k=0l,count-1 do begin
+        mask[ (foo[0,k]-box)>0 : (foo[0,k]+box)<(sz[1]-1), $
+              (foo[1,k]-box)>0 : (foo[1,k]+box)<(sz[2]-1) ] = 0
+      endfor
+      rrpi[where( mask eq 0 )] = median(rrpi[where( mask eq 1 )])
+    endif
+    rrpi = fit_propellers4_subtractavg( rrpi, rrpi, mask, sz, edgebnd=edgebnd[*,j] )
+    rrpi = rrpi + (1-mask)*1e-10  ; Keep edgefit from drawing erroneous bke's
+  endif
+
+  foo = where( rrpi eq 0, count )
+  if count gt 0 then rrpi[foo] = median(rrpi[where(rrpi ne 0)])
+  rrpi_orig = rrpi
+
+  hthresh = 0;5
+  run_histogram, rrpi, stmin, stmax, threshold=hthresh, /nocrop, /silent
+  rpi = (rrpi_orig>stmin<stmax) - stmin
+  rpi = rpi*248 / max(rpi)
+  rpi = byte(rpi)
+  rpi = rebin( rpi, sz[1]*rfac1, sz[2]*rfac1, /sample )
+  window, 10, xs=sz[1]*rfac1, ys=sz[2]*rfac1
+  tv, rpi
+
+  redo1:
+  if keyword_set(impact) then begin
+    if impact eq 2 then lonsm = _lonsm[j]
+    rem = sz[1] mod lonsm
+    rrpi[0:sz[1]-rem-1,*] = rebin(rebin( $
+        rrpi[0:sz[1]-rem-1,*], sz[1]/lonsm, sz[2] ), $
+                                         sz[1]-rem,sz[2], /sam )
+  endif else begin
+    if keyword_set(cenbnd[0,j]) and not keyword_set(redo) then begin
+      if not keyword_set(niceplot) then for k=0,1 do begin
+        plots, cenbnd[[k,k],j]*rfac1+([rfac1-1,0])[k], $
+               [0,sz[2]]*rfac1, /device, color=cyan()
+      endfor 
+      bnd = cenbnd[*,j]
+    endif else begin
+      wset, 10
+      bnd = intarr(2)
+      print, 'Click to the right of the central region'
+      for k=0,1 do begin
+        cursor, bnd1, y, 3, /device
+        bnd[k] = bnd1 / rfac1
+        bnd[k] = bnd[k]
+        plots, bnd[[k,k]]*rfac1+([rfac1-1,0])[k], [0,sz[2]]*rfac1, $
+               /device, color=cyan()
+      endfor
+      cenbnd[*,j] = bnd
+      lcenbnd[*,j] = lonx[bnd]
+    endelse
+    ;rem = sz[1] mod lonsm
+    ;rrpi[0:sz[1]-1-rem,*] = rebin(rebin( $
+    ;                              rrpi[0:sz[1]-1-rem,*], sz[1]/lonsm, sz[2] ),$
+    ;                                         sz[1]-rem,sz[2], /sam )
+    rem1 = cenbnd[0,j] mod lonsm
+    rrpi[rem1+1:cenbnd[0,j],*] = rebin(rebin( $
+                      rrpi[rem1+1:cenbnd[0,j],*], cenbnd[0,j]/lonsm, sz[2] ), $
+                                               cenbnd[0,j]-rem1,sz[2], /sam )
+    rem2 = (sz[1]-cenbnd[1,j]) mod lonsm
+    rrpi[cenbnd[1,j]:sz[1]-rem2-1,*] = rebin(rebin( $
+        rrpi[cenbnd[1,j]:sz[1]-rem2-1,*], (sz[1]-cenbnd[1,j])/lonsm, sz[2] ), $
+                                         sz[1]-cenbnd[1,j]-rem2,sz[2], /sam )
+  endelse
+
+  if not keyword_set(_guide1[j]) then begin
+    newguide1:
+    print, 'Click below the propeller'
+    cursor, x, y, 3, /device
+    _guide1[j] = y / rfac1
+  endif 
+  guide1 = radx[_guide1[j]]
+  plots, /device, color=green(), [0,sz[1]]*rfac1, [1,1]*_guide1[j]*rfac1
+  if not keyword_set(_guider[j]) then begin
+    newguider:
+    print, 'Click above the propeller'
+    cursor, x, y, 3, /device
+    _guider[j] = y / rfac1
+  endif 
+  guider = radx[_guider[j]]
+  plots, /device, color=green(), [0,sz[1]]*rfac1, [1,1]*_guider[j]*rfac1+rfac1-1
+  fittype = 1
+  bke = 0
+  noplot = 1
+  @run_edgefit
+  noplot = 0
+  *(prop_redge[j].redge) = redge
+  *(prop_redge[j].redge_sigma) = redge_sigma
+  foo = where( redge[2,*] lt 0, count )
+  if count lt sz[1]/2 then begin
+    reply = ''
+    while reply eq '' do begin
+      print, 'Only '+strtrim(count,2)+' of '+strtrim(sz[1],2)+$
+             ' column fits are dark.  Is this propeller relative-bright? (y/n)'
+      read, reply
+      if reply eq 'q' then retall else if reply eq 'y' then begin
+        foo = where( redge[2,*] gt 0, count )
+      endif else if reply ne 'n' then reply=''
+    endwhile 
+  endif
+  wset, 10
+  for k=-rfac1/2,rfac1/2 do begin
+    plots, /device, interpol(indgen(sz[1]),lonx,redge[0,foo])*rfac1+offs+k, $
+           redge[3,foo]*rfac1+offs, ps=3, color=red()
+  endfor
+;  wdelete, 8
+
+  redo2:
+  if keyword_set(niceplot) then begin
+    spawn, 'pwd', pwd
+    lastslash = rstrpos(pwd,'/')
+    lastslash2 = rstrpos(pwd,'/',lastslash-1)
+    psname = strmid(pwd[0],lastslash2+1,lastslash-lastslash2-1)+$
+             strlowcase(strmid(pwd[0],lastslash+1,1000))+'_'+strtrim(j,2)+'_'+$
+             strmid(sfile,0,strpos(sfile,'.'))
+  endif
+  if keyword_set(dolzr) then begin
+    ;window, 10, xs=sz[1]*rfac1+25, ys=sz[2]*rfac1
+    ;tv, rpi
+    ;outim = tvrd(true=0)
+    ;write_tiff, psname+'.tiff', reverse( outim, 2 )
+    lzr, psname+'_plot', /half
+    @plot_prepare
+    plot_color
+    loadct, 0
+  endif else window, 9
+  !y.margin = 0
+  !y.omargin = [4,2]
+  if keyword_set(niceplot) then begin
+    !p.multi = [0,1,3]
+    !p.charsize = 3
+  endif else !p.multi = [0,1,2]
+  if keyword_set(impact) then begin
+    good0 = where( redge[0,*] lt lonx[sz[1]-rem-1], ng0 )
+  endif else begin
+    if keyword_set(niceplot) then begin
+      good0 = where(( redge[0,*] gt lonx[edgebnd[0,j]] and $
+                      redge[0,*] le lonx[edgebnd[1,j]] ) or $
+                    ( redge[0,*] gt lonx[edgebnd[2,j]] and $
+                      redge[0,*] lt lonx[edgebnd[3,j]] ),ng0)
+      if psname eq '081azscandrk_1_fit_propellers_redge1_2' then begin
+        good0a = vec_remove( good0, where(redge[2,good0] lt .00025) )
+        yti = 20
+      endif else begin
+        good0a = good0
+        yti = 40
+      endelse 
+      if (where(redge[2,good0] ge 0))[0] eq -1 then redge[2,*] = -redge[2,*]
+      xr1 = [min(lonx),max(lonx)]
+      case psname of
+        '035azscnloph_0_fit_propellers_redge1_12': begin
+          position = [.185,.45,.945,1]
+          ytn = [ 134880l, 134920, 134960 ]
+          ytnfac = 7
+        end 
+        '081azscandrk_1_fit_propellers_redge1_2': begin
+          position = [.185,.52,.945,1]
+          ytn = [ 134880l, 134900, 134920 ]
+          ytnfac = 15
+        end 
+      endcase 
+      imdisp, rpi, /axis, xr=xr1, yr=[min(radx),max(radx)], /xs, /ys, $
+              xtickn=notn, ytickn=notn, margin=0, position=position
+      ;axis, yaxis=0, yr=!y.crange, /ys, yticki=yti, ytickf='(I6)'
+      for k=0,2 do xyouts, !x.crange[0]-(!x.crange[1]-!x.crange[0])/100, $
+                           ytn[k]-(!y.crange[1]-!y.crange[0])/ytnfac, $
+                           string(ytn[k],fo='(I6)'), align=1, $
+                           chars=!p.charsize/2
+      !p.multi[0] = !p.multi[2]-1
+    endif else begin
+      good0 = where(( redge[0,*] gt lonx[rem1] and $
+                      redge[0,*] le lonx[cenbnd[0,j]] ) or $
+                    ( redge[0,*] ge lonx[cenbnd[1,j]] and $
+                      redge[0,*] lt lonx[sz[1]-rem2-1] ),ng0)
+      good0a = good0
+      xr1 = redge[ 0, good0[[0,ng0-1]] ]
+    endelse 
+  endelse
+  yr1 = [ min(redge[1,good0]), max(redge[1,good0]) ]
+  yr1 = yr1 + [-0.1,0.1]*(yr1[1]-yr1[0])
+  plot_nosci, xr1, yr1, /nodata, /xs, /ys, $
+              ytit='              Radius (km)', xtickn=notn
+  mkexed, good0a, exed, z
+  for k=0,z do begin
+    _good0 = lindgen(exed[1,k]-exed[0,k]+1) + exed[0,k]
+    polyfill, [ reform(redge[0,_good0]), reverse(reform(redge[0,_good0])) ], $
+              [ reform(redge[1,_good0]-redge_sigma[1,_good0]), $
+                reverse(reform(redge[1,_good0]+redge_sigma[1,_good0])) ], $
+              noclip=0, color=gray()
+    oplot, redge[0,_good0], redge[1,_good0]
+  endfor
+  if keyword_set(impact) and keyword_set(prop_radx[*,j]) then begin
+    oplot, !x.crange, prop_radx[[0,0],j], color=cyan()
+  endif 
+  yr2 = [ min(redge[2,good0]), max(redge[2,good0]) ]
+  yr2 = yr2 + [-0.1,0.1]*(yr2[1]-yr2[0])
+  if keyword_set(niceplot) then begin
+    for k=0,nedgebnd/2-1 do oplot, ledgebnd[[k*2,k*2+1],j], $
+                                   prop_radx[[k,k],j], l=1
+  endif 
+  plot_nosci, xr1, yr2, /nodata, /xs, /ys, $
+              ytit='Brightness!CContrast (I/F)',xtit='Longitude (!Uo!N)'
+  mkexed, good0, exed, z
+  for k=0,z do begin
+    _good0 = lindgen(exed[1,k]-exed[0,k]+1) + exed[0,k]
+    polyfill, [ reform(redge[0,_good0]), reverse(reform(redge[0,_good0])) ], $
+              [ reform(redge[2,_good0]-redge_sigma[2,_good0]), $
+                reverse(reform(redge[2,_good0]+redge_sigma[2,_good0])) ], $
+              noclip=0, color=gray()
+    oplot, redge[0,_good0], redge[2,_good0]
+  endfor
+  if keyword_set(niceplot) then goto, nextniceplot
+
+  if keyword_set(edgebnd[1,j]) and not keyword_set(redo) then begin
+    for k=0,nedgebnd-1 do begin
+      wset, 9
+      oplot, ledgebnd[[k,k],j], color=blue(), $
+             !y.crange[0] + (!y.crange[1]-!y.crange[0])*[0,2], /noclip
+      wset, 10
+      if keyword_set(impact) then offs2 = [0,rfac1-1] else begin
+        offs2 = [0,rfac1-1,0,rfac1-1]
+      endelse 
+      plots, edgebnd[[k,k],j]*rfac1+offs2[k], $
+             [0,sz[2]]*rfac1, /device, color=blue()
+    endfor 
+    bnd = edgebnd[*,j]
+  endif else begin
+    bnd = intarr(nedgebnd)
+    print, 'Click to the right and left of the propeller.'
+    if keyword_set(impact) then begin
+      offs1 = [ 0, -1 ]
+    endif else begin
+      offs1 = [ rem1, rem1+1, cenbnd[1,j]-1, cenbnd[1,j] ]
+    endelse
+    for k=0,nedgebnd-1 do begin
+      wset, 9
+      ;cursor, bnd1, y, 3, /device
+      ;bnd[k] = bnd1/lonsm / rfac1
+      cursor, bnd1, y, 3, /data
+      bnd[k] = ( interpol(indgen(sz[1]),lonx,bnd1) - offs1[k] ) / lonsm
+      bnd[k] = bnd[k] * lonsm + offs1[k]
+      oplot, lonx[bnd[[k,k]]], color=blue(), $
+             !y.crange[0] + (!y.crange[1]-!y.crange[0])*[0,2], /noclip
+      wset, 10
+      plots, bnd[[k,k]]*rfac1+([0,rfac1-1,0,rfac1-1])[k], [0,sz[2]]*rfac1, $
+             /device, color=blue()
+    endfor
+    edgebnd[*,j] = bnd
+    ledgebnd[*,j] = lonx[bnd]
+  endelse
+
+  mnl = mean(lonx)
+  good1 = where(( redge[0,*] gt lonx[edgebnd[0,j]] and $
+                  redge[0,*] lt lonx[edgebnd[1,j]] ),ng1)
+  a1 = indgen(( edgebnd[1,j] - edgebnd[0,j] - 1 )/lonsm)*lonsm + $
+       edgebnd[0,j] + 1 + lonsm/2
+  for k=0,n_elements(a1)-1 do a1[k] = (where( $
+     abs(redge[0,*]-lonx[a1[k]]) eq min(abs(redge[0,*]-lonx[a1[k]])) ))[0]
+  if keyword_set(impact) then begin
+    goodlonx = good1
+    if impact eq 2 then begin
+      fit1[*,j] = [0,0]
+      sigma1[*,j] = [0,0]
+      prop_radx[*,j] = mean(redge[1,a1])
+      prop_radx_sigma[*,j] = stddev(redge[1,a1]) / sqrt(float(ng1)/lonsm)
+      cenbnd[*,j] = mean(edgebnd[*,j])
+      lcenbnd[*,j] = mean(ledgebnd[*,j])
+    endif else begin
+      fit1[*,j] = svdfit( reform(redge[0,a1]) - mean(redge[0,a1]), $
+                          reform(redge[1,a1]) - mean(redge[1,a1]), $
+                          2, sigma=_sigma1 )
+      sigma1[*,j] = _sigma1
+      cenbnd[*,j] = mean(edgebnd[*,j])
+      diff = 0
+      while 4 lt 5 do begin
+        ldiff = diff
+        diff = total(redge[2,cenbnd[*,j]+1:edgebnd[1,j]]) - $
+               total(redge[2,edgebnd[0,j]:cenbnd[*,j]])
+        if sign(diff) eq sign(ldiff) then begin
+          cenbnd[*,j] = cenbnd[*,j] + sign(diff)
+        endif else begin
+          if abs(diff) gt abs(ldiff) then cenbnd[*,j] = cenbnd[*,j] + sign(diff)
+          goto, cenbnd_done
+        endelse 
+      endwhile 
+      cenbnd_done:
+      lcenbnd[*,j] = mean([ lonx[cenbnd[*,j]], lonx[cenbnd[*,j]+1] ])
+      wset, 9
+      oplot, lcenbnd[[0,0],j], color=cyan(), $
+             !y.crange[0] + (!y.crange[1]-!y.crange[0])*[0,2], /noclip
+      prop_radx[*,j] = poly(lcenbnd[*,j]-mean(redge[0,a1]),fit1[*,j]) + $
+                       mean(redge[1,a1])
+      lcenbnd_sigma[*,j] = lonsm * dlonx
+      prop_radx_sigma[*,j] = fit1[1,j] * lcenbnd_sigma[*,j]
+      ; Kepler shear:  da/dn = -(2/3)*a/n
+      nn = sqrt(caviar_omega2( mean(redge[1,a1]) ))*180/!dpi ; deg/sec
+      age[j] = -2./3 * prop_radx[*,j] / nn / 3600 / fit1[1,j]
+      sigma_age[j] = 2./3 * prop_radx[*,j] / nn / 3600 / fit1[1,j]^2 * $
+                     sigma1[1,j]
+      print, 'Estimated time elapsed since impact:  '+strtrim(age[j],2)+' hours'
+    endelse
+    wset, 9
+    axis, yr=yr1-(yr1[1]-yr1[0]), yaxis=0, /ys, /save, ytickn=notn, $
+          ytickle=1e-10
+    oplot, ledgebnd[*,j], co=yellow(), /noclip, $
+           poly(ledgebnd[*,j]-mean(redge[0,a1]),fit1[*,j]) + mean(redge[1,a1])
+  endif else begin
+    good2 = where(( redge[0,*] gt lonx[edgebnd[2,j]] and $
+                    redge[0,*] lt lonx[edgebnd[3,j]] ))
+    goodlonx = [ good1, good2 ]
+    a2 = indgen(( edgebnd[3,j] - edgebnd[2,j] - 1 )/lonsm)*lonsm + $
+         edgebnd[2,j] + 1 + lonsm/2
+    for k=0,n_elements(a2)-1 do a2[k] = (where( $
+       abs(redge[0,*]-lonx[a2[k]]) eq min(abs(redge[0,*]-lonx[a2[k]])) ))[0]
+;    mn1 = svdfit( reform(redge[0,a1]), reform(redge[1,a1]), 1, sigma=_sigma1, $
+;                  measure_errors=reform(redge_sigma[1,a1]) )
+;    mn2 = svdfit( reform(redge[0,a2]), reform(redge[1,a2]), 1, sigma=_sigma2, $
+;                  measure_errors=reform(redge_sigma[1,a2]) )
+    mn1 = svdfit( reform(redge[0,a1]), reform(redge[1,a1]), 1, sigma=_sigma1 )
+    mn2 = svdfit( reform(redge[0,a2]), reform(redge[1,a2]), 1, sigma=_sigma2 )
+    prop_radx[*,j] = [ mn1, mn2 ]
+    prop_radx_sigma[*,j] = [ _sigma1, _sigma2 ]
+    wset, 9
+    axis, yr=yr1-(yr1[1]-yr1[0]), yaxis=0, /ys, /save, ytickn=notn, $
+          ytickle=1e-10
+    for k=0,nedgebnd/2-1 do begin
+      oplot, ledgebnd[[k*2,k*2+1],j], prop_radx[[k,k],j], co=yellow(), /noclip
+      oplot, ledgebnd[[k*2,k*2+1],j], /noclip, $
+             prop_radx[[k,k],j] - prop_radx_sigma[[k,k],j], co=yellow()
+      oplot, ledgebnd[[k*2,k*2+1],j], /noclip, $
+             prop_radx[[k,k],j] + prop_radx_sigma[[k,k],j], co=yellow()
+    endfor 
+
+    nextniceplot:
+    dr = prop_radx[0,j] - prop_radx[1,j]
+    dr_sigma = sqrt(total(prop_radx_sigma[*,j]^2))
+    aa = mean(prop_radx[*,j])
+    hh = dr / 4
+    h_sigma = dr_sigma / 4
+    hfac1 = aa * (4*!dpi*rho/9/ms)^(1./3)
+    rr = hh / hfac1
+    r_sigma = h_sigma / hfac1
+    print, 'Propeller diameter:  '+string(rr*2000,fo='(I4)')+' +- '+$
+           string(r_sigma*2000,fo='(I3)')+' meters'
+  endelse
+  if keyword_set(dolzr) then clzr
+
+
+  reply = ''
+  while reply eq '' do begin
+    print, 'Redo step [1], redo step [2], or [c]ontinue or [q]uit?'
+    read, reply
+    case reply of
+      '1': begin
+        wset, 10
+        tv, rpi
+        if not keyword_set(impact) then begin
+          for k=0,1 do begin
+            plots, cenbnd[[k,k],j]*rfac1+([rfac1-1,0])[k], $
+                   [0,sz[2]]*rfac1, /device, color=ltcyan()
+          endfor 
+          cenbnd[*,j] = 0
+          lcenbnd[*,j] = 0
+          rem1 = 0
+        endif 
+        plots, /device, [0,sz[1]]*rfac1, [1,1]*_guide1[j]*rfac1, color=ltgreen()
+        plots, /device, [0,sz[1]]*rfac1, [1,1]*_guider[j]*rfac1+rfac1-1, $
+               color=ltgreen()
+        _guide1[j] = 0
+        _guider[j] = 0
+        edgebnd[*,j] = 0
+        ledgebnd[*,j] = 0
+        goto, redo1
+      end 
+      '2': begin
+        wset, 10
+        tv, rpi
+        if not keyword_set(impact) then begin
+          for k=0,1 do begin
+            plots, cenbnd[[k,k],j]*rfac1+([rfac1-1,0])[k], $
+                   [0,sz[2]]*rfac1, /device, color=cyan()
+          endfor 
+          cenbnd[*,j] = 0
+          lcenbnd[*,j] = 0
+          rem1 = 0
+        endif 
+        plots, /device, [0,sz[1]]*rfac1, [1,1]*_guide1[j]*rfac1, color=green()
+        plots, /device, [0,sz[1]]*rfac1, [1,1]*_guider[j]*rfac1+rfac1-1, $
+               color=green()
+        for k=-rfac1/2,rfac1/2 do begin
+          plots, /device, interpol(indgen(sz[1]),lonx,redge[0,foo])*rfac1+$
+                 offs+k, redge[3,foo]*rfac1+offs, ps=3, color=red()
+        endfor
+        edgebnd[*,j] = 0
+        ledgebnd[*,j] = 0
+        goto, redo2
+      end 
+      'q': retall
+      'c': begin
+      end 
+      else: reply = ''
+    endcase 
+  endwhile 
+
+  save, _guide1, _guider, edgebnd, ledgebnd, nedgebnd, cenbnd, lcenbnd, lonsm, $
+        prop_radx, prop_radx_sigma, prop_redge, subtractavg, hipass, sm, _lonsm, $
+        age, sigma_age, fit1, sigma1, impact, lcenbnd_sigma, filename=sfile
+
+endfor
+
+end

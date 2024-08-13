@@ -1,0 +1,10 @@
+pro get_color
+
+tvlct,r,g,b,/get
+sub = lindgen(249)*(256/249)
+r = [r[sub], 0,255,0,0,255,255,255]
+g = [g[sub], 255,0,255,0,255,0,255]
+b = [b[sub], 255,0,0,255,0,255,255]
+tvlct, r, g, b
+
+end

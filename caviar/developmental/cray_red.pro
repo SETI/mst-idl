@@ -1,0 +1,15 @@
+print, 'Identify a cosmic ray.  Right-click to select a point on the image, roll scroll-bar to quit.'
+q = 0
+while q eq 0 do begin
+  caviar_rdpix,rawim,cam_params,cmat,nl,et,polera,poledec,sc,0,nl-1,x=crayx,y=crayy,q=q
+  if q eq 0 then begin
+    if keyword_set(cray) then begin
+      cray = [ cray, [ [crayy], [crayx] ] ]
+    endif else cray = [ [crayy], [crayx] ]
+  endif
+  @plot_cray_red
+endwhile
+cray = cray[uniq( cray[*,1]+cray[*,0]*nl, sort(cray[*,1]+cray[*,0]*nl) ),*]
+q = 0
+
+end

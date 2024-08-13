@@ -1,0 +1,32 @@
+period = rstrpos( image_name, '.' )
+filestem = strmid( image_name, 0, period )
+f = findfile( filestem+'.edge*' )
+if not keyword_set(f) then begin
+  print, 'No saved edgefits found for filestem '+filestem
+endif else begin
+  nf = n_elements(f)
+  if nf eq 1 then savefile = f[0] else begin
+    num = intarr(nf)
+    for j=0,nf-1 do num[j] = strmid( f[j], strpos(f[j],'edge')+4, 100 )
+    f = f[sort(num)]
+    num = num[sort(num)]
+    for j=0,nf-1 do print, num[j], '    ', f[j]
+    reply = ''
+    while reply eq '' do begin
+      print, 'Multiple saved edgefits detected.  Please select a number [1,' + $
+	strtrim(num[nf-1],2) + '] '
+      read, reply
+      reply = fix(reply)
+      if reply lt 1 or reply gt num[nf-1] then reply=''
+      reply = (where( num eq reply, count ))[0] + 1
+      if count eq 0 then reply=''
+    endwhile
+    savefile = f[reply-1]
+  endelse
+  print, 'Restoring edgefit information from '+savefile
+  restore, savefile
+endelse
+if !d.name eq 'X' then window, 14
+if !d.name eq 'X' then plot_redge,redge,redge_sigma,/height,keywords=keywords
+
+end

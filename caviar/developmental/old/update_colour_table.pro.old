@@ -1,0 +1,20 @@
+pro update_colour_table
+
+common udct,udctim,udctx,udcty,udctsymbol,udctsymbol_size,udctring_symbol,$
+       udctring_symbol_size,udctstars,udctxp,udctyp,udctplanet,udctring,$
+       udctxr,udctyr,udcts_names,udctplanet_symbol,udctplanet_symbol_size,$
+       udctnl,udctplan_names
+
+tv,udctim,/order
+
+plots,round(udctx),(udctnl-1)-round(udcty),psym=udctsymbol,symsize=udctsymbol_size,/device
+plots,round(udctxp),(udctnl-1)-round(udctyp),psym=udctplanet_symbol,symsize=udctplanet_symbol_size,/device
+plots,round(udctxr),(udctnl-1)-round(udctyr),psym=udctring_symbol,symsize=udctsymbol_size,/device
+
+xyouts,round(udctx)+6,(udctnl-4)-round(udcty),udcts_names,/device
+xyouts,round(udctx)+6,(udctnl-14)-round(udcty),strcompress(string(udctstars[*,3]/100.0),/remove_all),/device
+
+;xyouts,round(udctxp)+6,(udctnl-4)-round(udctyp),strcompress(string(udctplanet[*,0]),/remove_all),/device
+xyouts,round(udctxp)+6,(udctnl-4)-round(udctyp),udctplan_names[*],/device
+
+end

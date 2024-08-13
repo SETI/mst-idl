@@ -1,0 +1,17 @@
+\begindata
+KERNELS_TO_LOAD = (
+		'/home/sauron2/iss/NAIF/fk/nh_v220.tf',
+		'/home/sauron2/iss/NAIF/lsk/naif0011.tls',
+		'/home/sauron2/iss/NAIF/pck/pck00008.tpc',
+		'/home/sauron2/iss/NAIF/pck/pck00010.tpc',
+		'/home/sauron2/iss/NAIF/spk/de413.bsp',
+		'/home/sauron2/iss/NAIF/spk/de418.bsp',
+		'/home/sauron2/iss/NAIF/spk/nh_recon_e2j_v1.bsp',
+		'/home/sauron2/iss/NAIF/spk/jup260.bsp',
+		'/home/sauron2/iss/NAIF/spk/jup310.bsp',
+		'/home/sauron2/iss/NAIF/ck/merged_nhpc_2007_v006.bc',
+		'/home/sauron2/iss/NAIF/ik/nh_lorri_v100.ti',
+		'/home/sauron2/iss/NAIF/sclk/new_horizons_413.tsc'
+                   )
+\begintext
+

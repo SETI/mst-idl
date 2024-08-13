@@ -1,0 +1,76 @@
+if not keyword_set(_rmin) or not keyword_set(_rmax) then begin &$
+  if keyword_set(rmin) and keyword_set(rmax) and keyword_exists(jimg) then if jimg ne -1 then begin &$
+    _rmin = rmin[jimg] &$
+    _rmax = rmax[jimg] &$
+endif &$
+endif
+
+restore, '~/Data/caviar/developmental/ring_rads.sav'
+if keyword_set(_rmin) and keyword_set(_rmax) then begin &$
+
+  dr = _rmax - _rmin &$
+;  foo = where( _ring_rads gt _rmin-1.5*dr and _ring_rads lt _rmax-1.0*dr, count ) &$
+  foo = where( _ring_rads gt _rmin-.25*dr and _ring_rads lt _rmax+.25*dr, count ) &$
+  if count eq 0 then begin &$
+    ring_rads = 0 &$
+    ring_rads_legend = '' &$
+    foo = 0 &$
+  endif else begin &$
+    ring_rads = _ring_rads[foo] &$
+    ring_rads_legend = _ring_rads_legend[foo] &$
+  endelse &$
+
+  trimrr = 0 &$
+  if keyword_set(order1) then begin &$
+    trimrr = 1 &$
+    ord = 1 &$
+  endif else if strmid(image_name,0,1) eq 'W' or keyword_set(order2) then begin &$
+    trimrr = 1 &$
+    ord = 2 &$
+  endif &$
+  if keyword_set(trimrr) then begin &$
+    foo2 = where( order[foo] le ord, count ) &$
+    if count gt 0 then begin &$
+      ring_rads = ring_rads[foo2] &$
+      ring_rads_legend = ring_rads_legend[foo2] &$
+    endif &$
+  endif &$
+
+  if ( (keyword_set(moonorbits) or keyword_set(basiconly)) and not keyword_set(order1) and not keyword_set(order2) and not keyword_set(allrings) ) or not keyword_set(ring_rads) then begin &$
+    ring_rads_legend = [ 'C Ring Inner', 'B Ring Inner', 'B Ring Outer', $ 
+                         'A Ring Inner', '', 'Encke Gap', '', 'Keeler Gap', $
+                         'A Ring Outer', 'F Ring Core (ecc)', $
+          ;'G Ring Inner', 'G Ring Outer', 'E Ring Inner', 'E Ring Outer' ]
+                         'G Ring Core', 'Orbit of Enceladus' ] &$
+    ring_rads = [ 74490, 91983, 117516, 122053, 133424, 133745, 136488, $
+                  136522, 136774, 140461, $
+                  ;166511, 173750, 180990, 482640 ]
+                  167700, 238020 ] &$
+  endif &$
+  if keyword_set(hring) then begin &$
+    ring_rads_legend=[ 'A Ring Outer', 'Atlas', 'Janus 8:7', $
+                       '', 'Prometheus', '' ] &$
+    ring_rads=[ 136774., 137670, resloc(8,7,610), 139380*(1+[-.0022,0,.0022]) ] &$
+  endif &$
+  if keyword_set(moonorbits) then begin &$
+    ring_rads_legend = [ ring_rads_legend, 'Orbit of Atlas', $
+       'Orbit of Prometheus', 'Orbit of Pandora', 'Orbit of Janus/Epimetheus',$
+       'Orbit of Mimas', 'Orbit of Enceladus', 'Orbit of Tethys', $
+       'Orbit of Dione' ] &$
+    ring_rads = [ ring_rads, 137640, 139350, 141700, 151422, 185520, 238020, $
+                  294660, 377400 ] &$
+  endif &$
+
+  if keyword_set(specifybasicrings) then begin &$
+    ring_rads = ring_rads[specifybasicrings] &$
+    ring_rads_legend = ring_rads_legend[specifybasicrings] &$
+  endif &$
+
+  if keyword_set(specifyrings) then begin &$
+    ring_rads = _ring_rads[specifyrings] &$
+    ring_rads_legend = _ring_rads_legend[specifyrings] &$
+  endif &$
+
+endif
+
+;end

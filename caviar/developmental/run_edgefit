@@ -1,0 +1,5 @@
+redge = edgefit( rpi, rrpi, mnrad, mxrad, mnlon, mxlon, reproj_xygrid=reproj_xygrid, redge_linsam=redge_linsam, _redge_sigma_linsam=redge_sigma_linsam, yy=yy, redge_sigma=redge_sigma, nosmooth=nosmooth, nopad=nopad, fittype=fittype, guider=guider, guide1=guide1, keywords=keywords, noplot=noplot, bke=bke, smoothdata=smoothdata, win=efwin, ring=ring, rrd=ring_rads, rrlegend=ring_rads_legend, efpr=efpr, perfect=perfect, maxgradient=maxgradient )
+if not keyword_set(redge_win) then redge_win = 14
+;if !d.name eq 'X' then window, redge_win
+if not keyword_exists(redge_height) then redge_height=1
+;if !d.name eq 'X' then plot_redge,redge,redge_sigma,height=redge_height,keywords=keywords

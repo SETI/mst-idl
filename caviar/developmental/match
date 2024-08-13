@@ -1,0 +1,8 @@
+match_stars,coords,found_star_coords,stars,located_stars,4.0
+
+if located_stars[0] eq -1 then nx=0 else nx=n_elements(located_stars[*,5])
+if nx eq 0 then fittedx=-10 else fittedx=round(located_stars[*,5])
+if nx eq 0 then fittedy=-10 else fittedy=round(located_stars[*,4])
+if not keyword_set(noplot) then tv,im,/order
+if not keyword_set(noplot) then plots,fittedx,(nl-1)-fittedy,psym=symbol,symsize=symbol_size,color=make_array(nx,value=cyan()),/device
+print, strtrim(nx,2)+' stars identified.'

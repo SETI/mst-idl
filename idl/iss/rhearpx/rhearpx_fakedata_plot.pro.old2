@@ -1,0 +1,81 @@
+restore, 'rhea_reproject_grp.sav'
+restore, 'rhearpx_fakedata.sav'
+
+sz = size(__imrz_fake)
+xs = sz[1]
+ys = sz[2]
+marg = 30
+if keyword_set(paper_plot) then begin
+  nx = 2
+  ny = 3
+  window, xs=(xs+marg)*nx, ys=(ys+marg)*ny
+  tv, replicate( 255, (xs+marg)*nx, (ys+marg)*ny+marg*0.5 )
+endif else begin
+  nx = 1
+  ny = nfac
+  window, xs=(xs+marg)*nx, ys=(ys+marg)*ny+marg*0.5
+endelse
+for j=0l,nfac-1 do begin
+  if keyword_set(paper_plot) then begin
+    ; Load color table 15 and fix it
+    device, decomposed=0
+    loadct, 15
+    tvlct, r, g, b, /get
+    r[where(r lt g)] = g[where(r lt g)]
+    tvlct, r, g, b
+    thresh = 5e-6
+  endif else thresh = rms[jjj]/2
+  tvscl, __imrz_fake[*,*,j]>(-thresh)<thresh, $
+         marg*0.5+(xs+marg)*(j mod nx), $
+         marg*0.5+(ys+marg)*((nx*ny-1-(j mod (nx*ny)))/nx)
+  if _fac[j] mod 1 eq 0 then fo='(I1)' else fo='(F3.1)'
+  if not keyword_set(paper_plot) then begin
+    xyouts, /device, align=0.5, chars=1.5, $
+            marg*0.5+(xs+marg)*(j mod nx) + xs*0.5, $
+            marg*0.5+(ys+marg)*((nx*ny-1-(j mod (nx*ny)))/nx) + ys + marg/4, $
+            string(_fac[j],fo=fo)+' * RMS I/F'
+  endif
+endfor
+if keyword_set(dolzr) then begin
+  tifffile = 'rhearpx_fakedata_plot.tiff'
+  if keyword_set(paper_plot) then begin
+    outim = tvrd(/true)
+    write_tiff, tifffile, red=reverse(reform(outim[0,*,*]),2), $
+                green=reverse(reform(outim[1,*,*]),2), $
+                blue=reverse(reform(outim[2,*,*]),2), planarconfig=2
+  endif else begin
+    outim = tvrd()
+    write_tiff, tifffile, reverse( outim, 2 )
+  endelse
+endif
+
+if keyword_set(paper_plot) then begin
+  if keyword_set(dolzr) then begin
+    old = !d.name
+    set_plot, 'ps'
+    device, /port, /inches, xsize=8, ysize=8, xoffset=0, yoffset=0
+    device, file='rhearpx_fakedata_plot_scalebar.ps'
+    @plot_prepare
+    plot_color
+    loadct, 15
+    tvlct, r, g, b, /get
+    r[where(r lt g)] = g[where(r lt g)]
+    tvlct, r, g, b
+  endif else window, 1
+  !p.multi = 0
+  !p.charsize = 2
+  !y.margin = 0
+  !y.omargin = [4,2]
+  plot, [-thresh,thresh], [0,1], /nodata, xs=9, ys=5, yma=[20,2], $
+        xtit='Image Brightness (I/F)'
+  for j=0,255 do polyfill, ([0,1,1,0,0]+j)*(thresh*2)/255-thresh, $
+                           [0,0,1,1,0], co=j
+  if keyword_set(dolzr) then begin
+    ;clzr
+     device, /close
+     set_plot, old
+  endif
+endif
+
+end
+

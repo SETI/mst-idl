@@ -1,0 +1,45 @@
+pro get_planet_name,planvar,plan_name_string
+
+num=n_elements(planvar)
+
+plan_name_string=strarr(32)
+
+for i=0,num-1 do begin
+
+if planvar[i] eq 601 then plan_name_string[i]='Mimas'
+if planvar[i] eq 602 then plan_name_string[i]='Enceladus'
+if planvar[i] eq 603 then plan_name_string[i]='Tethys'
+if planvar[i] eq 604 then plan_name_string[i]='Dione'
+if planvar[i] eq 605 then plan_name_string[i]='Rhea'
+if planvar[i] eq 606 then plan_name_string[i]='Titan'
+if planvar[i] eq 607 then plan_name_string[i]='Hyperion'
+if planvar[i] eq 608 then plan_name_string[i]='Iapetus'
+if planvar[i] eq 609 then plan_name_string[i]='Phoebe'
+if planvar[i] eq 610 then plan_name_string[i]='Janus'
+if planvar[i] eq 611 then plan_name_string[i]='Epimetheus'
+if planvar[i] eq 612 then plan_name_string[i]='Helene'
+if planvar[i] eq 613 then plan_name_string[i]='Telesto'
+if planvar[i] eq 614 then plan_name_string[i]='Calypso'
+if planvar[i] eq 615 then plan_name_string[i]='Atlas'
+if planvar[i] eq 616 then plan_name_string[i]='Prometheus'
+if planvar[i] eq 617 then plan_name_string[i]='Pandora'
+if planvar[i] eq 618 then plan_name_string[i]='Pan'
+if planvar[i] eq 619 then plan_name_string[i]='Ymir'
+if planvar[i] eq 620 then plan_name_string[i]='Paaliaq'
+if planvar[i] eq 621 then plan_name_string[i]='Tarvos'
+if planvar[i] eq 622 then plan_name_string[i]='Ijiraq'
+if planvar[i] eq 623 then plan_name_string[i]='Suttung'
+if planvar[i] eq 624 then plan_name_string[i]='Kiviuq'
+if planvar[i] eq 625 then plan_name_string[i]='Mundilfari'
+if planvar[i] eq 626 then plan_name_string[i]='Albiorix'
+if planvar[i] eq 627 then plan_name_string[i]='Skadi'
+if planvar[i] eq 628 then plan_name_string[i]='Erriapo'
+if planvar[i] eq 629 then plan_name_string[i]='Siarnaq'
+if planvar[i] eq 630 then plan_name_string[i]='Thrym'
+if planvar[i] eq 631 then plan_name_string[i]='S/2003 S 1'
+if planvar[i] eq 699 then plan_name_string[i]='Saturn'
+
+endfor
+
+return
+end

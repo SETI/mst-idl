@@ -1,0 +1,38 @@
+function caviar_nu2, r, dnu_dr, dnu2_dr=dnu2_dr, lc82=lc82, j2=_j2, j4=_j4, j6=_j6
+
+if n_params() eq 0 then begin
+  print, 'Syntax:  Result = CAVIAR_NU2( r, dnu_dr )'
+  print, 'Returns the square of the mean motion (radians/sec) for radius r in Saturn''s ring plane,'
+  print, 'accounting for Saturn''s j2, j4, and j6.  '
+  print, 'Optionally returns the derivative (radians/sec/km) as well.'
+  retall
+endif
+
+;; Saturn mass, radius, and harmonics from JPL kernel cpck05May2004.tpc
+;gm = 37931289.4836 ;km^3/s^2
+;prad = 60330.0d0 ;km
+;j2 = 0.016292243237d
+;j4 = -0.000928716077d
+;j6 = 0.000088845313
+saturn_constants, gm=gm, prad=prad, j2=j2, j4=j4, j6=j6
+if keyword_set(lc82) then begin
+  ; Use values from Lissauer and Cuzzi (1982)
+  gm = 37929141.6d ;km^3/s^2
+  j2 = 16299.1d-6
+  j4 = -916.7d-6
+  j6 = 81.3d-6
+endif
+; Overwrite with input values, if they exist
+if keyword_exists(_j2) then j2 = _j2
+if keyword_exists(_j4) then j4 = _j4
+if keyword_exists(_j6) then j6 = _j6
+
+nu2 = gm / r^3 * ( 1 + j2*9/2*(prad/r)^2 - j4*75/8*(prad/r)^4 + $
+                       j6*245/16*(prad/r)^6 )
+dnu2_dr = 3 * gm / r^4 * ( -1 - j2*15/2*(prad/r)^2 + j4*175/8*(prad/r)^4 - $
+                                j6*735/16*(prad/r)^6 )
+dnu_dr = dnu2_dr / 2 / sqrt(nu2)
+
+return, nu2
+
+end

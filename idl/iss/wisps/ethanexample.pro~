@@ -1,0 +1,6 @@
+; 110/FMOVIE
+restore, 'stretch.sav'
+jjj = 60
+restore, strmid(filenames[jjj],0,17)+'.edge1'
+redge[1,*] = median(reform(redge[1,*]),10) 
+plot_nosci, redge[0,*], redge[1,*], xtit='Longitude (deg)', ytit='Radius (km)'

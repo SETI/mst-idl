@@ -1,0 +1,23 @@
+
+	pro mkpng
+
+	spawn,'ls *.IMG',list
+
+	num_images=n_elements(list)
+
+	for i=0,num_images-1 do begin
+
+		ImageObj = OBJ_NEW('CassImg', DebugFlag=DebugFlag)
+		ImageObj->ReadVic,list[i]
+		im=ImageObj->Image()
+		im=byte(im)
+		label=ImageObj->LabelArray()
+
+		fileout=strmid(list[i],0,14)+'PNG'
+
+		write_png,fileout,im,/order
+
+	endfor
+
+	return
+	end

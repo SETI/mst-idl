@@ -1,0 +1,4 @@
+
+	s_cap=tvrd()
+
+	write_png,'temp.png',s_cap

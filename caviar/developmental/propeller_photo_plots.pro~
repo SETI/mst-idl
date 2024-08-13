@@ -1,0 +1,200 @@
+restore, 'stretch.sav'
+restore, 'fit_propellers4.sav'
+restore, 'fit_propellers4_image_num.sav'
+
+if keyword_set(dolzr) then begin
+  lzr, 'propeller_photo_plots'
+  @plot_prepare
+  plot_color
+endif else window, xs=640, ys=740, 1
+
+if not keyword_exists(intbright) then intbright = 1
+if not keyword_exists(plot_nperim) then plot_nperim = 1
+if not keyword_exists(average) then average = 2;1
+
+!p.multi = [0,3,2]
+if keyword_set(intbright) then !p.multi[2] = !p.multi[2] + 1
+if keyword_set(plot_nperim) then !p.multi[2] = !p.multi[2] + 1
+!p.charsize = 2
+!x.margin = 0
+!x.omargin = [10,3]
+!y.margin = 0
+!y.omargin = [4,2]
+
+phase = _keywords[image_num[where(_use)]].ringplane_aimpoint_phase_angle
+emission = _keywords[image_num[where(_use)]].ringplane_aimpoint_emission_angle
+sslon = _keywords[image_num[where(_use)]].ringplane_subsolar_longitude
+sclon = _keywords[image_num[where(_use)]].ringplane_subspacecraft_longitude
+aplon = _keywords[image_num[where(_use)]].ringplane_aimpoint_longitude
+pp0 = _pp[0,where(_use)]
+pp1 = _pp[1,where(_use)]
+peakvol = 2*!pi*pp1* _pp[2,where(_use)] * _pp[3,where(_use)]
+
+imlims = [ [0,10], [11,21], [22,32], [33,43], [44,51], [52,59], [67,74] ]
+
+imindex = image_num[where(_use)]
+imindex = uniq( imindex, sort(imindex) )
+imnames = (image_num[where(_use)])[imindex]
+nim = n_elements(imindex)
+nperim = intarr(nim)
+for j=0,nim-1 do begin
+  foo = where( image_num[where(_use)] eq imnames[j], count )
+  nperim[j] = count
+endfor
+if keyword_set(average) then begin
+  _pp0 = pp0
+  _pp1 = pp1
+  _peakvol = peakvol
+  pp0 = fltarr(nim)
+  pp1 = fltarr(nim)
+  peakvol = fltarr(nim)
+  _phase = phase
+  _emission = emission
+  _sslon = sslon
+  _sclon = sclon
+  _aplon = aplon
+  phase = fltarr(nim)
+  emission = fltarr(nim)
+  sslon = fltarr(nim)
+  sclon = fltarr(nim)
+  aplon = fltarr(nim)
+  for j=0,nim-1 do begin
+    foo = where( image_num[where(_use)] eq imnames[j], count )
+    if count le 0 then stop
+    pp0[j] = median(_pp0[foo])
+    pp1[j] = median(_pp1[foo])
+    peakvol[j] = median(_peakvol[foo])
+    phase[j] = mean(_phase[foo])
+    emission[j] = mean(_emission[foo])
+    sslon[j] = mean(_sslon[foo])
+    sclon[j] = mean(_sclon[foo])
+    aplon[j] = mean(_aplon[foo])
+  endfor 
+  if average ge 2 then begin
+    __imindex = imindex
+    __imnames = imnames
+    __nim = nim
+    imindex = reform(imlims[0,*])
+    imnames = __imnames[imindex]
+    nim = n_elements(imindex)
+    __pp0 = pp0
+    __pp1 = pp1
+    __peakvol = peakvol
+    pp0 = fltarr(nim)
+    pp0sd = fltarr(nim)
+    pp1 = fltarr(nim)
+    pp1sd = fltarr(nim)
+    peakvol = fltarr(nim)
+    peakvolsd = fltarr(nim)
+    __phase = phase
+    __emission = emission
+    __sslon = sslon
+    __sclon = sclon
+    __aplon = aplon
+    phase = fltarr(nim)
+    emission = fltarr(nim)
+    sslon = fltarr(nim)
+    sclon = fltarr(nim)
+    aplon = fltarr(nim)
+    for j=0,nim-1 do begin
+      foo = where( __imnames eq imnames[j], count )
+      if count le 0 then stop
+      pp0[j] = mean(__pp0[foo])
+      pp0sd[j] = stddev(__pp0[foo])
+      pp1[j] = mean(__pp1[foo])
+      pp1sd[j] = stddev(__pp1[foo])
+      peakvol[j] = mean(__peakvol[foo])
+      peakvolsd[j] = stddev(__peakvol[foo])
+      phase[j] = mean(__phase[foo])
+      emission[j] = mean(__emission[foo])
+      sslon[j] = mean(__sslon[foo])
+      sclon[j] = mean(__sclon[foo])
+      aplon[j] = mean(__aplon[foo])
+    endfor 
+    yr1a = [0,150]
+    yr1 = [0,.018]
+    yr2 = [0,.00053]
+    yr3 = [.0085,.0132]
+  endif else begin
+    yr1a = [0,150]
+    yr1 = [0,.018]
+    yr2 = [0,.00053]
+    yr3 = [.0085,.0132]
+  endelse
+  ps = 8
+endif else begin
+  average = 0
+  yr1a = [0,150]
+  yr1 = [0,.04]
+  yr2 = [0,.001]
+  yr3 = [.0085,.0132]
+  ps = 3
+endelse
+notn = replicate(' ',20)
+solid_small_circles
+
+if keyword_set(plot_nperim) then begin
+  ytit = '# detected propellers per image'
+  if keyword_set(average) then ind = findgen(nim) else ind = imindex
+  plot, phase[ind], nperim, ps=8, yr=yr1a, /xs, $
+        xtickn=notn, ytit=ytit, xr=[105,155]
+  ; Add error bars if average ge 2
+  plot, abs(90-emission[ind]), nperim, ps=8, yr=yr1a, /xs, $
+        xtickn=notn, ytickn=notn, xr=[18,68]
+  if keyword_set(subsolar) then begin
+    plot, abs(fix_angles(aplon[ind]-sslon[ind])), nperim, ps=8, yr=yr1a, $
+          /xs, xtickn=notn, ytickn=notn, xr=[137,153]
+  endif else begin
+    plot, abs(fix_angles(aplon[ind]-sclon[ind])), nperim, ps=8, yr=yr1a, $
+          /xs, xtickn=notn, ytickn=notn, xr=[14,29]
+  endelse
+endif
+
+if keyword_set(intbright) then nj=2 else nj=1
+for j=0,nj-1 do begin
+  if j eq nj-1 then begin
+    ytit = 'Propeller minus background, I/F'
+    pp = pp1
+    yr = yr2
+  endif else begin
+    ytit = 'Propeller integrated brightness, I/F*km!U2!N'
+    pp = peakvol
+    yr = yr1
+  endelse 
+  plot, phase, pp, ps=ps, yr=yr, /xs, $
+        xtickn=notn, ytit=ytit, xr=[105,155]
+  plot, abs(90-emission), pp, ps=ps, yr=yr, /xs, $
+        xtickn=notn, ytickn=notn, xr=[18,68]
+  if keyword_set(subsolar) then begin
+    plot, abs(fix_angles(aplon-sslon)), pp, ps=ps, yr=yr, /xs, $
+          xtickn=notn, ytickn=notn, xr=[137,153]
+  endif else begin
+    plot, abs(fix_angles(aplon-sclon)), pp, ps=ps, yr=yr, /xs, $
+          xtickn=notn, ytickn=notn, xr=[14,29]
+  endelse
+endfor
+
+ytit = 'Propeller (white) and background (red), I/F'
+plot, phase, pp1+pp0, ps=ps, yr=yr3, $
+      /xs, /ys, $
+      xtit='Phase Angle (!Uo!N)', ytit=ytit, xr=[105,155]
+oplot, phase, pp0, ps=ps, co=ctred()
+plot, abs(90-emission), pp1+pp0, ps=ps, yr=yr3, $
+      /xs, /ys, $
+      xtit='Ring Opening Angle (!Uo!N)', ytickn=notn, xr=[18,68]
+oplot, abs(90-emission), pp0, ps=ps, co=ctred()
+if keyword_set(subsolar) then begin
+  plot, abs(fix_angles(aplon-sslon)), pp1+pp0, $
+        ps=ps, yr=yr3, /xs, /ys, $
+        xtit='Local Solar Longitude (!Uo!N)', ytickn=notn, xr=[137,153]
+  oplot, abs(fix_angles(aplon-sslon)), pp0, ps=ps, co=ctred()
+endif else begin
+  plot, abs(fix_angles(aplon-sclon)), pp1+pp0, $
+        ps=ps, yr=yr3, /xs, /ys, $
+        xtit='Local Spacecraft Longitude (!Uo!N)', ytickn=notn, xr=[14,29]
+  oplot, abs(fix_angles(aplon-sclon)), pp0, ps=ps, co=ctred()
+endelse
+
+if keyword_set(dolzr) then clzr
+
+end

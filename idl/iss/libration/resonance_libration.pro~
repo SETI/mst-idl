@@ -1,0 +1,14 @@
+dt=86400.0d0*10
+t=dindgen(1001)*dt
+phi=dblarr(1001)
+phidot=dblarr(1001)
+phiddot=dblarr(1001)
+phi[0]=!dpi/180
+for k=1,1000 do begin
+  phiddot[k-1] = 3*j^2*cr*n*ee*sin(phi[k-1])
+  phi[k] = phi[k-1] + phidot[k-1]
+  phidot[k] = phidot[k-1] + phiddot[k-1]
+endfor
+
+end
+

@@ -1,0 +1,15 @@
+period = rstrpos( image_name, '.' )
+filestem = strmid( image_name, 0, period )
+f = findfile( filestem+'.rpj*' )
+if not keyword_set(f) then savefile = filestem+'.rpj1' else begin
+  savefile = f[n_elements(f)-1]
+  num = strmid( savefile, strlen(savefile)-1, 1 )
+  num = strtrim( fix(num)+1, 2 )
+  savefile = strmid( savefile, 0, strlen(savefile)-1 ) + num
+endelse
+print, 'Saving reprojection information to '+savefile
+reproj_cmat = cmat
+save, mnrad, mxrad, mnlon, mxlon, rpi, rrpi, reproj_cmat, reproj_xygrid, $
+      resfac, reproj_sinc, filename=savefile
+
+end

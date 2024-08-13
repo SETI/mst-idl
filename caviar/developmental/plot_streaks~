@@ -1,0 +1,12 @@
+if not keyword_set(noplot) then begin & $
+  if !d.n_colors eq 16777216 then star_color=cyan() else star_color=getcolor('cyan') & $
+endif
+
+if keyword_set(streaks) then nux=n_elements(x)
+if keyword_set(streaks) then xx_streaks=x_streaks-rebin(x_streaks(4,*),9,nux)+rebin(reform(x,1,nux),9,nux)
+if keyword_set(streaks) then yy_streaks=y_streaks-rebin(y_streaks(4,*),9,nux)+rebin(reform(y,1,nux),9,nux)
+
+if not keyword_set(noplot) and keyword_set(streaks) then $
+for i=0,nux-1 do $
+plots,xx_streaks(*,i),(nl-1)-yy_streaks(*,i),thick=2,color=star_color,/device
+

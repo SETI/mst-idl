@@ -1,0 +1,176 @@
+restore,'stretch.sav'
+image_number =''
+read,image_number,prompt='Image Number : '
+image_number = fix(image_number)
+image_name = filenames(image_number)
+
+;-------------------------------------------;
+;
+;basiconly=1
+;manualstretch=0
+;
+;@caviar
+;@move
+;overwrite=1
+;@save_point
+;wdelete,1
+
+;manualstretch=1
+;stmin=0
+;stmax=.011
+;@caviar
+;@move
+;overwrite=1
+;@save_point
+
+;stars_present=0
+;read,stars_present,prompt='Stars Present [0/1] : '
+;stars_present = fix(stars_present)
+
+;overwrite=1
+
+;if keyword_set(stars_present) then begin
+;  @fm
+;  @caviar_match
+;  @rstar
+;  @point
+;  @save_point
+;endif else begin
+;  manualstretch=0
+;  @caviar
+;  @move
+;  @save_point
+;endelse
+
+;manualstretch=0
+
+;stop_here = 0
+;read,stop_here,prompt='Continue With Edgefitting ? [0/1]'
+;stop_here = fix(stop_here)
+;if not keyword_set(stop_here) then stop
+
+;---------------------;
+
+;@caviar
+;mnrad = 136445.0
+;mxrad = 136565.0
+;mnlon = 0
+;mxlon = 0
+;@r
+;.run repoint
+;wdelete,8
+;wdelete,32
+;wdelete,1
+
+;@caviar
+;mnrad = 136445.0
+;mxrad = 136565.0
+;mnlon = 0
+;mxlon = 0
+;@r
+;.run repoint
+;wdelete,8
+;wdelete,32
+;wdelete,1
+
+;---------------------;
+
+;@caviar
+;mnrad = 133350.
+;mxrad = 133800.
+;mnlon = 0
+;mxlon = 0
+;@r
+
+;--------------------;
+
+
+
+; ----- Keeler Gap Edgefit ------;
+
+@caviar
+mnrad = 136448.0
+mxrad = 136561.0
+mnlon = 0
+mxlon = 0
+@r
+
+period = rstrpos( image_name, '.' )
+filestem = strmid( image_name, 0, period );
+
+@run_edgefit
+
+edge = 1
+gap='K'
+savefile = filestem + '.edgeKI'
+redge_cmat = cmat
+save, redge,redge_sigma, redge_cmat, filename=savefile
+dummy = redge_to_linsam_encke(image_name = image_name,gap='K',edge=1)
+wdelete,8
+wset,32
+
+@run_edgefit
+edge = 2
+savefile = filestem + '.edgeKO'
+redge_cmat = cmat
+save, redge,redge_sigma, redge_cmat, filename=savefile
+dummy = redge_to_linsam_encke(image_name = image_name,gap='K',edge = 2)
+wdelete,32
+wdelete,8
+wdelete,1
+
+
+; ----- Encke Gap Edgefit -------;
+
+;@caviar
+;mnrad = 133350.
+;mxrad = 133800.
+;mnlon = 0
+;mxlon = 0
+;@r
+
+;@run_edgefit
+;edge = 1
+;gap = 'E'
+;savefile = filestem + '.edgeEI'
+;redge_cmat = cmat
+;save, redge, redge_sigma, redge_cmat, filename=savefile
+;dummy = redge_to_linsam_encke(image_name = image_name, gap='E',edge=1)
+;wdelete,8
+;wset,32
+
+;@run_edgefit
+;edge = 2
+;gap = 'E'
+;savefile = filestem + '.edgeEO'
+;redge_cmat = cmat
+;save, redge, redge_sigma, redge_cmat, filename=savefile
+;dummy = redge_to_linsam_encke(image_name = image_name, gap='E',edge=2)
+;wdelete,32
+;wdelete,8
+;wdelete,1
+
+
+; ----- Outer A Ring Edgefit ------ ;
+
+;@caviar
+;mnrad = 136690.
+;mxrad = 136840.
+;mnlon = 0
+;mxlon = 0
+;@r
+
+;@run_edgefit
+;edge = 1
+;gap = 'R'
+;savefile = filestem + '.edgeR'
+;redge_cmat = cmat
+;save, redge,redge_sigma, redge_cmat, filename=savefile
+;dummy = redge_to_linsam_encke(image_name = image_name,gap='R',edge = 1)
+;wdelete,32
+;wdelete,8
+;wdelete,1;
+
+print,Image_Number
+
+end

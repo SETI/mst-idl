@@ -1,0 +1,12 @@
+;window,/free,xsize=1024,ysize=1024
+wset, 1
+if keyword_set(shadow) then begin
+  mask = bytarr(nl,nl) + 1
+  mask[shadow[*,1],shadow[*,0]] = 0
+  tmpsgma = sigma(bksub_img[where(mask eq 1)])
+endif else tmpsgma = sigma(bksub_img)
+tv,/order,bytscl(bksub_img,min=-2*tmpsgma, max=2*tmpsgma)
+;@make_hist.ns
+;print,"sigma = ", tmpsgma
+
+end

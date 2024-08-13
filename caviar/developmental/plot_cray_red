@@ -1,0 +1,7 @@
+;if !version.arch eq 'ppc' then cray_color=red() else cray_color=getcolor('red')
+if not keyword_set(noplot) then begin & $
+  if !d.n_colors eq 16777216 then cray_color=red() else cray_color=getcolor('red') & $
+endif
+
+if not keyword_set(cray_space) then cray_space = 4
+if keyword_set(cray) then if not keyword_set(noplot) then for j=0l,n_elements(cray[*,0])-1 do plots,cray[j,1]+[-1,1,1,-1,-1]*cray_space,(nl-1)-cray[j,0]+[-1,-1,1,1,-1]*cray_space,color=cray_color,/device

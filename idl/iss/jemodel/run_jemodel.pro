@@ -1,0 +1,557 @@
+phasej = [ 0.0d0, 0.0d0 ]
+phasee = [ 0.0d0, 0.0d0 ]
+dradi = 0
+marks = 0
+reverse = 0
+sigma = 35.
+xi_d = 0
+minlam = 1.5
+nr = 0
+sigma0 = 27.
+sigma1 = 51.
+dsigma = 1
+xi_d0 = 7
+xi_d1 = 11
+dxi_d = 0.25
+whichpeak = 0
+cenpeak = 0
+cp1 = 0
+cc = 10
+image_mid_time = ''
+if keyword_set(qland) or keyword_set(hland) then wavelet_charsz=1 else wavelet_charsz=1.5
+if keyword_set(hland) and keyword_set(dolzr) then !y.omargin=[0,15]
+if not keyword_set(wave) then wave = 0
+
+if keyword_set(jemodelresults) then begin
+  !x.margin = [0,0]
+  wave = 2
+  pmulti = [0,3,6]
+  noxaxis = 1
+  noyaxis = '2004 July 1!C'
+  nextwave:
+endif else jemodelresults = 0
+
+dir='/home/borogove/iss/images/SOI/SOISPTURN'
+ebfile = '/home/borogove/iss/images/SOI/SOISPTURN/emily/feb06/' + $
+         [ 'dark_side_rad_scan_tiscareno.idl.sav', $
+           'lit_side_scans_tiscareno.idl.sav', 'rev8_rad_scans.idl.sav' ]
+
+case wave of 
+  0: begin
+    ; Janus 9:7
+    tit='J/E 9:7 (2004 July 1)';'SOISPTURN -- Janus/Epimetheus 9:7'
+    if jemodelresults eq 2 then tit='J/E 9:7'
+    psname='/home/borogove/matthewt/idl/iss/jemodel/je97model_soi'
+    ll = 9
+    mm = 8
+    ebfile = ebfile[0]
+    jimg = 27
+    image_mid_time='2004-183T03:41:01.280'
+    imlon = 323.12005;323.10163
+    sigma = 43
+    sigma0 = 39
+    sigma1 = 45
+    dsigma = 0.25
+    whichpeak = 1;0
+    cp1 = 6
+    dradi = 6.22;-1.648
+    reverse = 1;0
+    if reverse eq 1 then dradi = 10
+    marks = 128000. + [ 250, 261, 269, 278, 287, 294, 301, 309, 340, 349, $
+                        358, 373, 382, 394, 403 ] + dradi
+    xi_d = 8.5;11.
+    decay = 1
+    nr = 1720
+    ;xr = [128.228,128.32]
+  end
+  1: begin
+    ; Janus 9:7 in 008/RDHRCOMP
+    dir='/home/borogove/iss/images/008/RDHRCOMP'
+    tit='J/E 9:7 (2005 May 21)';'008/RDHRCOMP -- Janus/Epimetheus 9:7'
+    if jemodelresults eq 2 then tit=''
+    psname='/home/borogove/matthewt/idl/iss/jemodel/je97model_8'
+    ll = 9
+    mm = 8
+    ebfile = ebfile[2]
+    jimg = 7
+    image_mid_time='2005-141T00:05:56.766'
+    imlon = 278.94047
+    dradi = 6.42
+    reverse = 0
+    xi_d = 8.5;7.
+    decay = 1
+    sigma=43.
+    whichpeak = 6
+    cenpeak = 5
+    cp1 = 5
+    marks = 128000. + [ 240, 256, 266, 274, 280, 294, 305, 314, 321, 327, 333, $
+                        338, 353, 361, 367 ] + dradi
+    nr = 1720
+    xr = [128.2,128.4]
+  end
+  2: begin
+    ; Janus 7:5
+    tit='J/E 7:5 (2004 July 1)';'SOISPTURN -- Janus/Epimetheus 7:5'
+    if jemodelresults eq 2 then tit='J/E 7:5'
+    psname='/home/borogove/matthewt/idl/iss/jemodel/je75model_soi'
+     ll = 7
+    mm = 6
+    ebfile = ebfile[0]
+    jimg = 18
+    image_mid_time = '2004-183T03:32:10.283'
+    imlon = 320.07718;320.10393
+    dradi = 3.28
+    reverse = 0
+    xi_d = 8.
+    decay = 1
+    sigma = 11.5
+    sigma0 = 10.5
+    sigma1 = 22.5
+    dsigma = 0.5
+    whichpeak = 1;0
+    marks = 121000. + [ 229, 252, 259, 266, 270, 277, 294, 301, 306, 310, $
+                        313 ] + dradi
+    nr = 1000;1500
+    xr = [121.215,121.34]
+  end
+  3: begin
+    ; Janus 7:5 in 008/RDHRCOMP
+    ir='/home/borogove/iss/images/008/RDHRCOMP'
+    tit='J/E 7:5 (2005 May 21)';'008/RDHRCOMP -- Janus/Epimetheus 7:5'
+    if jemodelresults eq 2 then tit=''
+    psname='/home/borogove/matthewt/idl/iss/jemodel/je75model_8'
+    ll = 7
+    mm = 6
+    ebfile = ebfile[2]
+    jimg = 11
+    image_mid_time='2005-141T00:18:04.762'
+    imlon = 280.89061
+    dradi = -0.5
+    reverse = 0
+    xi_d = 8.;5.
+    decay = 1
+    sigma = 11.5
+    sigma0 = 10.5
+    sigma1 = 22.5
+    dsigma = 0.5
+    nr = 1000;1500
+    whichpeak = 2
+    marks = 121000. + [ 238, 248, 268, 274, 281, 289, 307, 313, 317 ] + dradi
+    xr = [121.22,121.34]
+  end
+  4: begin 
+    ; Janus 11:9 in 008/RDHRCOMP
+    dir='/home/borogove/iss/images/008/RDHRCOMP'
+    tit='J/E 11:9 (2005 May 21)';'008/RDHRCOMP -- Janus/Epimetheus 11:9'
+    if jemodelresults eq 2 then tit='J/E 11:9'
+    psname='/home/borogove/matthewt/idl/iss/jemodel/je119model_8'
+    ll = 11
+    mm = 10
+    ebfile = ebfile[2]
+    jimg = 4
+    image_mid_time='2005-140T23:56:54.770'
+    imlon = 277.70155
+    dradi = 5.53
+    reverse = 0
+    xi_d = 6.
+    decay = 1
+    sigma = 43.
+    nr = 1200;1500
+    whichpeak = 1
+    closestpeak = 132660
+    cp1 = 4
+    marks = 132000. + [ 614, 624, 631, 643, 658, 667, 674, 682, 687 ] + dradi
+    xr = [132.595,132.71]
+  end
+  5: begin
+    ; Janus 2:1 in 008/RDHRCOMP
+    dir='/home/borogove/iss/images/008/RDHRCOMP'
+    image_mid_time='2005-141T01:06:52.743'
+    tit='008/RDHRCOMP -- Janus/Epimetheus 2:1'
+    psname='/home/borogove/matthewt/idl/iss/jemodel/je21model_8'
+    ll = 2
+    mm = 2
+    jimg = 27
+    sigma = 60
+    dradi = 0;23
+    xi_d = 20
+    nr = 4000
+  end
+  6: begin
+    ; Janus 2:1
+    tit='SOISPTURN -- Janus/Epimetheus 2:1'
+    psname='/home/borogove/matthewt/idl/iss/jemodel/je21model_soi'
+    ll = 2
+    mm = 2
+    jimg = 10
+    image_mid_time = '2004-183T03:21:30.287'
+    imlon = 309.75982
+    sigma = 60
+    dradi = 23
+    xi_d = 20
+    nr = 8000
+  end
+  7: begin
+    ; Janus 4:3
+    tit='SOISPTURN -- Janus/Epimetheus 4:3'
+    psname='/home/borogove/matthewt/idl/iss/jemodel/je43model_soi'
+    ll = 4
+    mm = 4
+    jimg = 23
+    image_mid_time = '2004-183T03:37:05.281'
+    imlon = 321.87558
+    sigma = 35
+    dradi = 15
+    xi_d = 20
+    nr = 4000
+  end
+  8: begin
+    ; Janus 17:14 in ARINGLIT (1263 and 1325 and 1463)
+  end
+  9: begin
+    ; Janus 11:9 in ARINGLIT (1401 and 1463)
+    dir='/home/borogove/iss/images/SOI/ARINGLIT'
+    tit='SOI/ARINGLIT -- Janus/Epimetheus 11:9'
+    psname='/home/borogove/matthewt/idl/iss/jemodel/je119model_soi'
+    ll = 11
+    mm = 10
+    ebfile = ebfile[1]
+    jimg = 14
+    image_mid_time='2004-183T05:12:25.906'
+    ;jimg = 15
+    ;image_mid_time='2004-183T05:13:27.966'
+    dradi = -15
+    reverse = 0
+    xi_d = 6.
+    decay = 1
+    sigma = 43.
+    nr = 1500
+    whichpeak = 1
+    ;closestpeak = 132660
+    ;cp1 = 4
+    ;marks = 132000. + [ 614, 624, 631, 643, 658, 667, 674, 682, 687 ] + dradi
+    xr = [132.62,132.74]
+  end
+  10: begin
+    ; Janus 9:7 in 026/RDHRESSCN
+    dir='/home/borogove/iss/images/026/RDHRESSCN'
+    tit='J/E 9:7 (2006 July 23)';'026/RDHRESSCN -- Janus/Epimetheus 9:7'
+    psname='/home/borogove/matthewt/idl/iss/jemodel/je97model_26'
+    ll = 9
+    mm = 8
+    ebfile = ''
+    radscanfile = dir + '/N1532372071_1_cal.scan1'
+    jimg = 7
+    image_mid_time='2006-204T18:23:17.306'
+    dradi = 2
+    reverse = 0
+    xi_d = 8.5;7.
+    decay = 1
+    sigma=43.
+;    whichpeak = 6
+;    cenpeak = 5
+;    cp1 = 5
+    marks = 128000. + [ 258, 270, 278, 285, 291, 301, 312, 320, 327, 333, 339, 344, 349, 354 ] + dradi
+    nr = 1720
+    xr = [128.2,128.4]
+  end
+  11: begin
+    ; Janus 7:5 in 026/RDHRESSCN
+    dir='/home/borogove/iss/images/026/RDHRESSCN'
+    tit='J/E 7:5 (2006 July 23)';'026/RDHRESSCN -- Janus/Epimetheus 7:5'
+    psname='/home/borogove/matthewt/idl/iss/jemodel/je75model_26'
+    ll = 7
+    mm = 6
+    ebfile = ''
+    radscanfile = dir + '/N1532372691_1_cal.scan1'
+    jimg = 11
+    image_mid_time='2006-204T18:33:37.302'
+    dradi = -3
+    reverse = 0
+    xi_d = 8;6.5
+    xi_d0 = 5.
+    xi_d1 = 9.
+    decay = 1
+    sigma = 11.5
+    sigma0 = 10.5
+    sigma1 = 22.5
+    dsigma = 0.5
+    nr = 1000;1500
+    whichpeak = 1
+    marks = 121000. + [ 241, 248, 274, 278, 283, 289 ] + dradi
+    xr = [121.22,121.34]
+  end
+  12: begin 
+    ; Janus 11:9 in 026/RDHRESSCN
+    dir='/home/borogove/iss/images/026/RDHRESSCN'
+    tit='J/E 11:9 (2006 July 23)';'026/RDHRESSCN -- Janus/Epimetheus 11:9'
+    psname='/home/borogove/matthewt/idl/iss/jemodel/je119model_26'
+    ll = 11
+    mm = 10
+    ebfile = ''
+    radscanfile = dir + '/N1532371698_1_cal.scan1'
+    jimg = 4
+    image_mid_time='2006-204T18:17:04.308'
+    dradi = -10
+    reverse = 1;0
+    xi_d = 6.
+    decay = 1
+    sigma = 43.
+    nr = 1200;1500
+    whichpeak = 1
+    closestpeak = 132660
+    cp1 = 4
+    marks = 132000. + [ 617, 620, 630, 637, 643, 650, 661, 672 ] + dradi
+    xr = [132.595,132.71]
+  end
+  13: begin
+    ; Janus 7:5 in 028/RDHRESSCN001
+    dir='/home/borogove/iss/images/028/RDHRESSCN'
+    tit='J/E 7:5 (2006 September 9)';'028/RDHRESSCN001 -- Janus/Epimetheus 7:5'
+    psname='/home/borogove/matthewt/idl/iss/jemodel/je75model_28_001'
+    ll = 7
+    mm = 6
+    ebfile = ''
+    radscanfile = dir + '/N1536484946_1_cal.scan1'
+    jimg = 7
+    image_mid_time='2006-252T08:50:45.624'
+    dradi = -2.3
+    reverse = 0
+    xi_d = 8;6.5
+    xi_d0 = 5.
+    xi_d1 = 9.
+    decay = 1
+    sigma = 11.5
+    sigma0 = 10.5
+    sigma1 = 22.5
+    dsigma = 0.5
+    nr = 1000;1500
+    whichpeak = 1
+    marks = 121000. + [ 234, 244, 251, 276, 285, 291 ] + dradi
+    xr = [121.22,121.34]
+  end
+  14: begin
+    ; Janus 7:5 in 028/RDHRESSCN
+    dir='/home/borogove/iss/images/028/RDHRESSCN'
+    tit='J/E 7:5 (2006 September 9)';'028/RDHRESSCN -- Janus/Epimetheus 7:5'
+    psname='/home/borogove/matthewt/idl/iss/jemodel/je75model_28'
+    ll = 7
+    mm = 6
+    ebfile = ''
+    radscanfile = dir + '/N1536498973_1_cal.scan1'
+    jimg = 40
+    image_mid_time='2006-252T12:44:32.844'
+    dradi = 10
+    reverse = 0
+    xi_d = 8;6.5
+    xi_d0 = 5.
+    xi_d1 = 9.
+    decay = 1
+    sigma = 11.5
+    sigma0 = 10.5
+    sigma1 = 22.5
+    dsigma = 0.5
+    nr = 1000;1500
+    whichpeak = 1
+    marks = 121000. + [ 223, 233, 239, 265, 269, 274, 279 ] + dradi
+    xr = [121.22,121.34]
+  end
+  15: begin
+    ; Janus 9:7 in 028/RDHRESSCN
+    dir='/home/borogove/iss/images/028/RDHRESSCN'
+    tit='J/E 9:7 (2006 September 9)';'028/RDHRESSCN -- Janus/Epimetheus 9:7'
+    psname='/home/borogove/matthewt/idl/iss/jemodel/je97model_28'
+    ll = 9
+    mm = 8
+    ebfile = ''
+    radscanfile = dir + '/N1536498453_1_cal.scan1'
+    jimg = 35
+    image_mid_time='2006-252T12:35:52.848'
+    dradi = 16
+    reverse = 0
+    xi_d = 8.5;7.
+    decay = 1
+    sigma=43.
+    marks = 128000. + [ 242, 254, 262, 269, 281, 293, 302 ] + dradi
+    nr = 1720
+    xr = [128.2,128.4]
+  end
+endcase
+
+if keyword_set(iterate) then begin
+  if iterate eq 2 then suff = '_suite_xi.sav' else suff = '_suite.sav'
+  if keyword_set(findfile(psname+suff)) then begin
+    port = 1
+    restore, psname+suff
+  endif
+endif
+if keyword_set(ebfile) then begin
+  ; For SOI and 008/RDHRCOMP, get scans made by Emily Baker
+  restore, ebfile
+  jj = (where( orig_filenumber eq jimg ))[0]
+  @eb_get_radscan
+endif else if keyword_set(radscanfile) then begin
+  ; Get scan file from image directory
+  restore, radscanfile
+  mnlon = strpos( radscan_descrip[0], 'mnlon = ' )
+  mnlon = float(strmid( radscan_descrip[0], mnlon+7, 9 ))
+  mxlon = strpos( radscan_descrip[0], 'mxlon = ' )
+  mxlon = float(strmid( radscan_descrip[0], mxlon+7, 9 ))
+  im_lon_scan = replicate( mean([ mnlon, mxlon ]), n_elements(radi) )
+endif else stop, 'Data file?'
+if keyword_set(dolzr) then begin
+  if keyword_set(jemodelresults) then begin
+    if not keyword_exists(cmyk) then cmyk = '_cmyk'
+    if not keyword_set(cmyk) then cmyk = ''
+;    qport=1
+    psname = 'jemodelresults'+string(wave,fo='(I1)')+cmyk
+    if jemodelresults eq 2 then psname = 'jemodelresults'+cmyk
+  endif
+  if jemodelresults lt 2 or wave eq 2 then begin
+    lzr, psname, port=port, half=half, qland=qland, $
+         hland=hland, qport=qport
+    if keyword_set(cmyk) then device, /cmyk
+    plot_color
+    @plot_prepare
+    specify_levels = 1
+  endif
+endif else specify_levels = 0
+if keyword_set(wavelet_charsz) then !p.charsize=wavelet_charsz
+if keyword_set(iterate) then begin
+  if !d.name eq 'X' then window, !d.window+1, xs=800, ys=1200
+  noplot = 1
+  ii = 0
+  if iterate eq 2 then begin
+    xi_d = xi_d0 + dxi_d*0
+    range = (xi_d1-xi_d0)/dxi_d
+  endif else begin
+    sigma = sigma0 + dsigma*0
+    range = (sigma1-sigma0)/dsigma
+  endelse
+  solid_small_circles
+  next:
+endif else begin
+  if !d.name eq 'X' and jemodelresults ne 2 then window, !d.window+1
+  noplot = 0
+endelse
+if keyword_set(noils) then im_lon_scan = 0
+if keyword_set(jemodelresults) then begin
+  marks = 0
+  ;tit = ''
+  nowrite = 1
+  nolegend = 1
+  onebox = 1
+  usegreen = 1
+  resample = 1
+  xticki = .05
+  if wave ge 2 and wave le 3 then xticki = .04
+endif
+if keyword_set(__dw) then dw = __dw[*,ii] else begin
+  jemodel, ll, mm-1, rr, dw, tit=tit, sigma=sigma, xi_d=xi_d, phasej=phasej, $
+           phasee=phasee, radi=radi+dradi, val=val, reverse=reverse, nr=nr, $
+           image_mid_time=image_mid_time, noplot=noplot, $
+           imlon=imlon, im_lon_scan=im_lon_scan, decay=decay, $
+           usegreen=usegreen, nowrite=nowrite, nolegend=nolegend, $
+           onebox=onebox, resample=resample, xticki=xticki, pmulti=pmulti, $
+           noxaxis=noxaxis, noyaxis=noyaxis
+endelse
+if keyword_set(jemodelresults) then begin
+  xyouts, !x.crange[0]+(!x.crange[1]-!x.crange[0])/20, $
+          !y.crange[1]+(!y.crange[1]-!y.crange[0])*1.8, $
+          '('+(['c','d','a','b','e'])[wave]+')'
+  xyouts, !x.crange[0]+(!x.crange[1]-!x.crange[0])/20, $
+          !y.crange[0]+(!y.crange[1]-!y.crange[0])/5, $
+          '!Mx!DD!N = '+string(xi_d,fo='(F4.1)')+$
+          '!C!Ms = '+string(sigma,fo='(F4.1)')+' g/cm!U2!N', chars=1
+endif
+if keyword_set(iterate) then begin
+  mkexed, where( deriv(smooth(dw,5)) gt 0 ), exed
+  if keyword_set(onepeak) then begin
+    maxpeak = (where( dw eq max(dw) ))[0]
+    whichpeak = where( abs(exed[1,*]-maxpeak) eq min(abs(exed[1,*]-maxpeak)) )
+    drr = marks[cp1] - rr[exed[1,whichpeak[0]]]
+  endif else if keyword_set(twopeaks) then begin
+    maxpeak = (where( dw eq max(dw) ))[0]
+    whichpeak = where( abs(exed[1,*]-maxpeak) eq min(abs(exed[1,*]-maxpeak)) )
+    nextpeak = 1;dw[exed[1,whichpeak-1]] lt dw[exed[1,whichpeak+1]]
+    whichpeak = whichpeak + nextpeak - .5
+    drr = mean(marks[cp1:cp1+1]) - mean(rr[exed[1,whichpeak-.5:whichpeak+.5]])
+  endif else if keyword_set(closestpeak) then begin
+    whichpeak = where( abs(rr[exed[1,*]]-closestpeak) eq $
+                       min(abs(rr[exed[1,*]]-closestpeak)) )
+    drr = marks[cp1] - rr[exed[1,whichpeak[0]]]
+  endif else begin
+    drr = marks[cenpeak] - rr[exed[1,whichpeak]]
+  endelse
+;drr = drr - .5
+  if keyword_set(printdrr) then print, sigma, xi_d, drr
+  if ii eq 0 then begin
+    !p.multi = 0
+    if not keyword_set(xr) then xr=tkm([min(rr),max(rr)])
+    if keyword_set(reverse) then contrast='Reverse' else contrast='Normal'
+    plot, tkm(radi+dradi), val, xr=xr, /xs, /ys, tit=tit, ytit='I/F', $
+          xtickn=replicate(' ',20), $
+          yma=[((!d.y_size/!p.charsize/!d.y_ch_size)-6)*5/6+4,2]
+    plot, tkm(rr+drr), dw, /xs, /ys, ytickle=1e-10, $
+          ytickn=replicate(' ',20), xtit='Radius'+tkmtit(), ytit='Model', $
+          xr=xr, yr=[-15-cc*range,15], $
+          yma=[4,((!d.y_size/!p.charsize/!d.y_ch_size)-6)/6+2], /noerase
+    firsttime = 0
+    _dw = dw
+  endif else begin
+;if sigma eq 43 then oplot, tkm(rr+drr), dw-ii*cc, co=ctred() else $
+    oplot, tkm(rr+drr), dw-ii*cc
+    _dw = [ [_dw], [dw] ]
+  endelse
+  if not (xr[0] eq tkm(min(rr)) and xr[1] eq tkm(max(rr))) then begin
+    oplot, tkm(rr[exed[1,*]]+drr), dw[exed[1,*]]-ii*cc, ps=8
+  endif
+  if iterate eq 2 then begin
+    if ii mod 8 eq 0 then xyouts, !x.crange[0]+(!x.crange[1]-!x.crange[0])/30, $
+      -ii*cc, '!Ms = '+strtrim(xi_d,2)
+    xi_d = xi_d + dxi_d
+    ii = ii + 1
+    if xi_d le xi_d1 then goto, next
+  endif else begin
+    if ii mod 8 eq 0 then xyouts, !x.crange[0]+(!x.crange[1]-!x.crange[0])/30, $
+      -ii*cc, '!Ms = '+strtrim(sigma,2)
+    sigma = sigma + dsigma
+    ii = ii + 1
+    if sigma le sigma1 then goto, next
+  endelse
+  __dw = _dw
+  save, rr, __dw, sigma0, sigma1, dsigma, xi_d0, xi_d1, dxi_d, $
+        filename=psname+suff
+  ymarks=[!y.crange[0],!y.crange[1]+(!y.crange[1]-!y.crange[0])/5]
+endif else begin
+  ymarks=[!y.crange[1],!y.crange[1]+(!y.crange[1]-!y.crange[0])*2]
+endelse
+if keyword_set(marks) then for j=0,n_elements(marks)-1 do begin
+  oplot, l=1, /noclip, tkm(marks[[j,j]]), ymarks           
+endfor
+
+;radi = rr
+;val = dw
+;if !d.name eq 'X' then window, !d.window+1
+;_errbar = val*0+.3
+;equal = 0
+;wavelet_tit=tit+' Model'
+;mooncolor = 1
+;@run_wavelet1
+
+if keyword_set(jemodelresults) and wave lt 4 then begin
+  case wave of
+    0: wave = 3
+    1: wave = 0
+    2: wave = 1
+    3: wave = 4
+  endcase
+  pmulti = [ ([17,8,0,9,7])[wave], 3, 6 ]
+  if wave eq 0 or wave eq 2 then noxaxis = 1 else noxaxis = 0
+  if wave eq 3 then noyaxis = '2005 May 21!C' else noyaxis = ' '
+  goto, nextwave
+endif
+
+if keyword_set(dolzr) then clzr
+
+end

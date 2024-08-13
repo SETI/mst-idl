@@ -1,0 +1,7 @@
+function fix_precess, pomega
+
+
+
+return, pomega_fixed
+
+end

@@ -1,0 +1,8 @@
+jn = 50
+rawim2 = fltarr(nl,nl,jn)
+for jj=0,jn-1 do begin
+  rawim2[*,*,jj] = deband(rawim,yy=jn)
+endfor
+
+
+end

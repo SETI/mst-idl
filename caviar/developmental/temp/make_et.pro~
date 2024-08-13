@@ -1,0 +1,8 @@
+restore, 'stretch.sav'
+for jjj=0,n_elements(filenames)-1 do begin
+  noplot = 1
+  @caviar
+endfor
+save, _et, filename='et.sav'
+
+end

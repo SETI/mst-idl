@@ -1,0 +1,18 @@
+restore,'stretch.sav'
+image_number =''
+read,image_number,prompt='Image Number : '
+image_number = fix(image_number)
+image_name = filenames(image_number)
+basiconly=1
+@caviar
+mnrad = 133350.
+mxrad = 133800.
+mnrad = 136450.;136370.
+mxrad = 136570.;136650.
+mnlon=0
+mxlon=0
+@r
+.run repoint
+wdelete,32
+wdelete,9
+wdelete,1

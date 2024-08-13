@@ -1,0 +1,9 @@
+stretchfile=findfile('stretch.sav')
+
+if(stretchfile eq 'stretch.sav') then restore, stretchfile
+
+if(stretchfile ne 'stretch.sav') then print, 'No stretch.sav file found, please create stretch.sav file by entering .r update_stretch'
+
+
+.r rt_display
+rt_display, filenames, nostars=0, noplot=0, nonstop=0

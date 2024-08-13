@@ -1,0 +1,234 @@
+function resloc_rsat_root, r
+  common resloc1, lc82, omegasat, patternspeed, mm, inner
+  return, caviar_omega2(lc82=lc82,r) - omegasat^2
+end
+
+function resloc_rres_root_bw, r
+  common resloc1, lc82, omegasat, patternspeed, mm, inner
+  return, sqrt(caviar_omega2(lc82=lc82,r)) - sqrt(caviar_nu2(lc82=lc82,r))/mm - patternspeed
+end
+
+function resloc_rres_root_dw, r
+  common resloc1, lc82, omegasat, patternspeed, mm, inner
+  return, sqrt(caviar_omega2(lc82=lc82,r)) - inner*sqrt(caviar_kappa2(lc82=lc82,r))/mm - patternspeed
+end
+
+function resloc_rres_root_corot, r
+  common resloc1, lc82, omegasat, patternspeed, mm, inner
+  return, sqrt(caviar_omega2(lc82=lc82,r)) - patternspeed
+end
+
+; Calculate Resonance Locations
+; Method and values based on Lissauer and Cuzzi, AJ 87, 1051 (1982)
+function resloc, rl1, rl2, satnum, res_descrip=res_descrip, short=short, $
+	omegasat=omegasat, kappasat=kappasat, nusat=nusat, rsat=rsat, $
+        satnames=satnames, bending=bending, vertical=vertical, $
+        omegares=omegares, pp=_pp, kk=_kk, ll=ll, mm=mm, $
+        debug=debug, lc82=lc82, may04=may04, cm04=cm04, evans=evans, $
+        porco05=porco05, gm=gm, esat=esat, isat=isat, $
+        cer=cer, cir=cir, patternspeed=patternspeed, $
+        de414_mimas=de414_mimas, mwe_mimas=mwe_mimas
+
+if n_params() eq 0 then begin
+  print, 'Syntax:  Result = RESLOC( rl1, rl2, satnum, [res_descrip=] )'
+  print, 'Returns the radial location (in km) of the rl1:rl2 Lindblad resonance of satellite satnum.  The list of satellite names can be returned in keyword satnames.  The satellite''s orbital and radial frequencies can be returned in keywords omegasat and kappasat.'
+  retall;
+endif
+
+common resloc1, _lc82, _omegasat, _patternspeed, _mm, inner
+
+; Use 5:4 resonance as default
+if not keyword_exists(rl1) then rl1=5
+if not keyword_exists(rl2) then rl2=4
+
+; Lindblad and vertical resonances are generally written ll:(mm-1), 
+; while corotation resonances are ll:mm.
+ll = double(rl1)
+if keyword_set(cer) or keyword_set(cir) then begin
+  mm = double(rl2)
+  inner = 1
+endif else begin
+  if rl1 gt rl2 or rl2 eq 0 then begin
+    ; Inner Lindblad/vertical
+    inner = 1
+    mm = double(rl2) + 1
+  endif else begin
+    ; Outer Lindblad/vertical
+    inner = -1
+    mm = double(rl2) - 1
+  endelse
+endelse
+_mm = mm
+if keyword_set(vertical) then bending = 1
+if keyword_set(_pp) or keyword_set(_kk) then begin
+  if keyword_set(_pp) then pp = _pp else pp = 0
+  if keyword_set(_kk) then kk = _kk else kk = 0
+endif else begin
+  if keyword_set(bending) then begin
+    pp = 1 * sign(ll)
+    kk = ll - mm - pp
+    if kk lt 0 then stop, 'First-order vertical resonances do not exist'
+  endif else if keyword_set(cer) then begin
+    pp = 0
+    kk = ll - mm
+  endif else if keyword_set(cir) then begin
+    pp = ll - mm
+    kk = 0
+  endif else begin
+    kk = ll - mm
+    pp = 0
+  endelse
+endelse
+
+if not keyword_set(satnum) then satnum = 0
+if satnum ge 601 then begin
+  ; NAIF codes (preferred)
+  _satnum = satnum - 601
+endif else begin
+  ; I originally wrote this routine with an idiosyncratic system of assigning 
+  ; the number satnum to a moon.  
+  index = [ 5, 6, 11, 12, 13, 7, 8, 9, 14, 4, 3, -1, -1, -1, 0, 1, 2, 10 ]
+  _satnum = (where( satnum eq index ))[0]
+  satnum = _satnum + 601
+endelse
+
+if keyword_set(short) then begin
+  satnames = [ 'Mi', 'En', 'Te', 'Di', 'Rh', 'Ti', 'Hy', 'Ia', 'Ph', 'Ja', $
+               'Ep', '', '', '', 'At', 'Pr', 'Pd', 'Pan' ]
+endif else begin
+  satnames = [ 'Mimas', 'Enceladus', 'Tethys', 'Dione', 'Rhea', 'Titan', $
+               'Hyperion', 'Iapetus', 'Phoebe', 'Janus', 'Epimetheus', $
+               '', '', '', 'Atlas', 'Prometheus', 'Pandora', 'Pan' ]
+endelse
+if keyword_set(lc82) then begin
+  _lc82 = lc82
+  ; The original values used by Lissauer and Cuzzi 1982
+  ; Saturn's mass multiplied by Newton's Constant
+  gm = 37929141.6d ;km^3/s^2
+  _gm = gm
+  ; Saturn radius
+  prad = 60330.0d0 ; km
+  ; Saturn gravity harmonics
+  j2 = 16299.1d-6
+  j4 = -916.7d-6
+  j6 = 81.3d-6
+  ; Satellite orbital periods
+  _periodsat = [ 81425.0d, 118387.0d, 1e9, 1e9, 1e9, 1377684.0d, 1838592.0d, $
+                 6854112.0d, 1e9, 60019.0d, 59989.6d, 1e9, 1e9, 1e9, 51993.4d, $
+                 52962.8d, 54304.5d, 1e9 ]
+  _esat = [ .0201d, .0044, 0, 0, 0, .0289, .1042, .0283, 0, .007, .009, $
+            0, 0, 0, .002, .003, .004, 0 ]
+  _isat = _esat * 0
+endif else begin
+  ;; Saturn mass, radius, and harmonics from JPL kernel cpck05May2004.tpc
+  ;gm = 37931289.4836 ;km^3/s^2
+  ;prad = 60330.0d0 ;km
+  ;j2 = 0.016292243237d
+  ;j4 = -0.000928716077d
+  ;j6 = 0.000088845313
+  saturn_constants, gm=gm, prad=prad, j2=j2, j4=j4, j6=j6, may04=may04
+  _gm = gm
+  ; Satellite orbital periods from JPL Horizons queried on 21 February 2006 for
+  ; epoch JD 2453187.5 (1 July 2004).  See horizons.email for details of query.
+  ; Converting from days per orbit to seconds per orbit
+  _periodsat = [ 0.9424218d, 1.370218, 1.887802, 2.736915, 4.5175, 15.945421, $
+                 21.276609, 79.330183, 550.48, 0.694590, 0.694590, 0, 0, 0, $
+                 0.6019, 0.612986, 0.628804, 0.5750 ] * 86400
+  if keyword_set(de414_mimas) then _periodsat[0] = 0.94244242d * 86400
+  if keyword_set(mwe_mimas) then _periodsat[0] = 0.94245453d * 86400
+  ; Satellite eccentricities and inclinations from 
+  ; http://ssd.jpl.nasa.gov/sat_elem.html, queried 22 Feb 2006
+  _esat = [ .0193d, .0047, 0.0001, .0022, .001, .0288, .0274, .0283, .1635, $
+            .0073, .009, 0, 0, 0, 0, .0024, .0042, 0 ]
+  _isat = [ 1.572d, 0.009, 1.091, 0.028, 0.331, 0.28, 0.63, 7.49, 175.986, $
+            0.165, 0.335, 0, 0, 0, 0, 0, 0, 0 ]
+  if not keyword_exists(porco05) then porco05 = 1  ; Make these default.
+  if keyword_set(porco05) then begin
+    ; Mean motions from Porco et al (2005) paper in Science:
+    _periodsat[[9,10,14,15,16,17]] = [ 518.238639d, $ ; Janus
+                                       518.483719d, $ ; Epimetheus
+                                       598.313997d, $ ; Atlas
+                                       587.284953d, $ ; Prometheus
+                                       572.792057d, $ ; Pandora
+                                       626.031719d ]  ; Pan
+    _periodsat[[9,10,14,15,16,17]] = 360.0d0 * 86400.0d0 / $
+                                            _periodsat[[9,10,14,15,16,17]]
+    _esat[[9,10,14,15,16,17]] = [ .0067, .0098, 1.2e-3, .0023, .0042, .21e-3 ]
+    _isat[[9,10,14,15,16,17]] = [ .1649, .3541, .009, .0056, .0522, .007 ]
+  endif
+  if keyword_set(cm04) then begin
+    ; Janus and Epimetheus semimajor axes from Cooper and Murray (2004)
+    _periodsat[9:10] = 2*!dpi / sqrt(caviar_omega2(lc82=lc82,[151462.,151413.]))
+    if cm04 eq 2 then begin
+      ; Previous to the most recent Janus/Epimetheus switch
+      _periodsat[9:10] = 2*!dpi / sqrt(caviar_omega2(lc82=lc82,[151442.,151492.]))
+    endif
+  endif
+  if keyword_set(evans) then begin
+    ; Most recent values from Mike Evans, private communication, 2004.
+    ; Converting Mike's numbers from degrees per day to seconds per orbit.
+    _periodsat[[9,10,14,15,16,17]] = [ 518.23982d, $   ; Janus
+                                       518.48038d, $   ; Epimetheus
+                                       598.3140135d, $ ; Atlas
+                                       587.28512d, $   ; Prometheus
+                                       572.78823d, $   ; Pandora
+                                       626.03172d ]    ; Pan
+    _periodsat[[9,10,14,15,16,17]] = 360.0d0 * 86400.0d0 / $
+                                            _periodsat[[9,10,14,15,16,17]]
+  endif
+endelse
+; Keeler Gap moon, which will probably be named Daphnis
+if not keyword_set(lc82) then begin
+  if n_elements(_periodsat) ne 18 then stop
+  _periodsat = [ _periodsat, 2*!dpi / sqrt(caviar_omega2(lc82=lc82,136505.)) ]
+endif
+
+; Select which satellite we're using, then calculate mean motion and 
+; write description
+periodsat = _periodsat[_satnum]
+omegasat = 2 * !dpi / periodsat
+_omegasat = omegasat
+esat = _esat[_satnum]
+isat = _isat[_satnum]
+res_descrip = satnames[_satnum] + ' ' + strtrim(fix(ll),2) + ':' + strtrim(fix(rl2),2)
+if keyword_set(bending) then res_descrip = res_descrip + ' BW'
+if keyword_set(cer) then res_descrip = res_descrip + ' CER'
+if keyword_set(cir) then res_descrip = res_descrip + ' CIR'
+
+; Start with provisional satellite orbital radius (fx_root wants a 3-element
+; vector for reasons I don't understand)
+rsat0 = ( gm / omegasat^2 ) ^ (1./3) + [-5,0,5]
+; Find precise satellite orbital radius 
+rsat = fx_root( rsat0, 'resloc_rsat_root', /double )
+; Using radius, find satellite epicyclical frequency
+kappasat = sqrt( caviar_kappa2(lc82=lc82,rsat) )
+; Vertical frequency can be simply calculated from the mean motion and the 
+; epicyclic frequency (Shu et al 1983).
+nusat = sqrt( 2*omegasat^2 - kappasat^2 )
+; Calculate pattern speed
+patternspeed = omegasat + inner*kk/mm*kappasat + inner*pp/mm*nusat
+_patternspeed = patternspeed
+
+; Start with provisional resonance location
+if abs(ll) eq 1 and mm eq 1 then begin
+  ; Apsidal precession rate omega-kappa ~ sqrt(gm/r^3) * 3/2*j2*(prad/r)^2
+  ; is set equal to satellite mean motion, then solve for r
+  rres0 = ( gm / omegasat^2 * 9/4 * j2^2 * prad^4 ) ^ (1./7) + [-5,0,5]
+  ; Nodal precession rate omega-mu is the negative of this, but same estimate.
+endif else begin
+  rres0 = ( gm / omegasat^2 / ll^2 * rl2^2 ) ^ (1./3) + [-5,0,5]
+endelse
+; Find precise resonance location
+if keyword_set(bending) then begin
+  rres = fx_root( rres0, 'resloc_rres_root_bw', /double )
+endif else if keyword_set(cer) or keyword_set(cir) then begin
+  rres = fx_root( rres0, 'resloc_rres_root_corot', /double )
+endif else begin
+  rres = fx_root( rres0, 'resloc_rres_root_dw', /double )
+endelse
+omegares = sqrt(caviar_omega2(lc82=lc82,rres))
+if keyword_set(debug) then stop
+
+return, rres
+
+end
